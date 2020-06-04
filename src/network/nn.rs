@@ -46,7 +46,7 @@ impl NeuralNetwork {
 
 impl NeuralNetwork {
 
-  fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
+  pub fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
     let mut input = x;
     for i in 0..self.layers.len() {
       input = self.layers[i].forward(input);
@@ -57,7 +57,7 @@ impl NeuralNetwork {
     input //output
   }
 
-  fn backward(&mut self, feedback: Array1<f32>) {
+  pub fn backward(&mut self, feedback: Array1<f32>) {
     let mut fb = feedback;
     for i in (0..self.layers.len()).rev() {
       fb = self.layers[i].backward(fb);
