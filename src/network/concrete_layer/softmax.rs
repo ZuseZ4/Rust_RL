@@ -1,5 +1,6 @@
 use crate::network::layer_trait::Layer;
-use ndarray::{Array, Array1, Array2};
+//use ndarray::{Array, Array1, Array2};
+use ndarray::Array1;
 pub struct SoftmaxLayer {
 }
 
@@ -15,7 +16,7 @@ impl Layer for SoftmaxLayer {
     "Softmax Layer".to_string()
   }
 
-  fn forward(&self, x: Array1<f32>) -> Array1<f32> {
+  fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
     /*
     let max = x.iter().max();
     x.iter().map(|&x| (x-max).exp());
@@ -25,12 +26,13 @@ impl Layer for SoftmaxLayer {
     x
   }
 
-  fn backward(&self, x: Array1<f32>, feedback: Array1<f32>) -> Array1<f32>{
+  fn backward(&mut self, feedback: Array1<f32>) -> Array1<f32>{
     /*
     x.iter().zip(feedback.iter())
       .map(|(&b, &c)| b - c)
       .collect()
       */
+    feedback
   }
 
 }

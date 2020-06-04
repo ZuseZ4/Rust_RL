@@ -1,5 +1,6 @@
-use ndarray::{Array, Array1};
+use ndarray::Array1;
 use crate::network::layer::LayerType;
+use crate::network::layer_trait::Layer;
 
 pub struct HyperParameter {
   batch_size: usize,
@@ -31,10 +32,12 @@ pub struct NeuralNetwork {
 
 impl NeuralNetwork {
   pub fn new(_input_dim: usize) -> NeuralNetwork {
+    let mut l = vec![];
+    l.push(LayerType::new(1).unwrap());
+    l.push(LayerType::new(2).unwrap());
 
     NeuralNetwork{
-      H: 36,//200,
-      D: 36, //input_dim,
+      layers:  l,
       hyper: HyperParameter::new(),
     }
 
@@ -43,19 +46,25 @@ impl NeuralNetwork {
 
 impl NeuralNetwork {
 
-  fn forward(&self, x: Array1<f32>) -> Array1<f32> {
-    let input = x;
-    for layer in self.layer {
-      input = layer.forward(input);
+  fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
+    let mut input = x;
+    for i in 0..self.layers.len() {
+      input = self.layers[i].forward(input);
     }
+    //for &mut layer in self.layers.iter_mut() {
+    //  input = layer.forward(input);
+    //}
     input //output
   }
 
-  fn backward(&self, feedback: Array1<f32>) {
-    let fb = feedback;
-    for layer in self.layer.rev() {
-      fb = layer.backward(fb);
+  fn backward(&mut self, feedback: Array1<f32>) {
+    let mut fb = feedback;
+    for i in (0..self.layers.len()).rev() {
+      fb = self.layers[i].backward(fb);
     }
+    //for &mut layer in self.layers.iter_mut().rev() {
+    //  fb = layer.backward(fb);
+    //}
   }
 }
 

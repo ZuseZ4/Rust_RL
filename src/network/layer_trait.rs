@@ -1,4 +1,4 @@
-use ndarray::{Array, Array1};
+use ndarray::Array1;
 
 pub trait Layer {
     fn get_type(&self) -> String;

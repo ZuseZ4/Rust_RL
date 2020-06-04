@@ -2,6 +2,7 @@ use crate::network::concrete_layer;
 use concrete_layer::dense::DenseLayer;
 use concrete_layer::softmax::SoftmaxLayer;
 use crate::network::layer_trait::Layer;
+use ndarray::Array1;
 
 pub enum LayerType {
     D(DenseLayer),
@@ -21,8 +22,8 @@ impl LayerType {
 impl Layer for LayerType {
     fn get_type(&self) -> String {
         match self {
-            LayerType::D(dense_layer) => dense_layer.get_id(),
-            LayerType::S(softmax_layer) => softmax_layer.get_id(),
+            LayerType::D(dense_layer) => dense_layer.get_type(),
+            LayerType::S(softmax_layer) => softmax_layer.get_type(),
         }
     }
     fn forward(&mut self, input: Array1<f32>) -> Array1<f32> {
