@@ -12,6 +12,7 @@ debug = true
 [dependencies]
 rand = "0.5.5"
 fnv = "1.0.7"
+ndarray = "0.13.1"
 
 [dev-dependencies]
 criterion = "0.3"

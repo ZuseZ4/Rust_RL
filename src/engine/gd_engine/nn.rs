@@ -2,9 +2,7 @@ use ndarray::Array;
 use ndarray_rand::RandomExt;
 use ndarray_rand::rand_distr::normal::StandardNormal;
 
-
-pub struct NeuralNetwork {
-  H: usize,
+pub struct HyperParameter {
   batch_size: usize,
   learning_rate = f32,
   gamma = f32,
@@ -12,17 +10,9 @@ pub struct NeuralNetwork {
   resume = bool,
   render = bool,
 }
-
-
-impl NeuralNetwork {
-  pub fn new(input_dim: usize) -> Neuralnetwork {
-    //xavier init
-    let NN = Array::random((36,36), StandardNormal::new())
-      .map(|&x| x / sqrt(36));
-
-    NeuralNetwork{
-      H: 36,//200,
-      D: input_dim,
+impl HyperParameter {
+  pub fn new() -> self {
+    HyperParameter{
       batch_size = 10,
       learning_rate = 1e-4,
       gamma = 0.99,
@@ -30,23 +20,53 @@ impl NeuralNetwork {
       resume = false,
       render = false,
     }
-
-  pub fn init() {
   }
 }
 
-fn softmax(x: Vec<f32>) -> Vec<f32> {
-  max = 
+
+pub struct NeuralNetwork {
+  layers: Vec<Layer>,
+  hyper: HyperParameter,
 }
 
-fn policy_forward(x) -> Vec<f32> {
-  let output = W1.dot(x);
+
+impl NeuralNetwork {
+  pub fn new(_input_dim: usize) -> Neuralnetwork {
+    //xavier init
+    let NN = Array::random((36,36), StandardNormal::new())
+      .map(|&x| x / sqrt(36));
+
+    NeuralNetwork{
+      H: 36,//200,
+      D: 36, //input_dim,
+      hyper: HyperParameter::new(),
+    }
+
+  }
+}
+
+
+
+fn policy_forward(&self, x) -> Vec<f32> {
+  let input = x;
+  for layer in self.layer {
+    input = layer.forward(input);
+  }
+  input //output
+}
+
+fn policy_backward(&self, feedback) {
+  let fb = feedback;
+  for layer in self.layer.rev() {
+    fb = layer.backward(fb);
+  }
+}
     
-    //.map(|&x| 1 / (1 + (-x).exp())) //sigmoid
-    //.map(|&x| if x < 0 { 0 } else { x }); //ReLu for multilayer
+  //.map(|&x| 1 / (1 + (-x).exp())) //sigmoid
+  //.map(|&x| if x < 0 { 0 } else { x }); //ReLu for multilayer
 }
 
-fn discount_rewards(moves_prob, legal_moves: Vec<i32>) -> f32 {
+fn discount_rewards(&self, moves_prob, legal_moves: Vec<i32>) -> f32 {
   let n = legal_moves.iter().sum() as f32;
   let normalized_legal_moves: Vec<f32> = legal_moves.iter().map(|&x| (x as f32)/num_legal_moves).collect();
   //MSE pushed the neural net into giving all allowed moves the same prob and 0 to the rest
@@ -57,7 +77,9 @@ fn discount_rewards(moves_prob, legal_moves: Vec<i32>) -> f32 {
   1 - MSE
 }
 
-fn policy_backward(
+fn policy_backward(&mut self) {
+  let legal_moves = 
+}
 
 """ Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
 def policy_backward(eph, epdlogp):
