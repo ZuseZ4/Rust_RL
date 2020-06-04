@@ -1,40 +1,36 @@
-use ndarray::Array;
-use ndarray_rand::RandomExt;
-use ndarray_rand::rand_distr::normal::StandardNormal;
+use ndarray::{Array, Array1};
+use crate::network::layer::LayerType;
 
 pub struct HyperParameter {
   batch_size: usize,
-  learning_rate = f32,
-  gamma = f32,
-  decay_rate = f32,
-  resume = bool,
-  render = bool,
+  learning_rate: f32,
+  gamma: f32,
+  decay_rate: f32,
+  resume: bool,
+  render: bool,
 }
 impl HyperParameter {
-  pub fn new() -> self {
+  pub fn new() -> Self {
     HyperParameter{
-      batch_size = 10,
-      learning_rate = 1e-4,
-      gamma = 0.99,
-      decay_rate = 0.99,
-      resume = false,
-      render = false,
+      batch_size: 10,
+      learning_rate: 1e-4,
+      gamma: 0.99,
+      decay_rate: 0.99,
+      resume: false,
+      render: false,
     }
   }
 }
 
 
 pub struct NeuralNetwork {
-  layers: Vec<Layer>,
+  layers: Vec<LayerType>,
   hyper: HyperParameter,
 }
 
 
 impl NeuralNetwork {
-  pub fn new(_input_dim: usize) -> Neuralnetwork {
-    //xavier init
-    let NN = Array::random((36,36), StandardNormal::new())
-      .map(|&x| x / sqrt(36));
+  pub fn new(_input_dim: usize) -> NeuralNetwork {
 
     NeuralNetwork{
       H: 36,//200,
@@ -45,27 +41,29 @@ impl NeuralNetwork {
   }
 }
 
+impl NeuralNetwork {
 
-
-fn policy_forward(&self, x) -> Vec<f32> {
-  let input = x;
-  for layer in self.layer {
-    input = layer.forward(input);
+  fn forward(&self, x: Array1<f32>) -> Array1<f32> {
+    let input = x;
+    for layer in self.layer {
+      input = layer.forward(input);
+    }
+    input //output
   }
-  input //output
-}
 
-fn policy_backward(&self, feedback) {
-  let fb = feedback;
-  for layer in self.layer.rev() {
-    fb = layer.backward(fb);
+  fn backward(&self, feedback: Array1<f32>) {
+    let fb = feedback;
+    for layer in self.layer.rev() {
+      fb = layer.backward(fb);
+    }
   }
 }
-    
-  //.map(|&x| 1 / (1 + (-x).exp())) //sigmoid
-  //.map(|&x| if x < 0 { 0 } else { x }); //ReLu for multilayer
-}
 
+
+//.map(|&x| 1 / (1 + (-x).exp())) //sigmoid
+//.map(|&x| if x < 0 { 0 } else { x }); //ReLu for multilayer
+
+/*
 fn discount_rewards(&self, moves_prob, legal_moves: Vec<i32>) -> f32 {
   let n = legal_moves.iter().sum() as f32;
   let normalized_legal_moves: Vec<f32> = legal_moves.iter().map(|&x| (x as f32)/num_legal_moves).collect();
@@ -75,10 +73,6 @@ fn discount_rewards(&self, moves_prob, legal_moves: Vec<i32>) -> f32 {
     zip(normalized_legal_moves.iter())
     .fold(0.0, |sum, (&x, &y)| sum + ((x-y)*3.0).powf(2.0));
   1 - MSE
-}
-
-fn policy_backward(&mut self) {
-  let legal_moves = 
 }
 
 """ Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
@@ -167,4 +161,4 @@ while True:
 
   if reward != 0: # Pong has either +1 or -1 reward exactly when game ends.
     print ('ep %d: game finished, reward: %f' % (episode_number, reward)) + ('' if reward == -1 else ' !!!!!!!!')
-
+*/

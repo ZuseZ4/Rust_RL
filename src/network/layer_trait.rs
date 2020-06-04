@@ -1,8 +1,7 @@
-use crate::board::board_trait::BoardInfo;
 use ndarray::{Array, Array1};
 
 pub trait Layer {
-    fn get_Type(&self) -> String;
+    fn get_type(&self) -> String;
 
     fn forward(&mut self, input: Array1<f32>) -> Array1<f32>;
 
