@@ -25,20 +25,21 @@ impl HyperParameter {
 
 
 pub struct NeuralNetwork {
-  layers: Vec<LayerType>,
   hyper: HyperParameter,
+  layers: Vec<LayerType>,
 }
 
 
 impl NeuralNetwork {
   pub fn new(_input_dim: usize) -> NeuralNetwork {
+    let hyper_parameters = HyperParameter::new();
     let mut l = vec![];
-    l.push(LayerType::new(1).unwrap());
-    l.push(LayerType::new(2).unwrap());
+    l.push(LayerType::new_connection(1, hyper_parameters.learning_rate).unwrap()); //Dense
+    l.push(LayerType::new_activation(1).unwrap()); //Softmax
 
     NeuralNetwork{
       layers:  l,
-      hyper: HyperParameter::new(),
+      hyper: hyper_parameters,
     }
 
   }

@@ -10,11 +10,17 @@ pub enum LayerType {
 }
 
 impl LayerType {
-    pub fn new(layer_number: u8) -> Result<LayerType, String> {
+    pub fn new_connection(layer_number: u8, learning_rate: f32) -> Result<LayerType, String> {
         match layer_number {
-            1 => Ok(LayerType::D(DenseLayer::new())),
-            2 => Ok(LayerType::S(SoftmaxLayer::new())),
-            _ => Err(format!("Bad Layer: {}", layer_number)),
+            1 => Ok(LayerType::D(DenseLayer::new(learning_rate))),
+            _ => Err(format!("Bad Connection Layer: {}", layer_number)),
+        }
+    }
+    
+    pub fn new_activation(layer_number: u8) -> Result<LayerType, String> {
+        match layer_number {
+            1 => Ok(LayerType::S(SoftmaxLayer::new())),
+            _ => Err(format!("Bad ACtivation Layer: {}", layer_number)),
         }
     }
 }

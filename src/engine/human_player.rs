@@ -9,7 +9,7 @@ pub struct HumanPlayer {
 }
 
 impl HumanPlayer {
-    pub fn new(rounds_per_game: u8, _is_first_player: bool) -> HumanPlayer {
+    pub fn new(rounds_per_game: u8, _is_first_player: bool) -> Self {
         HumanPlayer {rounds: rounds_per_game,}
     }
 }

@@ -1,7 +1,6 @@
 use rand::Rng;
 
 use crate::board::board_trait::BoardInfo;
-//use crate::board::smart_board::Board;
 use crate::engine::engine_trait::Engine;
 
 #[allow(dead_code)]
@@ -10,7 +9,7 @@ pub struct RandomEngine {
 }
 
 impl RandomEngine {
-    pub fn new(rounds_per_game: u8, _is_first_player: bool) -> RandomEngine {
+    pub fn new(rounds_per_game: u8, _is_first_player: bool) -> Self {
         RandomEngine {rounds: rounds_per_game,}
     }
 }

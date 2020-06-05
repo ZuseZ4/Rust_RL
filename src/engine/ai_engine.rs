@@ -2,7 +2,6 @@ use rand::Rng;
 use std::collections::HashMap;
 
 use crate::board::board_trait::BoardInfo;
-//use crate::board::smart_board::Board;
 use crate::engine::engine_trait::Engine;
 
 #[allow(dead_code)]
@@ -16,7 +15,7 @@ pub struct AIEngine {
 }
 
 impl AIEngine {
-    pub fn new(rounds_per_game: u8, is_first_player: bool, e: f32) -> AIEngine {
+    pub fn new(rounds_per_game: u8, is_first_player: bool, e: f32) -> Self {
         let empty_scores = HashMap::new();
         AIEngine {
             rounds: rounds_per_game,
