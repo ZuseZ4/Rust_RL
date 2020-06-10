@@ -1,4 +1,4 @@
-use ndarray::Array1;
+use ndarray::{Array, Array1};
 use crate::network::layer::LayerType;
 use crate::network::layer_trait::Layer;
 
@@ -14,7 +14,7 @@ impl HyperParameter {
   pub fn new() -> Self {
     HyperParameter{
       batch_size: 10,
-      learning_rate: 1e-4,
+      learning_rate: 1e-3, //10e-4
       gamma: 0.99,
       decay_rate: 0.99,
       resume: false,
@@ -27,6 +27,8 @@ impl HyperParameter {
 pub struct NeuralNetwork {
   hyper: HyperParameter,
   layers: Vec<LayerType>,
+  last_output: Array1<f32>,
+  last_target: Array1<f32>,
 }
 
 
@@ -34,56 +36,59 @@ impl NeuralNetwork {
   pub fn new(_input_dim: usize) -> NeuralNetwork {
     let hyper_parameters = HyperParameter::new();
     let mut l = vec![];
+    //l.push(LayerType::new_activation(1).unwrap()); //Softmax
     l.push(LayerType::new_connection(1, hyper_parameters.learning_rate).unwrap()); //Dense
-    l.push(LayerType::new_activation(1).unwrap()); //Softmax
+    l.push(LayerType::new_activation(2).unwrap()); //Sigmoid
+    l.push(LayerType::new_connection(1, hyper_parameters.learning_rate).unwrap()); //Dense
+    l.push(LayerType::new_activation(2).unwrap()); //Sigmoid
 
     NeuralNetwork{
       layers:  l,
       hyper: hyper_parameters,
+      last_output: Array::zeros(36),
+      last_target: Array::zeros(36),
     }
 
   }
+}
+
+fn normalize(x: Array1<f32>) -> Array1<f32> {
+  x.map(|&x| (x+3.0)/6.0)
 }
 
 impl NeuralNetwork {
 
   pub fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
-    let mut input = x;
+    let mut input = normalize(x);
     for i in 0..self.layers.len() {
       input = self.layers[i].forward(input);
     }
-    //for &mut layer in self.layers.iter_mut() {
-    //  input = layer.forward(input);
-    //}
-    input //output
+    self.last_output = input; //output
+    self.last_output.clone()
   }
 
-  pub fn backward(&mut self, feedback: Array1<f32>) {
-    let mut fb = feedback;
+  pub fn backward(&mut self, target: Array1<f32>) {
+    self.last_target = target.clone();
+    let mut fb = &self.last_output - &target;
     for i in (0..self.layers.len()).rev() {
       fb = self.layers[i].backward(fb);
     }
-    //for &mut layer in self.layers.iter_mut().rev() {
-    //  fb = layer.backward(fb);
-    //}
   }
+
+  pub fn error(&mut self) {
+    let mse = self.last_output.iter()
+      .zip(self.last_target.iter())
+      .fold(0.0, |sum, (&x, &y)| sum + 0.5 * (x-y).powf(2.0));
+    println!("MSE: {}",mse);
+  }
+
+
 }
 
 
-//.map(|&x| 1 / (1 + (-x).exp())) //sigmoid
 //.map(|&x| if x < 0 { 0 } else { x }); //ReLu for multilayer
 
 /*
-fn discount_rewards(&self, moves_prob, legal_moves: Vec<i32>) -> f32 {
-  let n = legal_moves.iter().sum() as f32;
-  let normalized_legal_moves: Vec<f32> = legal_moves.iter().map(|&x| (x as f32)/num_legal_moves).collect();
-  //MSE pushed the neural net into giving all allowed moves the same prob and 0 to the rest
-  //+1 for mimicing legal moves perfectly, neg values if it is too far
-  let MSE = moves_prob.iter().
-    zip(normalized_legal_moves.iter())
-    .fold(0.0, |sum, (&x, &y)| sum + ((x-y)*3.0).powf(2.0));
-  1 - MSE
-}
 
 """ Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
 def policy_backward(eph, epdlogp):
