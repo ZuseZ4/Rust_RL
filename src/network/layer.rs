@@ -12,9 +12,10 @@ pub enum LayerType {
 }
 
 impl LayerType {
-    pub fn new_connection(layer_number: u8, learning_rate: f32) -> Result<LayerType, String> {
+    //pub fn new_connection(layer_number: u8, learning_rate: f32) -> Result<LayerType, String> {
+    pub fn new_connection(layer_number: u8, input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32) -> Result<Self, String> {
         match layer_number {
-            1 => Ok(LayerType::D(DenseLayer::new(learning_rate))),
+            1 => Ok(LayerType::D(DenseLayer::new(input_dim, output_dim, batch_size, learning_rate))),
             _ => Err(format!("Bad Connection Layer: {}", layer_number)),
         }
     }

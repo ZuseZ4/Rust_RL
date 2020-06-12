@@ -45,7 +45,6 @@ fn random_select(move_probs: Array1<f32>) -> usize {
 
 fn expand_to_36(legal_moves: Vec<f32>) -> Array1<f32> {
   let mut expanded_arr: Array1<f32> = Array::zeros(36);
-  let n = legal_moves.len() as f32;
   for pos in 0..legal_moves.len() {
     expanded_arr[pos] = 1.0 ; // n; for sigmoid don't normalize, only for softmax
   }
@@ -68,7 +67,6 @@ impl Engine for GDEngine {
       self.nn.backward(legal_moves);
 
       if !board.get_possible_moves().contains(&proposed_move) {
-        let old_move = proposed_move.clone();
         let legal_moves = board.get_possible_moves();
         proposed_move = legal_moves[rand::thread_rng().gen_range(0, legal_moves.len())];
         //println!("taking over failed NN prediction {}, now {}", old_move, proposed_move);
@@ -87,6 +85,10 @@ impl Engine for GDEngine {
       
       self.results.push(result);
       self.games_played += 1;
+
+      if self.games_played % 10 == 0 {
+        self.nn.error();
+      }
 
       if self.games_played % 1000 == 0 { //reset stats for time after learning rules
         println!("stats for last 1k games, total games: {}", self.games_played);

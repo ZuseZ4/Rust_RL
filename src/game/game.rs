@@ -12,7 +12,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(rounds_per_game: u8, game_type: u8) -> Result<Game, String> {
+    pub fn new(rounds_per_game: u8, game_type: u8) -> Result<Self, String> {
       // first digit encondes type of first engine, second digit the type of the second engine
       let first_engine = EngineType::create_engine(rounds_per_game, game_type/10, true)?; //first_player = true
       let second_engine = EngineType::create_engine(rounds_per_game, game_type%10, false)?; // first_player = false

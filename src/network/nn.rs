@@ -5,27 +5,29 @@ use crate::network::layer_trait::Layer;
 pub struct HyperParameter {
   batch_size: usize,
   learning_rate: f32,
-  gamma: f32,
-  decay_rate: f32,
-  resume: bool,
-  render: bool,
+  _gamma: f32,
+  _decay_rate: f32,
+  _resume: bool,
+  _render: bool,
 }
 impl HyperParameter {
   pub fn new() -> Self {
     HyperParameter{
       batch_size: 10,
       learning_rate: 1e-3, //10e-4
-      gamma: 0.99,
-      decay_rate: 0.99,
-      resume: false,
-      render: false,
+      _gamma: 0.99,
+      _decay_rate: 0.99,
+      _resume: false,
+      _render: false,
     }
   }
 }
 
 
 pub struct NeuralNetwork {
-  hyper: HyperParameter,
+  input_dim: usize,
+  ll_output_dim: usize,
+  h_p: HyperParameter,
   layers: Vec<LayerType>,
   last_output: Array1<f32>,
   last_target: Array1<f32>,
@@ -33,22 +35,41 @@ pub struct NeuralNetwork {
 
 
 impl NeuralNetwork {
-  pub fn new(_input_dim: usize) -> NeuralNetwork {
-    let hyper_parameters = HyperParameter::new();
-    let mut l = vec![];
-    //l.push(LayerType::new_activation(1).unwrap()); //Softmax
-    l.push(LayerType::new_connection(1, hyper_parameters.learning_rate).unwrap()); //Dense
-    l.push(LayerType::new_activation(2).unwrap()); //Sigmoid
-    l.push(LayerType::new_connection(1, hyper_parameters.learning_rate).unwrap()); //Dense
-    l.push(LayerType::new_activation(2).unwrap()); //Sigmoid
+  pub fn new(input_dim: usize) -> NeuralNetwork {
 
     NeuralNetwork{
-      layers:  l,
-      hyper: hyper_parameters,
-      last_output: Array::zeros(36),
-      last_target: Array::zeros(36),
+      input_dim,
+      ll_output_dim: input_dim,
+      layers:  vec![],
+      h_p: HyperParameter::new(),
+      last_output: Array::zeros(input_dim),
+      last_target: Array::zeros(input_dim),
     }
 
+    //self.add_layer("activation", 1); //Softmax
+
+    //self.add_connection("dense", 2); //Dense with 2 output neurons
+    //self.add_activation("sigmoid"); //Sigmoid
+    //self.add_connection("dense", 1); //Dense with 1 output neuron
+    //self.add_activation("sigmoid"); //Sigmoid
+
+  }
+
+  pub fn add_activation(&mut self, layer_kind: &str) {
+    match layer_kind {
+      "softmax" => self.layers.push(LayerType::new_activation(1).unwrap()),
+      "sigmoid" => self.layers.push(LayerType::new_activation(2).unwrap()),
+      _ => { println!("unknown activation function. Doing nothing!"); return;},
+    }
+    // don't change output dim, activation layers don't change dimensions
+  }
+
+  pub fn add_connection(&mut self, layer_kind: &str, output_dim: usize) {
+    match layer_kind {
+      "dense" => self.layers.push(LayerType::new_connection(1, self.ll_output_dim, output_dim, self.h_p.batch_size, self.h_p.learning_rate).unwrap()),
+      _ => println!("unknown type, use \"connection\" or \"activation\". Doing nothing!"),
+    }
+    self.ll_output_dim = output_dim; // update value to output size of new last layer
   }
 }
 
@@ -59,7 +80,7 @@ fn normalize(x: Array1<f32>) -> Array1<f32> {
 impl NeuralNetwork {
 
   pub fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
-    let mut input = normalize(x);
+    let mut input = x;//normalize(x);
     for i in 0..self.layers.len() {
       input = self.layers[i].forward(input);
     }

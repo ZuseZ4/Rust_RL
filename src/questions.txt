@@ -1,3 +1,13 @@
+this works: 
+self.weights -= &d_w;
+
+this not: 
+self.weights -= d_w;
+
+WHY?
+
+
+
  https://discord.com/channels/442252698964721669/448238009733742612/713537452886720582
 thanks to
 Rantanen
