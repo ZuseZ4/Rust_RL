@@ -13,8 +13,8 @@ pub struct HyperParameter {
 impl HyperParameter {
   pub fn new() -> Self {
     HyperParameter{
-      batch_size: 10,
-      learning_rate: 1e-3, //10e-4
+      batch_size: 100,
+      learning_rate: 1e-1, //10e-4
       _gamma: 0.99,
       _decay_rate: 0.99,
       _resume: false,
@@ -29,6 +29,7 @@ pub struct NeuralNetwork {
   ll_output_dim: usize,
   h_p: HyperParameter,
   layers: Vec<LayerType>,
+  last_input:  Array1<f32>,
   last_output: Array1<f32>,
   last_target: Array1<f32>,
 }
@@ -42,6 +43,7 @@ impl NeuralNetwork {
       ll_output_dim: input_dim,
       layers:  vec![],
       h_p: HyperParameter::new(),
+      last_input:  Array::zeros(input_dim),
       last_output: Array::zeros(input_dim),
       last_target: Array::zeros(input_dim),
     }
@@ -81,6 +83,7 @@ impl NeuralNetwork {
 
   pub fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
     let mut input = x;//normalize(x);
+    self.last_input = input.clone();
     for i in 0..self.layers.len() {
       input = self.layers[i].forward(input);
     }
@@ -90,7 +93,7 @@ impl NeuralNetwork {
 
   pub fn backward(&mut self, target: Array1<f32>) {
     self.last_target = target.clone();
-    let mut fb = &self.last_output - &target;
+    let mut fb = &self.last_output - &target; //should be correct
     for i in (0..self.layers.len()).rev() {
       fb = self.layers[i].backward(fb);
     }
@@ -100,6 +103,7 @@ impl NeuralNetwork {
     let mse = self.last_output.iter()
       .zip(self.last_target.iter())
       .fold(0.0, |sum, (&x, &y)| sum + 0.5 * (x-y).powf(2.0));
+    println!("input: {}, expected output: {}, was: {}", self.last_input, self.last_target, self.last_output);
     println!("MSE: {}",mse);
   }
 

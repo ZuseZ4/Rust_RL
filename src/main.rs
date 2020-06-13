@@ -46,8 +46,8 @@ fn main() -> Result<(),String>{
 
 
     let rounds = 0;
-    let training_games = 2000;
-    let bench_games = 2000;
+    let training_games = 200000;
+    let bench_games = 10;
     //let mut game = game::Game::new(rounds, engines)?;
     let mut game = xor::Game2::new(rounds)?;
     game.train(training_games);
