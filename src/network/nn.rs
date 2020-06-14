@@ -13,8 +13,8 @@ pub struct HyperParameter {
 impl HyperParameter {
   pub fn new() -> Self {
     HyperParameter{
-      batch_size: 100,
-      learning_rate: 1e-1, //10e-4
+      batch_size: 10,//00,
+      learning_rate: 0.1, //10e-4
       _gamma: 0.99,
       _decay_rate: 0.99,
       _resume: false,
@@ -48,15 +48,9 @@ impl NeuralNetwork {
       last_target: Array::zeros(input_dim),
     }
 
-    //self.add_layer("activation", 1); //Softmax
-
-    //self.add_connection("dense", 2); //Dense with 2 output neurons
-    //self.add_activation("sigmoid"); //Sigmoid
-    //self.add_connection("dense", 1); //Dense with 1 output neuron
-    //self.add_activation("sigmoid"); //Sigmoid
-
   }
 
+  //TODO return type Result<ok(_),err>
   pub fn add_activation(&mut self, layer_kind: &str) {
     match layer_kind {
       "softmax" => self.layers.push(LayerType::new_activation(1).unwrap()),
@@ -66,6 +60,7 @@ impl NeuralNetwork {
     // don't change output dim, activation layers don't change dimensions
   }
 
+  //TODO return type Result
   pub fn add_connection(&mut self, layer_kind: &str, output_dim: usize) {
     match layer_kind {
       "dense" => self.layers.push(LayerType::new_connection(1, self.ll_output_dim, output_dim, self.h_p.batch_size, self.h_p.learning_rate).unwrap()),
@@ -103,8 +98,7 @@ impl NeuralNetwork {
     let mse = self.last_output.iter()
       .zip(self.last_target.iter())
       .fold(0.0, |sum, (&x, &y)| sum + 0.5 * (x-y).powf(2.0));
-    println!("input: {}, expected output: {}, was: {}", self.last_input, self.last_target, self.last_output);
-    println!("MSE: {}",mse);
+    println!("MSE: {:.4}, input: {}, expected output: {}, was: {:.3}", mse, self.last_input, self.last_target, self.last_output);
   }
 
 

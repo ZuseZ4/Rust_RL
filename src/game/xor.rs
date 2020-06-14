@@ -11,7 +11,7 @@ pub struct Game2 {
 impl Game2 {
     pub fn new(_iterations: usize) -> Result<Game2, String> {
       let mut nn = NeuralNetwork::new(2);
-      nn.add_connection("dense", 3); //Dense with 2 / 3 output neurons
+      nn.add_connection("dense", 4); //Dense with 2 / 3 output neurons
       nn.add_activation("sigmoid"); //Sigmoid
       nn.add_connection("dense", 1); //Dense with 1 output neuron
       nn.add_activation("sigmoid"); //Sigmoid
@@ -44,21 +44,9 @@ impl Game2 {
     fn play_games(&mut self, num_games: u64, train: bool) -> (u32, u32, u32) {
         self.res = (0, 0, 0);
         let mut counter = 0;
-        
-        let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]];
-        let fb = array![[0.],[1.],[1.],[0.]];//XOR
 
-        //let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // FIRST
-        //let fb = array![[0.],[0.],[1.],[1.]]; //First works good with 200k examples
-
-        //let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.],[1.,1.],[1.,1.]]; // AND
-        //let fb = array![[0.],[0.],[0.],[1.],[1.],[1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
-
-        //let input = array![[0.,0.],[0.,0.],[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // OR
-        //let fb = array![[0.],[0.],[0.],[1.],[1.],[1.]];//OR works great with 200k examples
-
-        //let input = array![[0.],[1.]];
-        //let fb = array![[1.],[0.]];// NOT works great with 200k examples
+        let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // FIRST
+        let fb = array![[0.],[0.],[1.],[1.]]; //First works good with 200k examples
 
         println!("input row 0, {}", input.nrows());
         for _ in 0..num_games {
