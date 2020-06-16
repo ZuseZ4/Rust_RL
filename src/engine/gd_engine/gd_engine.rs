@@ -7,8 +7,8 @@ use rand::Rng;
 //""" Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
 
 pub struct GDEngine{
-  first_player: bool,
-  rounds: u8,
+  _first_player: bool,
+  _rounds: u8,
   batch_size: u32,
   games_played: usize,
   nn: NeuralNetwork,
@@ -17,14 +17,19 @@ pub struct GDEngine{
 }
 
 impl GDEngine {
-    pub fn new(rounds_per_game: u8, is_first_player: bool) -> Self {
+    pub fn new(_rounds: u8, _first_player: bool) -> Self {
+      let mut nn = NeuralNetwork::new(36);
+      nn.add_connection("dense", 36); //Dense with 2 / 3 output neurons
+      nn.add_activation("sigmoid"); //Sigmoid
+      nn.add_connection("dense", 36); //Dense with 1 output neuron
+      nn.add_activation("sigmoid"); //Sigmoid
         
         GDEngine {
-            first_player: is_first_player,
-            rounds: rounds_per_game,
+            _first_player,
+            _rounds,
             batch_size: 1,
             games_played: 0,
-            nn: NeuralNetwork::new(36),
+            nn,
             results: vec![],
             move_stats: (0,0),
         }
@@ -61,6 +66,7 @@ impl Engine for GDEngine {
       let board_position: Array1<f32> = Array::from_shape_vec(36, board_position).unwrap();
       let move_probs: Array1<f32> = self.nn.forward(board_position);
 
+      //move backward() and some of this to finish_round, so it's only called when training, not on inference
       let legal_moves: Vec<f32> = board.get_possible_moves().iter().map(|&x| x as f32).collect();
       let legal_moves: Array1<f32> = expand_to_36(legal_moves);
       let mut proposed_move: usize = random_select(move_probs);

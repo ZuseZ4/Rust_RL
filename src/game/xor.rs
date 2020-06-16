@@ -22,7 +22,7 @@ impl Game2 {
       })
     }
 
-    fn update_results(&mut self, first_player_fields: u8, second_player_fields: u8) {
+    fn update_results(&mut self, _first_player_fields: u8, _second_player_fields: u8) {
     }
 
     pub fn get_results(&self) -> (u32, u32, u32) {
@@ -52,7 +52,7 @@ impl Game2 {
         for _ in 0..num_games {
           counter += 1;
           let move_number = rand::thread_rng().gen_range(0, input.nrows()) as usize;
-          let mut current_input = input.row(move_number).into_owned().clone();
+          let current_input = input.row(move_number).into_owned().clone();
           self.nn.forward(current_input);
           if train {
             self.nn.backward(fb.row(move_number).into_owned());
