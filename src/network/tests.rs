@@ -2,8 +2,9 @@
 #[cfg(test)]
 mod tests {
     use crate::network::nn::NeuralNetwork;
-    use ndarray::{array, Array1, Array2};
+    use ndarray::{array, Array, Array1, Array2, Array3, Axis};
     use rand::Rng;
+    use mnist::{Mnist, MnistBuilder};
 
     fn new(i_dim: usize) -> NeuralNetwork {
       let mut nn = NeuralNetwork::new(i_dim);
@@ -38,6 +39,36 @@ mod tests {
         nn.forward(current_input);
         nn.backward(current_fb);
       }
+    }
+
+
+    #[test]
+    fn test_MNIST() {
+      let (trn_size, rows, cols) = (60_000, 28, 28);
+
+      // Deconstruct the returned Mnist struct.
+      let Mnist { trn_img, trn_lbl, .. } = MnistBuilder::new()
+          .label_format_one_hot() //0..9 
+          .finalize();
+
+      // Get the label of the first digit.
+      let n = 1;
+      let trn_lbl = Array2::from_shape_vec((trn_size,10),trn_lbl).unwrap();
+      let first_label = trn_lbl.index_axis(Axis(0),n);
+      println!("The first digit is a {}.", first_label);
+
+      // Convert the flattened training images vector to a matrix.
+      let mut trn_img: Array3<f32> = Array3::from_shape_vec((trn_size,rows,cols), trn_img).unwrap().mapv(|x| x as f32);
+      trn_img.mapv_inplace(|x| x/256.0);
+
+      // Get the image of the first digit.
+      let first_image = trn_img.index_axis(Axis(0),n);
+      assert_eq!(first_image.shape(), &[28,28]);
+
+      // Get the image of the first digit and round the values to the nearest tenth.
+      let trn_show = trn_img.mapv(|x| (x*10.0).round()/20.0) ;//only to show
+      let first_image = trn_show.index_axis(Axis(0),n);
+      println!("The image looks like... \n{:#?}", first_image);
     }
 
     #[test]
