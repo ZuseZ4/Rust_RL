@@ -1,4 +1,4 @@
-use ndarray::{Array, Array1, Array2, Axis};
+use ndarray::{Array, Array1, Array2, ArrayD, Axis, Ix1};
 use ndarray_rand::RandomExt;
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be better & faster
 use crate::network::layer_trait::Layer;
@@ -44,16 +44,18 @@ impl Layer for DenseLayer {
     "Softmax Layer".to_string()
   }
   
-  fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
+  fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    let input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
     let pos_in_batch = self.predictions % self.batch_size;
-    self.net.column_mut(pos_in_batch).assign(&x); 
-    let res: Array1<f32> = self.weights.dot(&x) + &self.bias; //was this
-    res
+    self.net.column_mut(pos_in_batch).assign(&input); 
+    let res: Array1<f32> = self.weights.dot(&input) + &self.bias; //was this
+    res.into_dyn()
   }
 
 
-  fn backward(&mut self, feedback: Array1<f32>) -> Array1<f32> {
-    
+  fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
+
+    let feedback: Array1<f32> = feedback.into_dimensionality::<Ix1>().unwrap();
     let pos_in_batch = self.predictions % self.batch_size;
     self.feedback.column_mut(pos_in_batch).assign(&feedback);
 
@@ -64,7 +66,7 @@ impl Layer for DenseLayer {
     //store feedback
     self.predictions += 1;
     if self.predictions % self.batch_size == 0 {
-      let d_w: Array3<f32> = &self.feedback.dot(&self.net.t()) * self.learning_rate / (self.batch_size as f32);
+      let d_w: Array2<f32> = &self.feedback.dot(&self.net.t()) * self.learning_rate / (self.batch_size as f32);
       let d_b: Array1<f32> = &self.feedback.sum_axis(Axis(1))  * self.learning_rate / (self.batch_size as f32); 
       
       
@@ -78,7 +80,7 @@ impl Layer for DenseLayer {
     }
    
 
-    output
+    output.into_dyn()
     }
 
 }

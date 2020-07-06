@@ -53,7 +53,7 @@ impl Game2 {
           counter += 1;
           let move_number = rand::thread_rng().gen_range(0, input.nrows()) as usize;
           let current_input = input.row(move_number).into_owned().clone();
-          self.nn.forward(current_input);
+          self.nn.forward1d(current_input);
           if train {
             self.nn.backward(fb.row(move_number).into_owned());
           }

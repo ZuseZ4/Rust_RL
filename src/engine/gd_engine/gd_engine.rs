@@ -64,7 +64,7 @@ impl Engine for GDEngine {
     fn get_move(&mut self, board: &impl BoardInfo) -> usize {
       let board_position = board.get_board_position().iter().map(|&x| x as f32).collect();
       let board_position: Array1<f32> = Array::from_shape_vec(36, board_position).unwrap();
-      let move_probs: Array1<f32> = self.nn.forward(board_position);
+      let move_probs: Array1<f32> = self.nn.forward1d(board_position);
 
       //move backward() and some of this to finish_round, so it's only called when training, not on inference
       let legal_moves: Vec<f32> = board.get_possible_moves().iter().map(|&x| x as f32).collect();

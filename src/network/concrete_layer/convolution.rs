@@ -3,7 +3,7 @@ use ndarray_rand::RandomExt;
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be better & faster
 use crate::network::layer_trait::Layer;
 
-pub struct DenseLayer {
+pub struct ConvolutionLayer {
   input_dim: usize,
   output_dim: usize,
   learning_rate: f32,
@@ -15,40 +15,51 @@ pub struct DenseLayer {
   predictions: usize,
 }
 
-impl DenseLayer {
-  pub fn new(input_dim: usize, output_dim: usize, batch_size: usize, l_r: f32) -> Self {
-    //xavier init
+impl ConvolutionLayer {
+  pub fn new(filter_shape: (usize, usize), filter_number: usize, batch_size: usize, learning_rate: f32) -> Self { //to start we expect filter.x==filter.y and no bias
     //let nn_weights: Array2<f32> = Array::random((input_dim,output_dim), Normal::new(0.0, 1.0).unwrap()) 
-    let nn_weights: Array2<f32> = Array::random((output_dim,input_dim), Normal::new(0.0, 1.0/((output_dim+input_dim) as f32/2.0)).unwrap()) 
-      .map(|&x| x / (input_dim as f32).sqrt());
-    let nn_bias: Array1<f32> = Array::zeros(output_dim);//https://cs231n.github.io/neural-networks-2/#init
-    DenseLayer{
+    let weights: Array2<f32> = Array::random((filter_number, filter_shape.0*filter_shape.1), Normal::new(0.0, 1.0 as f32)).unwrap()) 
+    ConvolutionLayer{
       input_dim,
       output_dim,
-      learning_rate: l_r,
-      weights: nn_weights,
-      bias: nn_bias,
+      learning_rate,
+      weights,
       net: Array::zeros((input_dim, batch_size)),
       feedback: Array::zeros((output_dim, batch_size)),
       batch_size,
       predictions: 0,
     }
   }
+
+  fn unfold_matrix(x: Array2<f32>, k: usize) {
+    let n, m = x.shape();
+    let xx: Array2<f32> = Array::zeros(((n - k + 1) * (m - k + 1),k**2));
+    let row_num = 0;
+    for i in 0..(n-k+1) {
+      for j in 0..(m-k+1) {
+        xx[row_num] = x[i:i+k, j:j+k];
+      }
+    }
+    xx
+  }
 }
 
 
 
-impl Layer for DenseLayer {
+impl Layer for ConvolutionLayer {
   
   fn get_type(&self) -> String {
-    "Softmax Layer".to_string()
+    "Convolution Layer".to_string()
   }
   
-  fn forward(&mut self, x: Array1<f32>) -> Array1<f32> {
-    let pos_in_batch = self.predictions % self.batch_size;
-    self.net.column_mut(pos_in_batch).assign(&x); 
-    //println!("before {:?}: {:?}   {:?}: {:?}", self.weights.shape(), self.weights, last_net.shape(), last_net);
-    let res: Array1<f32> = self.weights.dot(&x) + &self.bias; //was this
+  fn forward(&mut self, x: Array2<f32>) -> Array3<f32> {
+    //let pos_in_batch = self.predictions % self.batch_size; // how to change this?
+    //self.net.column_mut(pos_in_batch).assign(&x); 
+    let x_unfolded = unfold_matrix(x,self.filter_shape.0);
+
+    //let res: Array3<f32> = Array::zeros(((x.shape().0-filter_shape.0+1,x.shape().1-filter_shape.1+1,self.filter_number)));
+
+    //self.weights.dot(&x) + &self.bias; //was this
     res
   }
 
