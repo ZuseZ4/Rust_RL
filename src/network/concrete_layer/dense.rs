@@ -19,9 +19,10 @@ impl DenseLayer {
   pub fn new(input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32) -> Self {
     //xavier init
     //let nn_weights: Array2<f32> = Array::random((input_dim,output_dim), Normal::new(0.0, 1.0).unwrap()) 
-    let weights: Array2<f32> = Array::random((output_dim,input_dim), Normal::new(0.0, 1.0/((output_dim+input_dim) as f32/2.0)).unwrap()) 
-      .map(|&x| x / (input_dim as f32).sqrt());
+    let weights: Array2<f32> = Array::random((output_dim,input_dim), Normal::new(0.0, 2.0/((output_dim+input_dim) as f32).sqrt()).unwrap());
+      //.map(|&x| x / (input_dim as f32).sqrt());
     let bias: Array1<f32> = Array::zeros(output_dim);//https://cs231n.github.io/neural-networks-2/#init
+    //let bias: Array1<f32> = Array::random((output_dim),Normal::new(0.0, 1.0/(output_dim as f32/2.0)).unwrap());//https://cs231n.github.io/neural-networks-2/#init
     DenseLayer{
       input_dim,
       output_dim,

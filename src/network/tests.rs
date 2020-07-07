@@ -2,15 +2,17 @@
 #[cfg(test)]
 mod tests {
     use crate::network::nn::NeuralNetwork;
-    use ndarray::{array, Array, Array1, Array2, Array3, Axis};
+    use ndarray::{array, Array2, Array3, Axis};
     use rand::Rng;
     use mnist::{Mnist, MnistBuilder};
 
-    fn new(i_dim: usize) -> NeuralNetwork {
-      let mut nn = NeuralNetwork::new(i_dim, "bce".to_string());
-      nn.add_connection("dense", 2); //Dense with 2 / 3 output neurons
+    fn new(i_dim: usize, bs: usize, lr: f32) -> NeuralNetwork {
+      let mut nn = NeuralNetwork::new1d(i_dim, "bce".to_string());
+      nn.set_batch_size(bs);
+      nn.set_learning_rate(lr);
+      nn.add_dense(2); //Dense with 2 output neurons
       nn.add_activation("sigmoid"); //Sigmoid
-      nn.add_connection("dense", 1); //Dense with 1 output neuron
+      nn.add_dense(1); //Dense with 1 output neuron
       nn.add_activation("sigmoid"); //Sigmoid
       nn
     }
@@ -76,8 +78,8 @@ mod tests {
     fn test_and() {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.],[1.,1.],[1.,1.]]; // AND
       let feedback = array![[0.],[0.],[0.],[1.],[1.],[1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
-      let mut nn = new(2);
-      train(&mut nn, 20000, &input, &feedback);
+      let mut nn = new(2, 6, 0.1);
+      train(&mut nn, 50_000, &input, &feedback);
       test(nn, input, feedback, "and".to_string());
     }
 
@@ -85,8 +87,8 @@ mod tests {
     fn test_or() {
       let input = array![[0.,0.],[0.,0.],[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // OR
       let feedback = array![[0.],[0.],[0.],[1.],[1.],[1.]];//OR works great with 200k examples
-      let mut nn = new(2);
-      train(&mut nn, 200000, &input, &feedback);
+      let mut nn = new(2, 6, 0.1);
+      train(&mut nn, 20_0000, &input, &feedback);
       test(nn, input, feedback, "or".to_string());
     }
 
@@ -94,8 +96,8 @@ mod tests {
     fn test_not() {
       let input = array![[0.],[1.]];
       let feedback = array![[1.],[0.]];// NOT works great with 200k examples
-      let mut nn = new(1);
-      train(&mut nn, 40000, &input, &feedback);
+      let mut nn = new(1, 1, 0.1);
+      train(&mut nn, 40_000, &input, &feedback);
       test(nn, input, feedback, "not".to_string());
     }
 
@@ -104,7 +106,7 @@ mod tests {
     fn test_first() {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // FIRST
       let feedback = array![[0.],[0.],[1.],[1.]]; //First works good with 200k examples
-      let mut nn = new(2);
+      let mut nn = new(2, 4, 0.1);
       train(&mut nn, 40_000, &input, &feedback);
       test(nn, input, feedback, "first".to_string());
     }
@@ -114,8 +116,8 @@ mod tests {
     fn test_xor() {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]];
       let feedback = array![[0.],[1.],[1.],[0.]];//XOR
-      let mut nn = new(2);
-      train(&mut nn, 100_000, &input, &feedback);
+      let mut nn = new(2, 4, 0.1);
+      train(&mut nn, 200_000, &input, &feedback);
       test(nn, input, feedback, "xor".to_string());
     }
 

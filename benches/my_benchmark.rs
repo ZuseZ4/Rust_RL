@@ -1,4 +1,4 @@
-use hello_rust::game::game;
+use hello_rust::game::fortress::Game;
 #[allow(unused_imports)]
 use hello_rust::engine::{ai_engine, random_engine};
 
@@ -28,7 +28,7 @@ pub fn main_rand() -> Result<(),String> {
     let engines: u8 = 11;
     let bench_games: u64 = 100; 
     
-    let mut game = game::Game::new(rounds, engines)?;
+    let mut game = Game::new(rounds, engines)?;
     game.bench(bench_games);
     Ok(())
 }
@@ -39,7 +39,7 @@ pub fn main_ai_rand() -> Result<(),String> {
     let train_games: u64 = 50;
     let bench_games: u64 = 100;
 
-    let mut game = game::Game::new(rounds, engines)?;
+    let mut game = Game::new(rounds, engines)?;
     game.train(train_games);
     game.bench(bench_games);
     Ok(())
@@ -51,7 +51,7 @@ pub fn main_ai() -> Result<(),String> {
     let train_games: u64 = 50;
     let bench_games: u64 = 100;
 
-    let mut game = game::Game::new(rounds, engines)?;
+    let mut game = Game::new(rounds, engines)?;
     game.train(train_games);
     game.bench(bench_games);
     Ok(())
@@ -62,7 +62,7 @@ pub fn main_train() -> Result<(),String> {
     let engines: u8 = 22;
     let train_games: u64 = 50;
 
-    let mut game = game::Game::new(rounds, engines)?;
+    let mut game = Game::new(rounds, engines)?;
     game.train(train_games);
     Ok(())
 }

@@ -9,7 +9,6 @@ use rand::Rng;
 pub struct GDEngine{
   _first_player: bool,
   _rounds: u8,
-  batch_size: u32,
   games_played: usize,
   nn: NeuralNetwork,
   results: Vec<i32>,
@@ -27,7 +26,6 @@ impl GDEngine {
         GDEngine {
             _first_player,
             _rounds,
-            batch_size: 1,
             games_played: 0,
             nn,
             results: vec![],

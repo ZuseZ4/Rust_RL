@@ -14,12 +14,18 @@ impl HyperParameter {
   pub fn new() -> Self {
     HyperParameter{
       batch_size: 1,//10,//128,
-      learning_rate: 0.1, //10e-4
+      learning_rate: 0.002, //10e-4
       _gamma: 0.99,
       _decay_rate: 0.99,
       _resume: false,
       _render: false,
     }
+  }
+  pub fn batch_size(&mut self, batch_size: usize) {
+    self.batch_size = batch_size;
+  }
+  pub fn learning_rate(&mut self, learning_rate: f32) {
+    self.learning_rate = learning_rate;
   }
 }
 
@@ -75,29 +81,68 @@ impl NeuralNetwork {
     }
   }
 
+  pub fn set_batch_size(&mut self, batch_size: usize) {
+    self.h_p.batch_size(batch_size);
+  }
+  pub fn set_learning_rate(&mut self, learning_rate: f32) {
+    self.h_p.learning_rate(learning_rate);
+  }
 
-  //TODO return type Result<ok(_),err>
   pub fn add_activation(&mut self, layer_kind: &str) {
-    match layer_kind {
-      "softmax" => self.layers.push(LayerType::new_activation(1).unwrap()),
-      "sigmoid" => self.layers.push(LayerType::new_activation(2).unwrap()),
-      _ => { println!("unknown activation function. Doing nothing!"); return;},
+    let new_activation = LayerType::new_activation(layer_kind.to_string());
+    match new_activation {
+      Err(error) => {
+        eprintln!("{}",error); 
+        return;
+      }
+      Ok(activation) => {
+        self.layers.push(activation);
+        self.input_dims.push(self.input_dims.last().unwrap().clone()); // activation layers don't change dimensions
+      }
     }
-    self.input_dims.push(self.input_dims.last().unwrap().clone()); // activation layers don't change dimensions
   }
 
-  //TODO return type Result
   pub fn add_dense(&mut self, output_dim: usize) {
-    // assert self.input_dim[-1].len() == 1 (dense only for 1d implemented)
-    self.layers.push(LayerType::new_connection(self.input_dims.last().unwrap()[0], output_dim, self.h_p.batch_size, self.h_p.learning_rate).unwrap());
-    self.input_dims.push(vec![output_dim]);
+    if output_dim <= 0 {
+      eprintln!("output dimension should be > 0! Doing nothing!");
+      return;
+    }
+    let input_dims = self.input_dims.last().unwrap();
+    if input_dims.len()>1 {
+      eprintln!("Dense just accepts 1d input! Doing nothing!");
+      return;
+    }
+    let dense_layer = LayerType::new_connection(input_dims[0], output_dim, self.h_p.batch_size, self.h_p.learning_rate);
+    match dense_layer {
+      Err(error) => {
+        eprintln!("{}",error);
+        return;
+      }
+      Ok(dense) => {
+        self.layers.push(dense);
+        self.input_dims.push(vec![output_dim]);
+      }
+    }
   }
 
-  //TODO return type Result
   pub fn add_flatten(&mut self) {
-    self.layers.push(LayerType::new_flatten(self.input_dims.last().unwrap().clone()).unwrap());
-    let elements = self.input_dims.last().unwrap().iter().fold(1, |prod, val| prod * val);
-    self.input_dims.push(vec![elements]); 
+    let input_dims = self.input_dims.last().unwrap();
+    if input_dims.len()==1 {
+      eprintln!("Input dimension is already one! Doing nothing!");
+      return;
+    }
+    let flatten_layer = LayerType::new_flatten(input_dims.to_vec());
+    match flatten_layer {
+      Err(error) => {
+        eprintln!("{}",error);
+        return;
+      }
+      Ok(flatten) => {
+        self.layers.push(flatten);
+        let elements = input_dims.iter().fold(1, |prod, val| prod * val);
+        self.input_dims.push(vec![elements]); 
+      }
+    }
   }
 
 }
@@ -163,11 +208,9 @@ impl NeuralNetwork {
           fb = self.layers[i].backward(fb);
         }
       },
-      _ => println!("error, error function unknown! {}",self.error),
+      _ => eprintln!("error, error function unknown! {}",self.error),
     }
   }
-
-
 
   pub fn error(&mut self, target: Array1<f32>) -> f32 {
     match self.error.as_str() {
@@ -181,12 +224,11 @@ impl NeuralNetwork {
           .zip(self.last_output.iter())
           .fold(0.0, |sum, (&t, &o)| sum + t * -(o.ln()))
       },
-      _ => println!("foo"),
+      _ => eprintln!("foo"),
     }
     while 1==1 {println!("FOO");}
     42.
   }
-
 
 }
 

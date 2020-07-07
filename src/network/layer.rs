@@ -3,6 +3,8 @@ use concrete_layer::dense::DenseLayer;
 use concrete_layer::softmax::SoftmaxLayer;
 use concrete_layer::sigmoid::SigmoidLayer;
 use concrete_layer::flatten::FlattenLayer;
+use concrete_layer::relu::ReLuLayer;
+use concrete_layer::leakyrelu::LeakyReLuLayer;
 use crate::network::layer_trait::Layer;
 use ndarray::ArrayD;
 
@@ -11,6 +13,8 @@ pub enum LayerType {
     D(DenseLayer),
     SO(SoftmaxLayer),
     SI(SigmoidLayer),
+    R(ReLuLayer),
+    L(LeakyReLuLayer),
 }
 
 impl LayerType {
@@ -22,11 +26,13 @@ impl LayerType {
       Ok(LayerType::F(FlattenLayer::new(input_shape)))
     }
 
-    pub fn new_activation(layer_number: u8) -> Result<LayerType, String> {
-        match layer_number {
-            1 => Ok(LayerType::SO(SoftmaxLayer::new())),
-            2 => Ok(LayerType::SI(SigmoidLayer::new())),
-            _ => Err(format!("Bad Activation Layer: {}", layer_number)),
+    pub fn new_activation(layer_type: String) -> Result<LayerType, String>{
+        match layer_type.as_str() {
+            "softmax" => Ok(LayerType::SO(SoftmaxLayer::new())),
+            "sigmoid" => Ok(LayerType::SI(SigmoidLayer::new())),
+            "relu"    => Ok(LayerType::R(ReLuLayer::new())),
+            "leakyrelu" => Ok(LayerType::L(LeakyReLuLayer::new())),
+            _ => Err(format!("Bad Activation Layer: {}", layer_type)),
         }
     }
 }
@@ -38,6 +44,8 @@ impl Layer for LayerType {
             LayerType::SO(softmax_layer) => softmax_layer.get_type(),
             LayerType::SI(sigmoid_layer) => sigmoid_layer.get_type(),
             LayerType::F(flatten_layer) => flatten_layer.get_type(), 
+            LayerType::L(leaky_relu_layer) => leaky_relu_layer.get_type(),
+            LayerType::R(relu_layer) => relu_layer.get_type(),
         }
     }
     fn forward(&mut self, input: ArrayD<f32>) -> ArrayD<f32> {
@@ -46,6 +54,8 @@ impl Layer for LayerType {
             LayerType::SO(softmax_layer) => softmax_layer.forward(input),
             LayerType::SI(sigmoid_layer) => sigmoid_layer.forward(input),
             LayerType::F(flatten_layer) => flatten_layer.forward(input),
+            LayerType::L(leaky_relu_layer) => leaky_relu_layer.forward(input),
+            LayerType::R(relu_layer) => relu_layer.forward(input),
         }
     }
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
@@ -54,6 +64,8 @@ impl Layer for LayerType {
             LayerType::SO(softmax_layer) => softmax_layer.backward(feedback),
             LayerType::SI(sigmoid_layer) => sigmoid_layer.backward(feedback),
             LayerType::F(flatten_layer) => flatten_layer.backward(feedback),
+            LayerType::L(leaky_relu_layer) => leaky_relu_layer.backward(feedback),
+            LayerType::R(relu_layer) => relu_layer.backward(feedback),
         }
     }
 }
