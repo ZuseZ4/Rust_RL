@@ -14,14 +14,11 @@ pub enum LayerType {
 }
 
 impl LayerType {
-    pub fn new_connection(layer_number: u8, input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32) -> Result<Self, String> {
-        match layer_number {
-            1 => Ok(LayerType::D(DenseLayer::new(input_dim, output_dim, batch_size, learning_rate))),
-            _ => Err(format!("Bad Connection Layer: {}", layer_number)),
-        }
+    pub fn new_connection(input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32) -> Result<Self, String> {
+      Ok(LayerType::D(DenseLayer::new(input_dim, output_dim, batch_size, learning_rate)))
     }
    
-    pub fn new_flatten(input_shape: [usize;3]) -> Result<Self, String> {
+    pub fn new_flatten(input_shape: Vec<usize>) -> Result<Self, String> {
       Ok(LayerType::F(FlattenLayer::new(input_shape)))
     }
 

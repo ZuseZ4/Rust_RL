@@ -41,7 +41,8 @@ impl DenseLayer {
 impl Layer for DenseLayer {
   
   fn get_type(&self) -> String {
-    "Softmax Layer".to_string()
+    let output: String = "Dense Layer".to_string() + " input dim: " + &self.input_dim.to_string() + " output dim " + &self.output_dim.to_string();
+    output
   }
   
   fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {

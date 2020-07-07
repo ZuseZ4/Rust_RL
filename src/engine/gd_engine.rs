@@ -4,7 +4,7 @@ use crate::network::nn::NeuralNetwork;
 use ndarray::{Array,Array1};
 use rand::Rng;
 
-//""" Trains an agent with (stochastic) Policy Gradients on Pong. Uses OpenAI Gym. """
+//""" Trains an agent with Policy Gradients on Fortress. kind of based on OpenAI Gym. """
 
 pub struct GDEngine{
   _first_player: bool,
@@ -18,10 +18,10 @@ pub struct GDEngine{
 
 impl GDEngine {
     pub fn new(_rounds: u8, _first_player: bool) -> Self {
-      let mut nn = NeuralNetwork::new(36);
-      nn.add_connection("dense", 36); //Dense with 2 / 3 output neurons
+      let mut nn = NeuralNetwork::new1d(36,"bce".to_string());
+      nn.add_dense(36); //Dense with 2 / 3 output neurons
       nn.add_activation("sigmoid"); //Sigmoid
-      nn.add_connection("dense", 36); //Dense with 1 output neuron
+      nn.add_dense(36); //Dense with 1 output neuron
       nn.add_activation("sigmoid"); //Sigmoid
         
         GDEngine {
@@ -46,6 +46,12 @@ fn random_select(move_probs: Array1<f32>) -> usize {
     pos += 1;
   }
   pos
+}
+
+// just a Fortress game specific function, to be moved 
+#[allow(unused)]
+fn normalize(x: Array1<f32>) -> Array1<f32> {
+  x.map(|&x| (x+3.0)/6.0)
 }
 
 fn expand_to_36(legal_moves: Vec<f32>) -> Array1<f32> {
@@ -93,7 +99,7 @@ impl Engine for GDEngine {
       self.games_played += 1;
 
       if self.games_played % 10 == 0 {
-        self.nn.error();
+        //self.nn.error();// put result into Array1?
       }
 
       if self.games_played % 1000 == 0 { //reset stats for time after learning rules

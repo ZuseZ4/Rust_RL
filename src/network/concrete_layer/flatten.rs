@@ -1,15 +1,16 @@
 use crate::network::layer_trait::Layer;
-use ndarray::{Array, ArrayD, Ix1};
+use ndarray::ArrayD;
 pub struct FlattenLayer {
-  input_shape: [usize;3],
+  input_shape: Vec<usize>,
   num_elements: usize,
 }
 
 impl FlattenLayer {
-  pub fn new(input_shape: [usize;3]) -> Self {
+  pub fn new(input_shape: Vec<usize>) -> Self {
+    let num_elements = input_shape.clone().iter().fold(1, |prod, x| prod * x);
     FlattenLayer{
       input_shape,
-      num_elements: input_shape[0]*input_shape[1]*input_shape[2],
+      num_elements,
     }
   }
 }
@@ -25,7 +26,7 @@ impl Layer for FlattenLayer {
   }
 
   fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32>{
-    feedback.into_shape(self.input_shape).unwrap().into_dyn()
+    feedback.into_shape(self.input_shape.clone()).unwrap().into_dyn()
   }
 
 }

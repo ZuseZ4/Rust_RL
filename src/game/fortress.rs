@@ -43,6 +43,7 @@ impl Game {
       }
     }
 
+
     pub fn get_results(&self) -> (u32, u32, u32) {
         self.res
     }

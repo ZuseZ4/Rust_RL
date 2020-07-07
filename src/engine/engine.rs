@@ -3,7 +3,7 @@ use crate::engine::ai_engine::AIEngine;
 use crate::engine::engine_trait::Engine;
 use crate::engine::random_engine::RandomEngine;
 use crate::engine::human_player::HumanPlayer;
-use crate::engine::gd_engine::gd_engine::GDEngine;
+use crate::engine::gd_engine::GDEngine;
 
 pub enum EngineType {
     R(RandomEngine),

@@ -1,28 +1,24 @@
 use crate::network::nn::NeuralNetwork;
-use ndarray::{array};
+use ndarray::{array, Array2};
 use rand::Rng;
 
-pub struct Game2 {
+pub struct Game {
     res: (u32, u32, u32),
-    last_result: i32,
     nn: NeuralNetwork,
 }
 
-impl Game2 {
-    pub fn new(_iterations: usize) -> Result<Game2, String> {
-      let mut nn = NeuralNetwork::new(2);
-      nn.add_connection("dense", 4); //Dense with 2 / 3 output neurons
+impl Game {
+    pub fn new(_iterations: usize) -> Result<Game, String> {
+      let mut nn = NeuralNetwork::new1d(2,"bce".to_string());
+      nn.add_dense(2); //Dense with 2 output neurons
       nn.add_activation("sigmoid"); //Sigmoid
-      nn.add_connection("dense", 1); //Dense with 1 output neuron
+      nn.add_dense(1); //Dense with 1 output neuron
       nn.add_activation("sigmoid"); //Sigmoid
-      Ok(Game2 {
+      nn.print_setup();
+      Ok(Game {
           res: (0, 0, 0),
-          last_result: 42, //init value shouldn't be used
           nn,
       })
-    }
-
-    fn update_results(&mut self, _first_player_fields: u8, _second_player_fields: u8) {
     }
 
     pub fn get_results(&self) -> (u32, u32, u32) {
@@ -37,16 +33,25 @@ impl Game2 {
         self.play_games(num_games, true);
     }
 
-    pub fn bench(&mut self, num_games: u64) -> (u32, u32, u32) {
-        self.play_games(num_games, false)
+    pub fn bench(&mut self, _num_games: u64) -> (u32, u32, u32) {
+        self.res = (0, 0, 0);
+        let input: Array2<f32> = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // FIRST
+        let feedback: Array2<f32> = array![[0.],[1.],[1.],[0.]]; //First works good with 200k examples
+        for i in 0..4 {
+          println!("input: {}, feedback: {}", input.row(i),feedback.row(i));
+          println!("output: {}, error: {}\n",self.nn.forward1d(input.row(i).into_owned()),self.nn.error(feedback.row(i).into_owned()));
+
+
+        }
+        self.res
     }
 
     fn play_games(&mut self, num_games: u64, train: bool) -> (u32, u32, u32) {
         self.res = (0, 0, 0);
         let mut counter = 0;
 
-        let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // FIRST
-        let fb = array![[0.],[0.],[1.],[1.]]; //First works good with 200k examples
+        let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // XOR
+        let feedback = array![[0.],[1.],[1.],[0.]]; //First works good with 200k examples
 
         println!("input row 0, {}", input.nrows());
         for _ in 0..num_games {
@@ -55,10 +60,11 @@ impl Game2 {
           let current_input = input.row(move_number).into_owned().clone();
           self.nn.forward1d(current_input);
           if train {
-            self.nn.backward(fb.row(move_number).into_owned());
+            self.nn.backward(feedback.row(move_number).into_owned());
           }
           if counter % 20 == 0 {
-            self.nn.error();
+            let current_feedback = feedback.row(move_number).into_owned();
+            self.nn.error(current_feedback);
           }
         }
         self.res

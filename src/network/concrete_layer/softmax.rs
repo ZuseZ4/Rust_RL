@@ -20,12 +20,13 @@ impl Layer for SoftmaxLayer {
 
   fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
         
-    let max: f32 = x.iter().fold(0.0, |sum, val| sum+val);
+    //let max: f32 = x.iter().fold(0.0, |sum, val| sum+val);
+    let max: f32 = x.iter().fold(0.0f32, |max, &val| if val > max{val} else {max});
     x = x.iter()
       .map(|&x| (x-max).exp())
       .collect::<Array1<f32>>()
       .into_dyn();
-    let sum: f32 = x.iter().fold(0.0, |sum, val| sum+val);
+    let sum: f32 = x.iter().sum();
     x = x.iter()
       .map(|&x| x / sum)
       .collect::<Array1<f32>>()

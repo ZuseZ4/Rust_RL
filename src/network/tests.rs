@@ -7,41 +7,42 @@ mod tests {
     use mnist::{Mnist, MnistBuilder};
 
     fn new(i_dim: usize) -> NeuralNetwork {
-      let mut nn = NeuralNetwork::new(i_dim);
-      nn.add_connection("dense", 4); //Dense with 2 / 3 output neurons
+      let mut nn = NeuralNetwork::new(i_dim, "bce".to_string());
+      nn.add_connection("dense", 2); //Dense with 2 / 3 output neurons
       nn.add_activation("sigmoid"); //Sigmoid
       nn.add_connection("dense", 1); //Dense with 1 output neuron
       nn.add_activation("sigmoid"); //Sigmoid
       nn
     }
 
-    fn test(mut nn: NeuralNetwork, input: Array2<f32>, fb: Array2<f32>) {
+    fn test(mut nn: NeuralNetwork, input: Array2<f32>, feedback: Array2<f32>, testname: String) {
       let mut current_input;
-      let mut current_fb;
+      let mut current_feedback;
       let mut diff;
       for i in 0..input.nrows() {
         current_input = input.row(i).into_owned().clone();
-        current_fb = fb.row(i).into_owned().clone();
-        diff = (&nn.forward(current_input) - &current_fb).sum().abs();
+        current_feedback = feedback.row(i).into_owned().clone();
+        let last_output = nn.forward1d(current_input.clone());
+        diff = nn.error(current_feedback.clone());
 
-        assert!(diff < 0.2, "failed learning: {}", diff);
+        assert!(diff < 0.2, "failed learning: {}. Achieved loss: {}\n input: {} output was: {:?} should {:?}", testname, diff, current_input.clone(), last_output, current_feedback);
       }
     }
 
-    fn train(nn: &mut NeuralNetwork, num: usize, input: &Array2<f32>, fb: &Array2<f32>) {
+    fn train(nn: &mut NeuralNetwork, num: usize, input: &Array2<f32>, feedback: &Array2<f32>) {
       let mut pos;
       let mut current_input;
-      let mut current_fb;
+      let mut current_feedback;
       for _ in 0..num {
         pos = rand::thread_rng().gen_range(0, input.nrows()) as usize;
         current_input = input.row(pos).into_owned().clone();
-        current_fb = fb.row(pos).into_owned().clone();
-        nn.forward(current_input);
-        nn.backward(current_fb);
+        current_feedback = feedback.row(pos).into_owned().clone();
+        nn.forward1d(current_input);
+        nn.backward(current_feedback);
       }
     }
 
-
+    #[allow(non_snake_case)]
     #[test]
     fn test_MNIST() {
       let (trn_size, rows, cols) = (60_000, 28, 28);
@@ -74,48 +75,48 @@ mod tests {
     #[test]
     fn test_and() {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.],[1.,1.],[1.,1.]]; // AND
-      let fb = array![[0.],[0.],[0.],[1.],[1.],[1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
+      let feedback = array![[0.],[0.],[0.],[1.],[1.],[1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
       let mut nn = new(2);
-      train(&mut nn, 40000, &input, &fb);
-      test(nn, input, fb);
+      train(&mut nn, 20000, &input, &feedback);
+      test(nn, input, feedback, "and".to_string());
     }
 
     #[test]
     fn test_or() {
       let input = array![[0.,0.],[0.,0.],[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // OR
-      let fb = array![[0.],[0.],[0.],[1.],[1.],[1.]];//OR works great with 200k examples
+      let feedback = array![[0.],[0.],[0.],[1.],[1.],[1.]];//OR works great with 200k examples
       let mut nn = new(2);
-      train(&mut nn, 40000, &input, &fb);
-      test(nn, input, fb);
+      train(&mut nn, 200000, &input, &feedback);
+      test(nn, input, feedback, "or".to_string());
     }
 
     #[test]
     fn test_not() {
       let input = array![[0.],[1.]];
-      let fb = array![[1.],[0.]];// NOT works great with 200k examples
+      let feedback = array![[1.],[0.]];// NOT works great with 200k examples
       let mut nn = new(1);
-      train(&mut nn, 40000, &input, &fb);
-      test(nn, input, fb);
+      train(&mut nn, 40000, &input, &feedback);
+      test(nn, input, feedback, "not".to_string());
     }
 
 
     #[test]
     fn test_first() {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // FIRST
-      let fb = array![[0.],[0.],[1.],[1.]]; //First works good with 200k examples
+      let feedback = array![[0.],[0.],[1.],[1.]]; //First works good with 200k examples
       let mut nn = new(2);
-      train(&mut nn, 40000, &input, &fb);
-      test(nn, input, fb);
+      train(&mut nn, 40_000, &input, &feedback);
+      test(nn, input, feedback, "first".to_string());
     }
 
 
     #[test]
     fn test_xor() {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]];
-      let fb = array![[0.],[1.],[1.],[0.]];//XOR
+      let feedback = array![[0.],[1.],[1.],[0.]];//XOR
       let mut nn = new(2);
-      train(&mut nn, 100000, &input, &fb);
-      test(nn, input, fb);
+      train(&mut nn, 100_000, &input, &feedback);
+      test(nn, input, feedback, "xor".to_string());
     }
 
 }

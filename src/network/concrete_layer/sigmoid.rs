@@ -20,7 +20,7 @@ impl Layer for SigmoidLayer {
   }
 
   fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-    println!("{:?}",x.shape());
+    //println!("{:?}",x.shape());
     self.output = x.map(|&x| 1.0 / (1.0 + (-x).exp()));
     self.output.clone()
   }
