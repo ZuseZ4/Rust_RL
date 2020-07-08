@@ -79,7 +79,7 @@ mod tests {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.],[1.,1.],[1.,1.]]; // AND
       let feedback = array![[0.],[0.],[0.],[1.],[1.],[1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
       let mut nn = new(2, 6, 0.1);
-      train(&mut nn, 50_000, &input, &feedback);
+      train(&mut nn, 20_000, &input, &feedback);
       test(nn, input, feedback, "and".to_string());
     }
 
@@ -97,7 +97,7 @@ mod tests {
       let input = array![[0.],[1.]];
       let feedback = array![[1.],[0.]];// NOT works great with 200k examples
       let mut nn = new(1, 1, 0.1);
-      train(&mut nn, 40_000, &input, &feedback);
+      train(&mut nn, 20_000, &input, &feedback);
       test(nn, input, feedback, "not".to_string());
     }
 
@@ -107,7 +107,7 @@ mod tests {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // FIRST
       let feedback = array![[0.],[0.],[1.],[1.]]; //First works good with 200k examples
       let mut nn = new(2, 4, 0.1);
-      train(&mut nn, 40_000, &input, &feedback);
+      train(&mut nn, 20_000, &input, &feedback);
       test(nn, input, feedback, "first".to_string());
     }
 
@@ -116,8 +116,9 @@ mod tests {
     fn test_xor() {
       let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]];
       let feedback = array![[0.],[1.],[1.],[0.]];//XOR
-      let mut nn = new(2, 4, 0.1);
-      train(&mut nn, 200_000, &input, &feedback);
+      let mut nn = new(2, 2, 0.1);
+      //let mut nn = new(2, 2, 0.1);
+      train(&mut nn, 20_000, &input, &feedback);
       test(nn, input, feedback, "xor".to_string());
     }
 

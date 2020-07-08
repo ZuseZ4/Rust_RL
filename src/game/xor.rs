@@ -10,6 +10,8 @@ pub struct Game {
 impl Game {
     pub fn new(_iterations: usize) -> Result<Game, String> {
       let mut nn = NeuralNetwork::new1d(2,"bce".to_string());
+      nn.set_batch_size(2);
+      nn.set_learning_rate(0.1f32);
       nn.add_dense(2); //Dense with 2 output neurons
       nn.add_activation("sigmoid"); //Sigmoid
       nn.add_dense(1); //Dense with 1 output neuron
@@ -53,7 +55,6 @@ impl Game {
         let input = array![[0.,0.],[0.,1.],[1.,0.],[1.,1.]]; // XOR
         let feedback = array![[0.],[1.],[1.],[0.]]; //First works good with 200k examples
 
-        println!("input row 0, {}", input.nrows());
         for _ in 0..num_games {
           counter += 1;
           let move_number = rand::thread_rng().gen_range(0, input.nrows()) as usize;

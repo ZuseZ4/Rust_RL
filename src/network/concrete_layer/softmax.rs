@@ -1,5 +1,6 @@
 use crate::network::layer_trait::Layer;
-use ndarray::{Array, Array1, ArrayD};
+use ndarray::{Array, ArrayD};
+
 pub struct SoftmaxLayer {
   output: ArrayD<f32>,
 }
@@ -12,6 +13,8 @@ impl SoftmaxLayer {
   }
 }
 
+
+
 impl Layer for SoftmaxLayer {
 
   fn get_type(&self) -> String {
@@ -20,30 +23,18 @@ impl Layer for SoftmaxLayer {
 
   fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
         
-    //let max: f32 = x.iter().fold(0.0, |sum, val| sum+val);
-    let max: f32 = x.iter().fold(0.0f32, |max, &val| if val > max{val} else {max});
-    x = x.iter()
-      .map(|&x| (x-max).exp())
-      .collect::<Array1<f32>>()
-      .into_dyn();
+    // ignore nans on sum and max
+    let max: f32 = x.iter().fold(f32::MIN, |acc, &x| if x.is_nan() {acc} else {if acc<=x {x} else {acc}});
+    x.mapv_inplace(|x| (x-max).exp());
     let sum: f32 = x.iter().sum();
-    x = x.iter()
-      .map(|&x| x / sum)
-      .collect::<Array1<f32>>()
-      .into_dyn();
+    x.mapv_inplace(|x| x / sum);
     self.output = x;
     
     self.output.clone()
   }
 
   fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32>{
-    
-    let output = self.output.iter().zip(feedback.iter())
-      .map(|(&b, &c)| b - c)
-      .collect::<Array1<f32>>()
-      .into_dyn();
-      
-    output
+    (&self.output - &feedback).clone()
   }
 
 }

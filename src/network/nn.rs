@@ -13,7 +13,7 @@ pub struct HyperParameter {
 impl HyperParameter {
   pub fn new() -> Self {
     HyperParameter{
-      batch_size: 1,//10,//128,
+      batch_size: 1,
       learning_rate: 0.002, //10e-4
       _gamma: 0.99,
       _decay_rate: 0.99,
@@ -22,9 +22,17 @@ impl HyperParameter {
     }
   }
   pub fn batch_size(&mut self, batch_size: usize) {
+    if batch_size <= 0 {
+      eprintln!("batch size should be > 0! Doing nothing!");
+      return;
+    }
     self.batch_size = batch_size;
   }
   pub fn learning_rate(&mut self, learning_rate: f32) {
+    if learning_rate <= 0. {
+      eprintln!("learning rate should be > 0! Doing nothing!");
+      return;
+    }
     self.learning_rate = learning_rate;
   }
 }
@@ -153,12 +161,14 @@ impl NeuralNetwork {
 //https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d
 pub fn binary_crossentropy(target: Array1<f32>, output: Array1<f32>) -> Array1<f32> { //should be used after sigmoid
   //assert len of output vector = 1
-  output-target
+  -&target / &output + (1.0-target) / (1.0-output)
+  //output-target
 }
 
 //https://stats.stackexchange.com/questions/235528/backpropagation-with-softmax-cross-entropy
 pub fn categorical_crossentropy(target: Array1<f32>, output: Array1<f32>) -> Array1<f32> { //should be used after softmax
-  -target / output
+  //-&target / &output + (1.0-target) / (1.0-output)
+  output - target
 }
 
 impl NeuralNetwork {
@@ -231,7 +241,3 @@ impl NeuralNetwork {
   }
 
 }
-
-
-//.map(|&x| if x < 0 { 0 } else { x }); //ReLu for multilayer
-
