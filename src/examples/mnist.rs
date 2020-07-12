@@ -4,21 +4,20 @@ use rand::Rng;
 use mnist::{Mnist, MnistBuilder};
 
 fn new() -> NeuralNetwork {
-  let mut nn = NeuralNetwork::new2d((28, 28), "cce".to_string());
-  nn.set_batch_size(128);
+  let mut nn = NeuralNetwork::new2d((28, 28), "none".to_string());
+  nn.set_batch_size(1);
   nn.set_learning_rate(0.00001);
   nn.add_flatten();
-  nn.add_dense(128); //Dense with 32 output neurons
-  //nn.add_activation("leakyrelu"); //Sigmoid
-  nn.add_activation("sigmoid");
   nn.add_dense(10); //Dense with 10 output neuron
-  nn.add_activation("softmax"); //Softmax
+  //nn.add_activation("softmax");
   nn
 }
 
 fn test(nn: &mut NeuralNetwork, input: &Array3<f32>, feedback: &Array2<f32>) {
   for (current_input, current_fb) in input.outer_iter().zip(feedback.outer_iter()) {
-    let pred = &nn.forward2d(current_input.into_owned());
+    let pred = nn.predict2d(current_input.into_owned());
+    let _loss = nn.loss_from_prediction(pred.clone(), current_fb.into_owned());
+    println!("expected: {}\n prediction: {}\n ", current_fb, pred);
   }
 }
 
@@ -27,8 +26,7 @@ fn train(nn: &mut NeuralNetwork, num: usize, input: &Array3<f32>, fb: &Array2<f3
     let pos = rand::thread_rng().gen_range(0, input.shape()[0]) as usize;
     let current_input = input.index_axis(Axis(0),pos).into_owned();
     let current_fb = fb.index_axis(Axis(0),pos).into_owned();
-    nn.forward2d(current_input);
-    nn.backward(current_fb);
+    nn.train2d(current_input, current_fb);
   }
 }
 

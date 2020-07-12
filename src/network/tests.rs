@@ -20,14 +20,14 @@ mod tests {
     fn test(mut nn: NeuralNetwork, input: Array2<f32>, feedback: Array2<f32>, testname: String) {
       let mut current_input;
       let mut current_feedback;
-      let mut diff;
       for i in 0..input.nrows() {
         current_input = input.row(i).into_owned().clone();
         current_feedback = feedback.row(i).into_owned().clone();
-        let last_output = nn.forward1d(current_input.clone());
-        diff = nn.error(current_feedback.clone());
 
-        assert!(diff < 0.2, "failed learning: {}. Achieved loss: {}\n input: {} output was: {:?} should {:?}", testname, diff, current_input.clone(), last_output, current_feedback);
+        let prediction = nn.predict1d(current_input.clone());
+        let diff = nn.loss_from_prediction(prediction.clone(), current_feedback.clone());
+
+        assert!(diff < 0.001, "failed learning: {}. Achieved loss: {}\n input: {} output was: {:?} should {:?}", testname, diff, current_input.clone(), prediction, current_feedback);
       }
     }
 
@@ -39,8 +39,7 @@ mod tests {
         pos = rand::thread_rng().gen_range(0, input.nrows()) as usize;
         current_input = input.row(pos).into_owned().clone();
         current_feedback = feedback.row(pos).into_owned().clone();
-        nn.forward1d(current_input);
-        nn.backward(current_feedback);
+        nn.train1d(current_input, current_feedback);
       }
     }
 

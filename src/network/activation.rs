@@ -5,7 +5,6 @@ use concrete_layer::sigmoid::SigmoidLayer;
 use concrete_layer::flatten::FlattenLayer;
 use concrete_layer::relu::ReLuLayer;
 use concrete_layer::leakyrelu::LeakyReLuLayer;
-
 use crate::network::layer_trait::Layer;
 use ndarray::ArrayD;
 
@@ -19,7 +18,6 @@ pub enum LayerType {
 }
 
 impl LayerType {
-
     pub fn new_connection(input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32) -> Result<Self, String> {
       Ok(LayerType::D(DenseLayer::new(input_dim, output_dim, batch_size, learning_rate)))
     }
@@ -37,7 +35,6 @@ impl LayerType {
             _ => Err(format!("Bad Activation Layer: {}", layer_type)),
         }
     }
-    
 }
 
 impl Layer for LayerType {

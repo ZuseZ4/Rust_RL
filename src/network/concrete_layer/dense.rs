@@ -18,10 +18,8 @@ pub struct DenseLayer {
 impl DenseLayer {
   pub fn new(input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32) -> Self {
     //xavier init
-    //let nn_weights: Array2<f32> = Array::random((input_dim,output_dim), Normal::new(0.0, 1.0).unwrap()) 
     let weights: Array2<f32> = Array::random((output_dim,input_dim), Normal::new(0.0, 2.0/((output_dim+input_dim) as f32).sqrt()).unwrap());
-      //.map(|&x| x / (input_dim as f32).sqrt());
-    let bias: Array1<f32> = Array::zeros(output_dim);//https://cs231n.github.io/neural-networks-2/#init
+    let bias: Array1<f32> = Array::zeros(output_dim); //https://cs231n.github.io/neural-networks-2/#init
     //let bias: Array1<f32> = Array::random((output_dim),Normal::new(0.0, 1.0/(output_dim as f32/2.0)).unwrap());//https://cs231n.github.io/neural-networks-2/#init
     DenseLayer{
       input_dim,
@@ -50,7 +48,7 @@ impl Layer for DenseLayer {
     let input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
     let pos_in_batch = self.predictions % self.batch_size;
     self.net.column_mut(pos_in_batch).assign(&input); 
-    let res: Array1<f32> = self.weights.dot(&input) + &self.bias; //was this
+    let res: Array1<f32> = self.weights.dot(&input) + &self.bias; 
     res.into_dyn()
   }
 
@@ -71,12 +69,13 @@ impl Layer for DenseLayer {
       let d_w: Array2<f32> = &self.feedback.dot(&self.net.t()) * self.learning_rate / (self.batch_size as f32);
       let d_b: Array1<f32> = &self.feedback.sum_axis(Axis(1))  * self.learning_rate / (self.batch_size as f32); 
       
-      
+      assert_eq!( d_w.shape(), self.weights.shape());
+      assert_eq!( d_b.shape(), self.bias.shape());
+
       self.weights -= &d_w;
       self.bias    -= &d_b;
    
 
-      //self.learning_rate *= 0.999;
       self.net = Array::zeros((self.input_dim, self.batch_size)); //can be skipped, just ignore/overwrite old vals
       self.feedback = Array::zeros((self.output_dim, self.batch_size)); //can be skipped, just ignore/overwrite old vals
     }

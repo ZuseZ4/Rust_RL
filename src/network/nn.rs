@@ -1,6 +1,8 @@
-use ndarray::{Array, Array1, Array2, Array3, ArrayD, Ix1};
+use ndarray::{Array1, Array2, Array3, ArrayD, Ix1};
 use crate::network::layer::LayerType;
 use crate::network::layer_trait::Layer;
+use crate::network::error::ErrorType;
+use crate::network::error_trait::Error;
 
 pub struct HyperParameter {
   batch_size: usize,
@@ -10,6 +12,7 @@ pub struct HyperParameter {
   _resume: bool,
   _render: bool,
 }
+
 impl HyperParameter {
   pub fn new() -> Self {
     HyperParameter{
@@ -42,10 +45,9 @@ pub struct NeuralNetwork {
   input_dims: Vec<Vec<usize>>, //each layer takes a  1 to 4-dim input. Store details here
   h_p: HyperParameter,
   layers: Vec<LayerType>,
-  last_input:  ArrayD<f32>,
-  last_output: Array1<f32>,
-  last_target: Array1<f32>,
-  error: String,
+  error: String, //remove due to error_function
+  error_function: ErrorType,
+  from_logits: bool,
 }
 
 
@@ -53,45 +55,40 @@ impl NeuralNetwork {
 
   fn new(error: String) -> Self {
     // if error not in "bce" or "cce" => panic?
+    // acceppt linear (=None) if not needed?
     NeuralNetwork{
       error,
+      error_function: ErrorType::new_noop(),
       input_dims: vec![vec![]],
       layers:  vec![],
       h_p: HyperParameter::new(),
-      last_input:  Array::zeros(0).into_dyn(),
-      last_output: Array::zeros(0),
-      last_target: Array::zeros(0),
+      from_logits: false,
     }
   }
 
   pub fn new1d(input_dim: usize, error: String) -> Self {
-    let nn1 = NeuralNetwork::new(error);
     NeuralNetwork{
       input_dims: vec![vec![input_dim]],
-      last_input: Array::zeros(input_dim).into_dyn(),
-      ..nn1
+      ..NeuralNetwork::new(error)
     }
   }
   pub fn new2d((input_dim1, input_dim2): (usize, usize), error: String) -> Self {
-    let nn1 = NeuralNetwork::new(error);
     NeuralNetwork{
       input_dims: vec![vec![input_dim1, input_dim2]],
-      last_input: Array::zeros((input_dim1, input_dim2)).into_dyn(),
-      ..nn1
+      ..NeuralNetwork::new(error)
     }
   }
   pub fn new3d((input_dim1,input_dim2,input_dim3): (usize,usize,usize), error: String) -> Self {
-    let nn1 = NeuralNetwork::new(error);
     NeuralNetwork{
       input_dims: vec![vec![input_dim1, input_dim2, input_dim3]],
-      last_input: Array::zeros((input_dim1, input_dim2, input_dim3)).into_dyn(),
-      ..nn1
+      ..NeuralNetwork::new(error)
     }
   }
 
   pub fn set_batch_size(&mut self, batch_size: usize) {
     self.h_p.batch_size(batch_size);
   }
+
   pub fn set_learning_rate(&mut self, learning_rate: f32) {
     self.h_p.learning_rate(learning_rate);
   }
@@ -107,6 +104,11 @@ impl NeuralNetwork {
         self.layers.push(activation);
         self.input_dims.push(self.input_dims.last().unwrap().clone()); // activation layers don't change dimensions
       }
+    }
+    match (self.error.as_str(), layer_kind) {
+      ("bce", "sigmoid") => self.from_logits = true,
+      ("cce", "softmax") => self.from_logits = true,
+      _ => self.from_logits = false,
     }
   }
 
@@ -131,6 +133,7 @@ impl NeuralNetwork {
         self.input_dims.push(vec![output_dim]);
       }
     }
+    self.from_logits = false;
   }
 
   pub fn add_flatten(&mut self) {
@@ -151,25 +154,12 @@ impl NeuralNetwork {
         self.input_dims.push(vec![elements]); 
       }
     }
+    self.from_logits = false;
   }
 
 }
 
   
-
-//https://gombru.github.io/2018/05/23/cross_entropy_loss/
-//https://towardsdatascience.com/implementing-the-xor-gate-using-backpropagation-in-neural-networks-c1f255b4f20d
-pub fn binary_crossentropy(target: Array1<f32>, output: Array1<f32>) -> Array1<f32> { //should be used after sigmoid
-  //assert len of output vector = 1
-  -&target / &output + (1.0-target) / (1.0-output)
-  //output-target
-}
-
-//https://stats.stackexchange.com/questions/235528/backpropagation-with-softmax-cross-entropy
-pub fn categorical_crossentropy(target: Array1<f32>, output: Array1<f32>) -> Array1<f32> { //should be used after softmax
-  //-&target / &output + (1.0-target) / (1.0-output)
-  output - target
-}
 
 impl NeuralNetwork {
 
@@ -178,66 +168,78 @@ impl NeuralNetwork {
     for i in 0..self.layers.len() {
       println!("{}",self.layers[i].get_type());
     }
+    println!("using from_logits optimization: {}", self.from_logits);
     println!();
   }
 
-  pub fn forward1d(&mut self, x: Array1<f32>) -> Array1<f32> {
-    self.forward(x.into_dyn())
-  }
-  pub fn forward2d(&mut self, x: Array2<f32>) -> Array1<f32> {
-    self.forward(x.into_dyn())
-  }
-  pub fn forward3d(&mut self, x: Array3<f32>) -> Array1<f32> {
-    self.forward(x.into_dyn())
-  }
 
 
-  pub fn forward(&mut self, x: ArrayD<f32>) -> Array1<f32> {
-    self.last_input = x.clone();
-    let mut input = x.into_dyn();//normalize(x);
+  pub fn predict1d(&mut self, input: Array1<f32>) -> Array1<f32> {
+    self.predict(input.into_dyn())
+  }
+  pub fn predict2d(&mut self, input: Array2<f32>) -> Array1<f32> {
+    self.predict(input.into_dyn())
+  }
+  pub fn predict3d(&mut self, input: Array3<f32>) -> Array1<f32> {
+    self.predict(input.into_dyn())
+  }
+
+  pub fn predict(&mut self, input: ArrayD<f32>) -> Array1<f32> {
+    let mut input = input.into_dyn();
     for i in 0..self.layers.len() {
       input = self.layers[i].forward(input);
     }
-    self.last_output = input.into_dimensionality::<Ix1>().unwrap(); //output should be Array1 again
-    self.last_output.clone()
+    input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
+  }
+
+  pub fn loss_from_prediction(&mut self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
+    let loss = self.error_function.forward(prediction.into_dyn(), target.into_dyn());
+    loss[0] 
   }
 
 
-  pub fn backward(&mut self, target: Array1<f32>) {
-    self.last_target = target.clone();
-    match self.error.as_str() {
-      "bce" => { //assert that target.len() == output.len() == 1
-        let mut fb = binary_crossentropy(target, self.last_output.clone()).into_dyn(); 
-        for i in (0..self.layers.len()).rev() {
-          fb = self.layers[i].backward(fb);
-        }
-      },
-      "cce" => {  
-        let mut fb = categorical_crossentropy(target, self.last_output.clone()).into_dyn();
-        for i in (0..self.layers.len()).rev() {
-          fb = self.layers[i].backward(fb);
-        }
-      },
-      _ => eprintln!("error, error function unknown! {}",self.error),
+  pub fn train1d(&mut self, input: Array1<f32>, target: Array1<f32>) {
+    self.train(input.into_dyn(), target)
+  }
+  pub fn train2d(&mut self, input: Array2<f32>, target: Array1<f32>) {
+    self.train(input.into_dyn(), target)
+  }
+  pub fn train3d(&mut self, input: Array3<f32>, target: Array1<f32>) {
+    self.train(input.into_dyn(), target)
+  }
+  pub fn train(&mut self, input: ArrayD<f32>, target: Array1<f32>) { //maybe return option(accuracy,None) and add a setter to return accuracy?
+    let mut input = input.into_dyn();
+    let n = self.layers.len();
+    //forward pass
+
+
+
+    //handle layers 1 till pre-last
+    for i in 0..(n-1) { 
+      input = self.layers[i].forward(input);
     }
+
+
+
+    let mut feedback;
+    // handle last layer and error function
+    if self.from_logits { //merge last layer with error function
+      feedback = self.error_function.deriv_from_logits(input, target.into_dyn());
+    } else { //evaluate last activation layer and error function seperately
+      input = self.layers[n-1].forward(input);
+      // to print error function loss here: println!("{}", self.error_function.loss(input, target);
+      feedback = self.error_function.backward(input, target.into_dyn());
+      feedback = self.layers[n-1].backward(feedback);
+    }
+
+
+
+    // handle pre-last till first layer
+    for i in (0..(n-1)).rev() {
+      feedback = self.layers[i].backward(feedback);
+    }
+
   }
 
-  pub fn error(&mut self, target: Array1<f32>) -> f32 {
-    match self.error.as_str() {
-      "bce" => {
-        let t = target[0];
-        let o = self.last_output[0];
-        return -t*o.ln() - (1.-t)*(1.-o).ln();
-      },
-      "cce" => {
-        return target.iter()
-          .zip(self.last_output.iter())
-          .fold(0.0, |sum, (&t, &o)| sum + t * -(o.ln()))
-      },
-      _ => eprintln!("foo"),
-    }
-    while 1==1 {println!("FOO");}
-    42.
-  }
 
 }
