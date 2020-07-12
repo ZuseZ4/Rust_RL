@@ -41,10 +41,13 @@ impl Layer for DenseLayer {
   
   fn get_type(&self) -> String {
     let output: String = "Dense Layer".to_string() + " input dim: " + &self.input_dim.to_string() + " output dim " + &self.output_dim.to_string();
+    println!("weights shape: {:?}", self.weights.shape());
+    
     output
   }
   
   fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    println!("input shape: {:?}", x.shape());
     let input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
     let pos_in_batch = self.predictions % self.batch_size;
     self.net.column_mut(pos_in_batch).assign(&input); 

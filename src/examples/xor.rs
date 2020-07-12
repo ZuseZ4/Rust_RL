@@ -7,10 +7,10 @@ use rand::Rng;
 pub fn new() -> NeuralNetwork {
   //let mut nn = NeuralNetwork::new1d(2,"bce".to_string());
   let mut nn = NeuralNetwork::new1d(2,"none".to_string());
-  nn.set_batch_size(1);
-  nn.set_learning_rate(0.1);
-  //nn.add_dense(2); //Dense with 2 output neurons
-  //nn.add_activation("sigmoid"); //Sigmoid
+  nn.set_batch_size(4);
+  nn.set_learning_rate(0.0001);
+  nn.add_dense(2); //Dense with 2 output neurons
+  nn.add_activation("sigmoid"); //Sigmoid
   nn.add_dense(1); //Dense with 1 output neuron
   //nn.add_activation("sigmoid"); //Sigmoid
   nn

@@ -210,22 +210,24 @@ impl NeuralNetwork {
   pub fn train(&mut self, input: ArrayD<f32>, target: Array1<f32>) { //maybe return option(accuracy,None) and add a setter to return accuracy?
     let mut input = input.into_dyn();
     let n = self.layers.len();
-    //forward pass
 
 
-
-    //handle layers 1 till pre-last
+    // forward pass
+    // handle layers 1 till pre-last
     for i in 0..(n-1) { 
       input = self.layers[i].forward(input);
     }
 
 
 
+    // handle last layer + error function
     let mut feedback;
     // handle last layer and error function
-    if self.from_logits { //merge last layer with error function
+    if self.from_logits { 
+      //merge last layer with error function
       feedback = self.error_function.deriv_from_logits(input, target.into_dyn());
-    } else { //evaluate last activation layer and error function seperately
+    } else { 
+      //evaluate last activation layer and error function seperately
       input = self.layers[n-1].forward(input);
       // to print error function loss here: println!("{}", self.error_function.loss(input, target);
       feedback = self.error_function.backward(input, target.into_dyn());
@@ -233,7 +235,7 @@ impl NeuralNetwork {
     }
 
 
-
+    // backward pass
     // handle pre-last till first layer
     for i in (0..(n-1)).rev() {
       feedback = self.layers[i].backward(feedback);
