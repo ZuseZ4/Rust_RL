@@ -43,9 +43,6 @@ pub fn test_fortress() {
      
 
 
-    let rounds = 25;
-    let training_games = 16_000;
-    let bench_games = 10;
     
     let mut game = fortress::Game::new(rounds, engines).unwrap();
     game.train(training_games);

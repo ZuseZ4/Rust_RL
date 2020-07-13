@@ -1,5 +1,4 @@
 use crate::network::layer_trait::Layer;
-//use ndarray::{Array, Array1, Array2};
 use ndarray::{Array1, ArrayD};
 pub struct SigmoidLayer {
   output: ArrayD<f32>,
@@ -20,12 +19,12 @@ impl Layer for SigmoidLayer {
   }
 
   fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-    self.output = x.map(|&x| 1.0 / (1.0 + (-x).exp()));
+    self.output = x.mapv(|x| 1.0 / (1.0 + (-x).exp()));
     self.output.clone()
   }
 
   fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32>{
-    self.output.map(|&x| x * (1.0-x)) * feedback
+    self.output.mapv(|x| x * (1.0-x)) * feedback
   }
 
 }

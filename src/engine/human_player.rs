@@ -1,5 +1,4 @@
 use std::io;
-//use crate::board::smart_board::Board;
 use crate::board::board_trait::BoardInfo;
 use crate::engine::engine_trait::Engine;
 
@@ -9,8 +8,8 @@ pub struct HumanPlayer {
 }
 
 impl HumanPlayer {
-    pub fn new(rounds_per_game: u8, _is_first_player: bool) -> Self {
-        HumanPlayer {rounds: rounds_per_game,}
+    pub fn new(rounds: u8, _is_first_player: bool) -> Self {
+        HumanPlayer {rounds,}
     }
 }
 

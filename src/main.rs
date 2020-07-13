@@ -6,10 +6,10 @@ use hello_rust::examples::fortress;
 
 fn main() -> Result<(),String>{
 
-    mnist::test_MNIST(); //not learning usefull results
+    //mnist::test_MNIST(); //not learning usefull results
     //xor::test_xor(); 
     
-    //fortress::test_fortress(); // more complex example, still needs some care
+    fortress::test_fortress(); // more complex example, still needs some care
 
 
     Ok(())

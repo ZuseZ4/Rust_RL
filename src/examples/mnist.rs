@@ -5,8 +5,8 @@ use mnist::{Mnist, MnistBuilder};
 
 fn new() -> NeuralNetwork {
   let mut nn = NeuralNetwork::new2d((28, 28), "none".to_string());
-  nn.set_batch_size(1);
-  nn.set_learning_rate(0.00001);
+  nn.set_batch_size(32);
+  nn.set_learning_rate(0.001);
   nn.add_flatten();
   nn.add_dense(10); //Dense with 10 output neuron
   nn.add_activation("softmax");
@@ -72,8 +72,9 @@ pub fn test_MNIST() {
 
   let mut nn = new();
   nn.print_setup();
-  for _ in 0..10 {
+  for i in 0..10 {
     train(&mut nn, 60_000, &train_img, &train_lbl);
+    println!("{}",i);
     test(&mut nn, &test_img, &test_lbl);
   }
 

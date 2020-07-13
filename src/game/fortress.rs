@@ -74,7 +74,7 @@ impl Game {
                 board.try_move(self.engine2.get_move(&board));
             }
 
-            let game_res = board.eval();
+            let game_res = board.eval(); // umstellen auf 1-hot encoded
             self.update_results(game_res.0, game_res.1);
             if train {
                 self.engine1.finish_round(self.last_result);

@@ -9,8 +9,8 @@ pub struct RandomEngine {
 }
 
 impl RandomEngine {
-    pub fn new(rounds_per_game: u8, _is_first_player: bool) -> Self {
-        RandomEngine {rounds: rounds_per_game,}
+    pub fn new(rounds: u8, _is_first_player: bool) -> Self {
+        RandomEngine {rounds: rounds,}
     }
 }
 
