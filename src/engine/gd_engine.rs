@@ -90,6 +90,11 @@ impl Engine for GDEngine {
     
     fn reset_board(&mut self) {
     }
+  
+    fn set_exploration_rate(&mut self, _e: f32) -> Result<(),String>{
+      Ok(())
+    }
+
 
     fn finish_round(&mut self, result: i32) {
       

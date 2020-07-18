@@ -28,4 +28,8 @@ impl Engine for RandomEngine {
     fn finish_round(&mut self, _single_res: i32) {}
 
     fn reset_board(&mut self) {}
+    
+    fn set_exploration_rate(&mut self, _e: f32) -> Result<(),String>{
+      Ok(())
+    }
 }

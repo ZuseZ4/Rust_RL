@@ -7,4 +7,6 @@ pub trait Engine {
     fn reset_board(&mut self);
 
     fn finish_round(&mut self, result: i32);
+
+    fn set_exploration_rate(&mut self, e: f32) -> Result<(),String>;
 }

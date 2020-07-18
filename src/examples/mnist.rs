@@ -4,7 +4,7 @@ use rand::Rng;
 use mnist::{Mnist, MnistBuilder};
 
 fn new() -> NeuralNetwork {
-  let mut nn = NeuralNetwork::new2d((28, 28), "none".to_string());
+  let mut nn = NeuralNetwork::new2d((28, 28), "cce".to_string());
   nn.set_batch_size(32);
   nn.set_learning_rate(0.001);
   nn.add_flatten();
@@ -14,12 +14,7 @@ fn new() -> NeuralNetwork {
 }
 
 fn test(nn: &mut NeuralNetwork, input: &Array3<f32>, feedback: &Array2<f32>) {
-  for (current_input, current_fb) in input.outer_iter().zip(feedback.outer_iter()) {
-    let pred = nn.predict2d(current_input.into_owned());
-    let _loss = nn.loss_from_prediction(pred.clone(), current_fb.into_owned());
-    println!("expected: {}\n prediction: {}\n pred_for_val: {}\n", current_fb, pred.clone(), (current_fb.into_owned()*pred).iter().sum::<f32>());
-
-  }
+  nn.test(input.clone(), feedback.clone());
 }
 
 fn train(nn: &mut NeuralNetwork, num: usize, input: &Array3<f32>, fb: &Array2<f32>) {

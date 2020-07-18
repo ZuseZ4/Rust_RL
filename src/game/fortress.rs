@@ -57,6 +57,8 @@ impl Game {
     }
 
     pub fn bench(&mut self, num_games: u64) -> (u32, u32, u32) {
+        self.engine1.set_exploration_rate(0.).unwrap(); // exploration rate is in [0,1], so ignore error possibility
+        self.engine2.set_exploration_rate(0.).unwrap();
         self.play_games(num_games, false)
     }
 

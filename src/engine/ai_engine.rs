@@ -109,5 +109,14 @@ impl Engine for AIEngine {
         self.positions.push(best_pair.2.to_string());
         best_pair.0
     }
+  
+  fn set_exploration_rate(&mut self, e: f32) -> Result<(),String>{
+    if e < 0. || e > 1. {
+      return Err("exploration rate must be in [0,1]!".to_string());
+    }
+    self.exploration = e;
+    Ok(())
+  }
+
 }
 

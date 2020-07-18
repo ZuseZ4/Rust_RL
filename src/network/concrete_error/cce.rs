@@ -1,5 +1,5 @@
 use crate::network::error_trait::Error;
-use ndarray::ArrayD;
+use ndarray::{ArrayD, Array};
 
 pub struct CategoricalCrossEntropyError {
 }
@@ -16,23 +16,33 @@ impl CategoricalCrossEntropyError {
 impl Error for CategoricalCrossEntropyError {
 
   fn get_type(&self) -> String {
-    "Binary Crossentropy Error".to_string()
+    "Categorical Crossentropy Error".to_string()
   }
 
-  fn forward(&mut self, input: ArrayD<f32>, _target: ArrayD<f32>) -> ArrayD<f32> {
-    input
+  fn forward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    let loss = -(target * output.mapv(|x| f32::ln(x))).sum();
+    Array::from_elem(1,loss).into_dyn()
   }
 
-  fn backward(&mut self, _input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32>{
-    target
+  fn backward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32>{
+    (1.-&target) / (1.-&output) - target/output
   }
 
-  fn loss_from_logits(&mut self, input: ArrayD<f32>, _target: ArrayD<f32>) -> ArrayD<f32> {
-    input
+  fn loss_from_logits(&mut self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    // ignore nans on sum and max
+    let max: f32 = output.iter().fold(f32::MIN, |acc, &x| if x.is_nan() {acc} else {if acc<=x {x} else {acc}});
+    output.mapv_inplace(|x| (x-max).exp());
+    let sum: f32 = output.iter().sum();
+    let loss = -(target*output).iter().sum::<f32>() + f32::ln(sum);
+    Array::from_elem(1,loss).into_dyn()    
   }
 
-  fn deriv_from_logits(&mut self, _input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-    target 
+  fn deriv_from_logits(&mut self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    let max: f32 = output.iter().fold(f32::MIN, |acc, &x| if x.is_nan() {acc} else {if acc<=x {x} else {acc}});
+    output.mapv_inplace(|x| (x-max).exp());
+    let sum: f32 = output.iter().sum();
+    output.mapv_inplace(|x| x/sum);
+    output - target 
   }
 }
 

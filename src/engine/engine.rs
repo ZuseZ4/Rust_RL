@@ -61,4 +61,10 @@ impl Engine for EngineType {
             EngineType::G(gd_engine) => gd_engine.finish_round(result),
         }
     }
+    fn set_exploration_rate(&mut self, e: f32) -> Result<(),String> {
+      match self {
+            EngineType::A(ai_engine) => {return ai_engine.set_exploration_rate(e);},
+            _ => {return Ok(());},
+      }
+    }
 }

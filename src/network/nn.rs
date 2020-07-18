@@ -54,11 +54,17 @@ pub struct NeuralNetwork {
 impl NeuralNetwork {
 
   fn new(error: String) -> Self {
-    // if error not in "bce" or "cce" => panic?
-    // acceppt linear (=None) if not needed?
+    let error_function;
+    match ErrorType::new_error(error.clone()) {
+      Ok(error_fun) => error_function = error_fun,
+      Err(warning) => {
+        eprintln!("{}",warning); 
+        error_function = ErrorType::new_noop();
+      }
+    }
     NeuralNetwork{
       error,
-      error_function: ErrorType::new_noop(),
+      error_function,
       input_dims: vec![vec![]],
       layers:  vec![],
       h_p: HyperParameter::new(),
@@ -174,6 +180,7 @@ impl NeuralNetwork {
 
 
 
+
   pub fn predict1d(&mut self, input: Array1<f32>) -> Array1<f32> {
     self.predict(input.into_dyn())
   }
@@ -184,12 +191,34 @@ impl NeuralNetwork {
     self.predict(input.into_dyn())
   }
 
-  pub fn predict(&mut self, input: ArrayD<f32>) -> Array1<f32> {
-    let mut input = input.into_dyn();
+  pub fn predict(&mut self, mut input: ArrayD<f32>) -> Array1<f32> {
     for i in 0..self.layers.len() {
       input = self.layers[i].forward(input);
     }
     input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
+  }
+
+  pub fn test(&mut self, input: Array3<f32>, target: Array2<f32>) {
+    let n = target.len();
+    let mut loss: Array1<f32> = Array1::zeros(n);
+    let mut correct: Array1<f32> = Array1::ones(n);
+    let mut i = 0;
+    for (current_input, current_fb) in input.outer_iter().zip(target.outer_iter()) {
+      let pred = self.predict2d(current_input.into_owned());
+      loss[i] = self.loss_from_prediction(pred.clone(), current_fb.into_owned());
+
+      let best_guess: f32 = (pred.clone() * current_fb).sum();
+      
+      let num: usize = pred.iter().filter(|&x| *x >= best_guess).count();
+      if num > 1 {
+        correct[i] = 0.;
+        //eprintln!("FAIL {}",best_guess);
+      }
+      i += 1;
+    }
+    let avg_loss = loss.iter().sum::<f32>()/(n as f32);
+    let acc  = correct.iter().sum::<f32>()/(n as f32);
+    println!("avg loss: {}, percentage correct: {}", avg_loss, acc);
   }
 
   pub fn loss_from_prediction(&mut self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
@@ -220,12 +249,12 @@ impl NeuralNetwork {
 
 
 
-    // handle last layer + error function
     let mut feedback;
     // handle last layer and error function
     if self.from_logits { 
       //merge last layer with error function
       feedback = self.error_function.deriv_from_logits(input, target.into_dyn());
+      // to print error function loss here: println!("{}", self.error_function.loss_from_logits(input, target);
     } else { 
       //evaluate last activation layer and error function seperately
       input = self.layers[n-1].forward(input);
