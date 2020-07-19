@@ -6,3 +6,4 @@ pub mod error_trait;
 pub mod concrete_layer;
 pub mod concrete_error;
 pub mod tests;
+pub mod q_learning;

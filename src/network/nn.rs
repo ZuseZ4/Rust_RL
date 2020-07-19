@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, Array3, ArrayD, Ix1};
+use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
 use crate::network::layer::LayerType;
 use crate::network::layer_trait::Layer;
 use crate::network::error::ErrorType;
@@ -174,6 +174,7 @@ impl NeuralNetwork {
     for i in 0..self.layers.len() {
       println!("{}",self.layers[i].get_type());
     }
+    println!("{}",self.error_function.get_type());
     println!("using from_logits optimization: {}", self.from_logits);
     println!();
   }
@@ -199,7 +200,7 @@ impl NeuralNetwork {
   }
 
   pub fn test(&mut self, input: Array3<f32>, target: Array2<f32>) {
-    let n = target.len();
+    let n = target.len_of(Axis(0));
     let mut loss: Array1<f32> = Array1::zeros(n);
     let mut correct: Array1<f32> = Array1::ones(n);
     let mut i = 0;
@@ -210,9 +211,8 @@ impl NeuralNetwork {
       let best_guess: f32 = (pred.clone() * current_fb).sum();
       
       let num: usize = pred.iter().filter(|&x| *x >= best_guess).count();
-      if num > 1 {
+      if num != 1 {
         correct[i] = 0.;
-        //eprintln!("FAIL {}",best_guess);
       }
       i += 1;
     }

@@ -8,6 +8,8 @@ fn new() -> NeuralNetwork {
   nn.set_batch_size(32);
   nn.set_learning_rate(0.001);
   nn.add_flatten();
+  nn.add_dense(128); //Dense with 10 output neuron
+  nn.add_activation("leakyrelu");
   nn.add_dense(10); //Dense with 10 output neuron
   nn.add_activation("softmax");
   nn
@@ -68,9 +70,9 @@ pub fn test_MNIST() {
   let mut nn = new();
   nn.print_setup();
   for i in 0..10 {
-    train(&mut nn, 60_000, &train_img, &train_lbl);
     println!("{}",i);
     test(&mut nn, &test_img, &test_lbl);
+    train(&mut nn, 60_000, &train_img, &train_lbl);
   }
 
 }
