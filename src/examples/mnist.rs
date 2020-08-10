@@ -6,17 +6,17 @@ use mnist::{Mnist, MnistBuilder};
 fn new() -> NeuralNetwork {
   let mut nn = NeuralNetwork::new2d((28, 28), "cce".to_string());
   nn.set_batch_size(32);
-  nn.set_learning_rate(0.001);
+  nn.set_learning_rate(0.1);
   nn.add_flatten();
-  nn.add_dense(128); //Dense with 10 output neuron
-  nn.add_activation("leakyrelu");
+  nn.add_dense(800); //Dense with 10 output neuron
+  nn.add_activation("ReLu");
   nn.add_dense(10); //Dense with 10 output neuron
   nn.add_activation("softmax");
   nn
 }
 
 fn test(nn: &mut NeuralNetwork, input: &Array3<f32>, feedback: &Array2<f32>) {
-  nn.test(input.clone(), feedback.clone());
+  nn.test(input.clone().into_dyn(), feedback.clone());
 }
 
 fn train(nn: &mut NeuralNetwork, num: usize, input: &Array3<f32>, fb: &Array2<f32>) {
@@ -71,8 +71,8 @@ pub fn test_MNIST() {
   nn.print_setup();
   for i in 0..10 {
     println!("{}",i);
-    test(&mut nn, &test_img, &test_lbl);
     train(&mut nn, 60_000, &train_img, &train_lbl);
+    test(&mut nn, &test_img, &test_lbl);
   }
 
 }

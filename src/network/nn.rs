@@ -199,13 +199,15 @@ impl NeuralNetwork {
     input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
   }
 
-  pub fn test(&mut self, input: Array3<f32>, target: Array2<f32>) {
+  // fix test to work on something else than just 2D input
+  pub fn test(&mut self, input: ArrayD<f32>, target: Array2<f32>) {
     let n = target.len_of(Axis(0));
+    let img_dim = input.ndim() - 1;
     let mut loss: Array1<f32> = Array1::zeros(n);
     let mut correct: Array1<f32> = Array1::ones(n);
     let mut i = 0;
     for (current_input, current_fb) in input.outer_iter().zip(target.outer_iter()) {
-      let pred = self.predict2d(current_input.into_owned());
+      let pred = self.predict(current_input.clone().into_owned().into_dyn());
       loss[i] = self.loss_from_prediction(pred.clone(), current_fb.into_owned());
 
       let best_guess: f32 = (pred.clone() * current_fb).sum();
@@ -267,6 +269,8 @@ impl NeuralNetwork {
     // backward pass
     // handle pre-last till first layer
     for i in (0..(n-1)).rev() {
+      //println!("i: {}",i);
+      //println!("{}",self.layers[i].get_type());
       feedback = self.layers[i].backward(feedback);
     }
 
