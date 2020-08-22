@@ -62,13 +62,29 @@ impl Game {
         self.play_games(num_games, false)
     }
 
+    //fn get_reward(&mut self) -> f32 {
+    //  42.
+    //}
+
     fn play_games(&mut self, num_games: u64, train: bool) -> (u32, u32, u32) {
         self.res = (0, 0, 0);
-
+        let exploration_rate1 = self.engine1.get_exploration_rate();
+        let exploration_rate2 = self.engine2.get_exploration_rate();
         let mut board: smart_board::Board;
-        for _game in 0..num_games {
+        let sub_epoch: u64 = (num_games / 10) as u64;
+
+        for game in 0..num_games {
             board = smart_board::Board::get_board(self.rounds);
+            if (game % sub_epoch) == 0  && train{
+              let sub_epoch_nr: f32 = (game / sub_epoch) as f32;
+              let (new_exploration_rate1, new_exploration_rate2) = ((exploration_rate1 * (10. - sub_epoch_nr) / 10.), (exploration_rate2 * (10. - sub_epoch_nr) / 10.));
+              self.engine1.set_exploration_rate(new_exploration_rate1).unwrap();
+              self.engine2.set_exploration_rate(new_exploration_rate2).unwrap();
+              println!("New exploration rates: {}, {}", new_exploration_rate1, new_exploration_rate2);
+            }
+
             for _round in 0..board.get_total_rounds() {
+
               //TODO what if no move possible? 
               // parallelize
 

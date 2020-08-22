@@ -37,6 +37,10 @@ impl Engine for HumanPlayer {
 
     fn reset_board(&mut self) {}
     
+    fn get_exploration_rate(&self) -> f32 {
+      42.
+    }
+
     fn set_exploration_rate(&mut self, _e: f32) -> Result<(),String>{
       Ok(())
     }

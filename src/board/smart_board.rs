@@ -7,7 +7,7 @@ pub struct Board {
     flags: [i8; 36],
     neighbours: [Vec<usize>; 36],
     first_player_turn: bool,
-    total_rounds: u8,
+    total_rounds: usize,
     //first_player_moves: Vec<usize>, //TODO HashSet is slower than recalculating possible moves each time. remove it?
     //second_player_moves: Vec<usize>,
     first_player_moves: HashSet<usize, std::hash::BuildHasherDefault<fnv::FnvHasher>>,
@@ -15,7 +15,21 @@ pub struct Board {
 }
 
 impl BoardInfo for Board {
-    
+
+  fn step(&self) -> (String, Vec<usize>, f32) {
+    let current_pos = self
+        .field
+        .iter()
+        .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
+    let possible_actions = self.get_possible_moves();
+    let controlled_fields = self.eval();
+    let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
+    if !self.first_player_turn {
+      reward *= -1;
+    }
+    (current_pos, possible_actions, reward as f32)
+  }
+
   fn print_board(&self) {
         let mut fst;
         let mut snd;
@@ -119,7 +133,7 @@ impl Board {
             flags: [0; 36],
             neighbours: neighbours_list,
             first_player_turn: true,
-            total_rounds: rounds,
+            total_rounds: rounds as usize,
             first_player_moves: first_player_hashset,
             second_player_moves: second_player_hashset,
         }
@@ -191,7 +205,7 @@ impl Board {
         (fields_one, fields_two)   
     }
     
-    pub fn get_total_rounds(&self) -> u8 {
+    pub fn get_total_rounds(&self) -> usize {
         self.total_rounds
     }
 

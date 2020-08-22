@@ -42,6 +42,10 @@ impl Engine for AIEngine {
     fn get_move(&mut self, board: &impl BoardInfo) -> usize {
       self.qlearning.get_move(board)
     }
+
+  fn get_exploration_rate(&self) -> f32 {
+    return self.qlearning.get_exploration_rate();
+  }
   
   fn set_exploration_rate(&mut self, e: f32) -> Result<(),String>{
     if e < 0. || e > 1. {

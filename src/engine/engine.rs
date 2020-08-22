@@ -20,7 +20,7 @@ impl EngineType {
     ) -> Result<EngineType, String> {
         match engine_number {
             1 => Ok(EngineType::R(RandomEngine::new(rounds_per_game, first_engine))),
-            2 => Ok(EngineType::A(AIEngine::new(rounds_per_game, first_engine, 0.2))),
+            2 => Ok(EngineType::A(AIEngine::new(rounds_per_game, first_engine, 1.))),// start with always exploring
             3 => Ok(EngineType::H(HumanPlayer::new(rounds_per_game, first_engine))),
             4 => Ok(EngineType::G(GDEngine::new(rounds_per_game, first_engine))),
             _ => Err(format!("Bad engine: {}", engine_number)),
@@ -60,6 +60,12 @@ impl Engine for EngineType {
             EngineType::H(human_player) => human_player.finish_round(result),
             EngineType::G(gd_engine) => gd_engine.finish_round(result),
         }
+    }
+    fn get_exploration_rate(&self) -> f32 {
+      match self {
+            EngineType::A(ai_engine) => {return ai_engine.get_exploration_rate();},
+            _ => {return 42.;},
+      }
     }
     fn set_exploration_rate(&mut self, e: f32) -> Result<(),String> {
       match self {
