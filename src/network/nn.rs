@@ -118,6 +118,35 @@ impl NeuralNetwork {
     }
   }
 
+  pub fn add_convolution(&mut self, filter_shape: (usize, usize), filter_number: usize) {
+    let filter_depth: usize;
+    let input_dim = self.input_dims.last().unwrap().clone();
+    assert!(input_dim.len() == 2 || input_dim.len() == 3, "only implemented conv for 2d or 3d input!");
+    if input_dim.len() == 2 {
+      filter_depth = 1;
+    } else {
+      filter_depth = input_dim[0];
+    }
+    let conv_layer = LayerType::new_convolution(filter_shape, filter_depth, filter_number, self.h_p.batch_size, self.h_p.learning_rate);
+    match conv_layer {
+      Err(err) => {
+        eprintln!("{}",err);
+        return;
+      }
+      Ok(conv) => {
+        self.layers.push(conv);
+        let input = self.input_dims.last().unwrap().clone();
+        let (mut dim_n, mut dim_m) = (0,1); // expect 2d input 
+        if input.len() == 3 { // last two dimensions are relevant, so adjust for 3d input
+          dim_n += 1;
+          dim_m += 1;
+        }
+        self.input_dims.push(vec![filter_number, input[dim_n]-filter_shape.0+1, input[dim_m]-filter_shape.1+1]);
+      }
+    }
+    self.from_logits = false;
+  }
+
   pub fn add_dense(&mut self, output_dim: usize) {
     if output_dim <= 0 {
       eprintln!("output dimension should be > 0! Doing nothing!");
@@ -130,8 +159,8 @@ impl NeuralNetwork {
     }
     let dense_layer = LayerType::new_connection(input_dims[0], output_dim, self.h_p.batch_size, self.h_p.learning_rate);
     match dense_layer {
-      Err(error) => {
-        eprintln!("{}",error);
+      Err(err) => {
+        eprintln!("{}",err);
         return;
       }
       Ok(dense) => {
@@ -202,12 +231,12 @@ impl NeuralNetwork {
   // fix test to work on something else than just 2D input
   pub fn test(&mut self, input: ArrayD<f32>, target: Array2<f32>) {
     let n = target.len_of(Axis(0));
-    let img_dim = input.ndim() - 1;
+    //let img_dim = input.ndim() - 1;
     let mut loss: Array1<f32> = Array1::zeros(n);
     let mut correct: Array1<f32> = Array1::ones(n);
     let mut i = 0;
     for (current_input, current_fb) in input.outer_iter().zip(target.outer_iter()) {
-      let pred = self.predict(current_input.clone().into_owned().into_dyn());
+      let pred = self.predict(current_input.into_owned().into_dyn());
       loss[i] = self.loss_from_prediction(pred.clone(), current_fb.into_owned());
 
       let best_guess: f32 = (pred.clone() * current_fb).sum();
@@ -269,8 +298,6 @@ impl NeuralNetwork {
     // backward pass
     // handle pre-last till first layer
     for i in (0..(n-1)).rev() {
-      //println!("i: {}",i);
-      //println!("{}",self.layers[i].get_type());
       feedback = self.layers[i].backward(feedback);
     }
 

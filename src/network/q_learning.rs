@@ -84,7 +84,6 @@ impl Qlearning {
 
         //42 is illegal board position, would result in error
         let mut best_pair: (usize, f32) = (42, f32::MIN);
-        let new_actions = Vec::<usize>::new();
 
         //println!("#possible actions: {}", actions.len());
         for &move_candidate in actions.iter() {
@@ -96,7 +95,8 @@ impl Qlearning {
         //println!("{:?}", best_pair);
         best_pair
     }
-  
+ 
+    #[allow(non_snake_case)]
     fn update_Map(&mut self, reward: f32, max_future_q: f32) {
         let score = self.scores.entry((self.last_state.clone(), self.last_action.clone()))
           .or_insert(self.rng.gen_range(-0.5,0.5));

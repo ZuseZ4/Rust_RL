@@ -6,10 +6,15 @@ use mnist::{Mnist, MnistBuilder};
 fn new() -> NeuralNetwork {
   let mut nn = NeuralNetwork::new2d((28, 28), "cce".to_string());
   nn.set_batch_size(32);
-  nn.set_learning_rate(0.1);
+  nn.set_learning_rate(0.05);
+  nn.add_convolution((3,3), 32);
+  nn.add_activation("sigmoid");
+  //nn.add_convolution((3,5), 10);
   nn.add_flatten();
-  nn.add_dense(800); //Dense with 10 output neuron
-  nn.add_activation("ReLu");
+  //nn.add_activation("leakyrelu");
+  //nn.add_activation("relu");
+  //nn.add_dense(100); //Dense with 10 output neuron
+  //nn.add_activation("sigmoid");
   nn.add_dense(10); //Dense with 10 output neuron
   nn.add_activation("softmax");
   nn
@@ -43,8 +48,8 @@ pub fn test_MNIST() {
   let test_lbl  = Array2::from_shape_vec((test_size,10),tst_lbl).unwrap().mapv(|x| x as f32);
   let mut train_img: Array3<f32> = Array3::from_shape_vec((train_size,rows,cols), trn_img).unwrap().mapv(|x| x as f32);
   let mut test_img:  Array3<f32> = Array3::from_shape_vec((test_size,rows,cols), tst_img).unwrap().mapv(|x| x as f32);
-  assert_eq!(train_img.shape(), &[60_000,28,28]);
-  assert_eq!(test_img.shape(), &[10_000,28,28]);
+  assert_eq!(train_img.shape(), &[train_size,rows,cols]);
+  assert_eq!(test_img.shape(), &[test_size,rows,cols]);
   println!("mapping image values from [0,255] to [0,1]");
   train_img.mapv_inplace(|x| x/256.0);
   test_img.mapv_inplace(|x| x/256.0);
@@ -71,8 +76,10 @@ pub fn test_MNIST() {
   nn.print_setup();
   for i in 0..10 {
     println!("{}",i);
-    train(&mut nn, 60_000, &train_img, &train_lbl);
+    train(&mut nn, 60_000, &train_img, &train_lbl);//60_000
     test(&mut nn, &test_img, &test_lbl);
+    nn.print_setup();
   }
+
 
 }

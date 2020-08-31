@@ -1,12 +1,5 @@
 #[allow(unused_imports)]
-use hello_rust::examples::xor;
-#[allow(unused_imports)]
-use hello_rust::examples::mnist;
-#[allow(unused_imports)]
-use hello_rust::examples::fortress;
-#[allow(unused_imports)]
-use hello_rust::examples::cifar10;
-
+use hello_rust::examples::{xor,mnist,fortress,cifar10};
 
 
 fn main() -> Result<(),String>{

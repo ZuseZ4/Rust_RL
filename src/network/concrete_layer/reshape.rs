@@ -1,11 +1,11 @@
 use crate::network::layer_trait::Layer;
 use ndarray::{Array, ArrayD, Ix1};
-pub struct FlattenLayer {
+pub struct ReshapeLayer {
   input_shape: [usize;3],
   num_elements: usize,
 }
 
-impl FlattenLayer {
+impl ReshapeLayer {
   pub fn new(input_shape: [usize;3]) -> Self {
     FlattenLayer{
       input_shape,
@@ -14,10 +14,10 @@ impl FlattenLayer {
   }
 }
 
-impl Layer for FlattenLayer {
+impl Layer for ReshapeLayer {
 
   fn get_type(&self) -> String {
-    "Flatten Layer".to_string()
+    "Reshape Layer".to_string()
   }
 
   fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {

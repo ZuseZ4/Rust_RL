@@ -10,7 +10,7 @@ pub struct BinaryCrossEntropyError {
 impl BinaryCrossEntropyError {
   pub fn new() -> Self {
     BinaryCrossEntropyError{
-      activation_function: LayerType::new_activation("BinaryCrossEntropyError".to_string()).unwrap(),
+      activation_function: LayerType::new_activation("sigmoid".to_string()).unwrap(),
     }
   }
 }
