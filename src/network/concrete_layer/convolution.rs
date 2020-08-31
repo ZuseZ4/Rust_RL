@@ -172,7 +172,7 @@ impl Layer for ConvolutionLayer {
     // https://medium.com/@pavisj/convolutions-and-backpropagations-46026a8f5d2c
     // return that
 
-    Array::zeros((self.last_input.shape())).into_dyn()
+    Array::zeros(self.last_input.shape()).into_dyn()
     }
 
 }

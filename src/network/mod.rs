@@ -7,3 +7,4 @@ pub mod concrete_layer;
 pub mod concrete_error;
 pub mod tests;
 pub mod q_learning;
+pub mod dq_learning;

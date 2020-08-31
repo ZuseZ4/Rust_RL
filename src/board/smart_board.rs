@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use crate::board::board_trait::BoardInfo;
 use fnv::FnvHashSet;
+#[allow(unused_imports)]
+use ndarray::{Array, Array1, Array2, Array3, ArrayD, Axis, Ix1};
 
 pub struct Board {
     field: [i8; 36],
@@ -15,6 +17,27 @@ pub struct Board {
 }
 
 impl BoardInfo for Board {
+
+  // return values:
+  // 6x6 field with current board
+  // 6x6 field with 1's for possible moves, 0's for impossible moves
+  fn step2(&self) -> (Array2<f32>, Array1<f32>) {
+    
+    // storing current position into ndarray
+    let position = Array2::from_shape_vec((6,6), self.field.to_vec()).unwrap();
+    let position = position.mapv(|x| x as f32);
+
+    // collecting allowed moves
+    let mut moves = Array::zeros(36); // start as a ndarray of length 36
+    let possible_actions = self.get_possible_moves();
+    for action in possible_actions {
+      moves[action] = 1.;
+    }
+    //let moves = moves.into_shape((6,6)).unwrap(); // transform into 6x6
+    let moves: Array1<f32> = moves.mapv(|x| x as f32); // transform from usize to f32
+
+    (position, moves)
+  }
 
   fn step(&self) -> (String, Vec<usize>, f32) {
     let current_pos = self
