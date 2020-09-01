@@ -71,12 +71,14 @@ impl Engine for EngineType {
     fn get_exploration_rate(&self) -> f32 {
       match self {
             EngineType::Q(ql_engine) => {return ql_engine.get_exploration_rate();},
+            EngineType::D(dql_engine) => {return dql_engine.get_exploration_rate();},
             _ => {return 42.;},
       }
     }
     fn set_exploration_rate(&mut self, e: f32) -> Result<(),String> {
       match self {
             EngineType::Q(ql_engine) => {return ql_engine.set_exploration_rate(e);},
+            EngineType::D(dql_engine) => {return dql_engine.set_exploration_rate(e);},
             _ => {return Ok(());},
       }
     }
