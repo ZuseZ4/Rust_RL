@@ -164,7 +164,7 @@ impl Layer for ConvolutionLayer {
 
     if self.num_in_batch == self.batch_size {
       self.num_in_batch = 0;
-      //self.kernels = self.kernels.clone() - self.learning_rate / (self.batch_size as f32) * self.kernel_updates.clone();
+      self.kernels = self.kernels.clone() - self.learning_rate / (self.batch_size as f32) * self.kernel_updates.clone();
     }
 
     //calc feedback for the previous layer:

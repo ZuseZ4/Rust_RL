@@ -1,8 +1,18 @@
 use crate::game::fortress;
 use std::io;
 
-pub fn test_fortress() {
+fn parse_train_num() -> u64 {
+  let mut training_games = String::new();
+  println!("please insert the number of training games.");
+  io::stdin()
+      .read_line(&mut training_games)
+      .expect("Failed to read number of games");
+  let training_games: u64 = training_games.trim().parse().expect("please type a number");
+  training_games
+}
 
+
+fn parse_input() -> (u8, u64, u64, u8) {
    //set number of rounds to play per game
    let mut engines = String::new();
    let mut rounds = String::new();
@@ -40,7 +50,31 @@ pub fn test_fortress() {
         "rounds: {}, #training games: {}, #bench games: {}\n",
         rounds, training_games, bench_games
     );
-     
+    (rounds, training_games, bench_games, engines)
+}
+
+pub fn test_fortress() {
+
+    let mut auto_fill = String::new();
+     println!("Run with default parameters? (1/0/2)");
+     io::stdin()
+         .read_line(&mut auto_fill)
+         .expect("Failed to read 1 or 0 or 2");
+    let auto_fill: usize = auto_fill.trim().parse().expect("please type 0 or 1 or 2");
+
+    let params; 
+    if auto_fill == 1 {
+      params = (25, 4_000, 1000, 13);
+    } else if auto_fill == 2 {
+      params = (25, parse_train_num(), 1000, 13);
+    } else {
+      params = parse_input();
+    }
+
+    let rounds = params.0;
+    let training_games = params.1;
+    let bench_games = params.2;
+    let engines = params.3;
 
 
     
