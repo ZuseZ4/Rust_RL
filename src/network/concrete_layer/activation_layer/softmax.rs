@@ -21,15 +21,17 @@ impl Layer for SoftmaxLayer {
     "Softmax Layer".to_string()
   }
 
-  fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
-        
+  fn predict(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
     // ignore nans on sum and max
     let max: f32 = x.iter().fold(f32::MIN, |acc, &x| if x.is_nan() {acc} else {if acc<=x {x} else {acc}});
     x.mapv_inplace(|x| (x-max).exp());
     let sum: f32 = x.iter().sum();
     x.mapv_inplace(|x| x / sum);
-    self.output = x;
-    
+    x
+  }
+
+  fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    self.output = self.predict(x);        
     self.output.clone()
   }
 

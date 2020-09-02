@@ -9,11 +9,11 @@ Actual layers are in src/network/concrete_layers.
 The neural network is build in src/nn.rs  
 
 #EXISTING
-1) Dense_Layer, flatten_Layer, reshape_Layer  
+1) The following layers have been implemented: Dense, Dropout, Flatten, Reshape  
 2) Convolution_Layer (weight updates work, but don't stack them)  
-3) Softmax, Sigmoid, ReLu, LeakyReLu  
+3) The following activation functions have been implemented: Softmax, Sigmoid, ReLu, LeakyReLu  
 4) binary_crossentropy, categorical_crossentropy  
-5) 1d, 2d, or 3d input  
+5) Networks work for 1d, 2d, or 3d input. Exact input shape has to be given, following layers adjust accordingly.
 6) Cifar10 & MNIST testcase (achieving ~49% and ~98%) 
 7) Q-Learning example (Fortress), Deep-Q-Learning example (Fortress)  
 

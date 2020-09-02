@@ -9,8 +9,9 @@ fn new() -> NeuralNetwork {
   nn.set_batch_size(32);
   nn.set_learning_rate(0.1);
   //nn.add_convolution((3,3), 32);
-  nn.add_convolution((3,3), 10);
+  nn.add_convolution((3,3), 16);
   nn.add_activation("sigmoid");
+  nn.add_dropout(0.);
   nn.add_flatten();
   //nn.add_dense(25); //Dense with 10 output neuron
   //nn.add_activation("sigmoid");
@@ -18,17 +19,6 @@ fn new() -> NeuralNetwork {
   nn.add_activation("softmax");
   nn
 
-  //let mut nn = NeuralNetwork::new3d((3, 32, 32), "cce".to_string());
-  //nn.set_batch_size(32);
-  //nn.set_learning_rate(0.1);
-  //nn.add_flatten();
-  //nn.add_dense(128); //Dense with 10 output neuron
-  //nn.add_activation("sigmoid");
-  //nn.add_dense(64); //Dense with 10 output neuron
-  //nn.add_activation("sigmoid");
-  //nn.add_dense(10); //Dense with 10 output neuron
-  //nn.add_activation("softmax");
-  //nn
 }
 
 fn test(nn: &mut NeuralNetwork, input: &Array4<f32>, feedback: &Array2<f32>) {

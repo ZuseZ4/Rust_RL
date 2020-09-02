@@ -113,9 +113,7 @@ impl Layer for ConvolutionLayer {
     "Convolution Layer".to_string()
   }
   
-  fn forward(&mut self, input: ArrayD<f32>) -> ArrayD<f32> { // 2d input, 3d out currently
-    self.last_input = input.clone();
-   
+  fn predict(&mut self, input: ArrayD<f32>) -> ArrayD<f32> { // 2d input, 3d out currently
     let k = self.filter_shape.0;
     let n_dim = input.ndim();
     let (output_shape_x, output_shape_y) = (input.shape()[n_dim-2]-k+1, input.shape()[n_dim-1]-k+1);
@@ -134,6 +132,13 @@ impl Layer for ConvolutionLayer {
     // reshape product for next layer
     let res = self.fold_output(prod, (self.kernels.nrows(), output_shape_x, output_shape_y));
     res.into_dyn()
+  }
+
+
+
+  fn forward(&mut self, input: ArrayD<f32>) -> ArrayD<f32> { // 2d input, 3d out currently
+    self.last_input = input.clone();
+    self.predict(input) 
   }
 
 

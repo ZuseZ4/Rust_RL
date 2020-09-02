@@ -7,10 +7,12 @@ fn new() -> NeuralNetwork {
   let mut nn = NeuralNetwork::new2d((28, 28), "cce".to_string());
   nn.set_batch_size(32);
   nn.set_learning_rate(0.05);
-  nn.add_convolution((3,3), 32);
-  nn.add_activation("sigmoid");
-  //nn.add_convolution((3,5), 10);
   nn.add_flatten();
+  //nn.add_convolution((3,3), 32);
+  nn.add_dense(100); //Dense with 10 output neuron
+  nn.add_activation("sigmoid");
+  nn.add_dropout(0.);
+  //nn.add_convolution((3,5), 10);
   //nn.add_activation("leakyrelu");
   //nn.add_activation("relu");
   //nn.add_dense(100); //Dense with 10 output neuron
@@ -78,7 +80,6 @@ pub fn test_MNIST() {
     println!("{}",i);
     train(&mut nn, 60_000, &train_img, &train_lbl);//60_000
     test(&mut nn, &test_img, &test_lbl);
-    nn.print_setup();
   }
 
 

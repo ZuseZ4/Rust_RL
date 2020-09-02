@@ -16,6 +16,10 @@ impl Layer for ReLuLayer {
     "ReLu Layer".to_string()
   }
 
+  fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    self.forward(x)
+  }
+
   fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
     x.mapv_inplace(|x| if x>0. {x} else {0.});
     x

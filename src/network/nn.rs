@@ -171,6 +171,26 @@ impl NeuralNetwork {
     self.from_logits = false;
   }
 
+  pub fn add_dropout(&mut self, dropout_prob: f32) {
+    if dropout_prob < 0. || dropout_prob > 1. {
+      eprintln!("dropout probability has to be between 0. and 1.");
+      return
+    }
+    let dropout_layer = LayerType::new_dropout(dropout_prob);
+    match dropout_layer {
+      Err(error) => {
+        eprintln!("{}", error);
+        return;
+      }
+      Ok(dropout) => {
+        self.layers.push(dropout);
+        let output = self.input_dims.last().unwrap().clone();
+        self.input_dims.push(output);
+      }
+    }
+    self.from_logits = false;
+  }
+
   pub fn add_flatten(&mut self) {
     let input_dims = self.input_dims.last().unwrap();
     if input_dims.len()==1 {
@@ -223,7 +243,7 @@ impl NeuralNetwork {
 
   pub fn predict(&mut self, mut input: ArrayD<f32>) -> Array1<f32> {
     for i in 0..self.layers.len() {
-      input = self.layers[i].forward(input);
+      input = self.layers[i].predict(input);
     }
     input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
   }
@@ -231,7 +251,6 @@ impl NeuralNetwork {
   // fix test to work on something else than just 2D input
   pub fn test(&mut self, input: ArrayD<f32>, target: Array2<f32>) {
     let n = target.len_of(Axis(0));
-    //let img_dim = input.ndim() - 1;
     let mut loss: Array1<f32> = Array1::zeros(n);
     let mut correct: Array1<f32> = Array1::ones(n);
     let mut i = 0;

@@ -18,6 +18,10 @@ impl Layer for SigmoidLayer {
     "Sigmoid Layer".to_string()
   }
 
+  fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    self.forward(x)
+  }
+
   fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
     self.output = x.mapv(|x| 1.0 / (1.0 + (-x).exp()));
     self.output.clone()

@@ -21,6 +21,10 @@ impl Layer for FlattenLayer {
     "Flatten Layer".to_string()
   }
 
+  fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    self.forward(x)
+  }
+
   fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
     x.into_shape(self.num_elements).unwrap().into_dyn()
   }

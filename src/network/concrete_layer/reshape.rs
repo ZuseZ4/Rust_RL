@@ -20,9 +20,16 @@ impl Layer for ReshapeLayer {
     "Reshape Layer".to_string()
   }
 
+
+  fn predict(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
+    self.forward(x)
+  }
+
+
   fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
     x.into_shape(self.num_elements).unwrap().into_dyn()
   }
+
 
   fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32>{
     feedback.into_shape(self.input_shape).unwrap().into_dyn()
