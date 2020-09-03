@@ -1,10 +1,10 @@
 use crate::network::dq_learning::DQlearning;
 
 use crate::board::board_trait::BoardInfo;
-use crate::engine::engine_trait::Engine;
+use crate::agent::agent_trait::Agent;
 
 #[allow(dead_code)]
-pub struct DQLEngine {
+pub struct DQLAgent {
     dqlearning: DQlearning,
     rounds: u8,
     first_player: bool,
@@ -12,9 +12,9 @@ pub struct DQLEngine {
 
 // based on Q-learning using a HashMap as table
 // 
-impl DQLEngine {
+impl DQLAgent {
     pub fn new(rounds: u8, first_player: bool, exploration: f32) -> Self {
-        DQLEngine {
+        DQLAgent {
             dqlearning: DQlearning::new(exploration),
             rounds,
             first_player,
@@ -22,9 +22,9 @@ impl DQLEngine {
     }
 }
 
-impl Engine for DQLEngine {
+impl Agent for DQLAgent {
     fn get_id(&self) -> String {
-        "dqlearning engine".to_string()
+        "dqlearning agent".to_string()
     }
 
     fn reset_board(&mut self) {

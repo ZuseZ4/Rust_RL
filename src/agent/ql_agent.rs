@@ -1,10 +1,10 @@
 use crate::network::q_learning::Qlearning;
 
 use crate::board::board_trait::BoardInfo;
-use crate::engine::engine_trait::Engine;
+use crate::agent::agent_trait::Agent;
 
 #[allow(dead_code)]
-pub struct QLEngine {
+pub struct QLAgent {
     qlearning: Qlearning,
     rounds: u8,
     first_player: bool,
@@ -12,9 +12,9 @@ pub struct QLEngine {
 
 // based on Q-learning using a HashMap as table
 // 
-impl QLEngine {
+impl QLAgent {
     pub fn new(rounds: u8, first_player: bool, exploration: f32) -> Self {
-        QLEngine {
+        QLAgent {
             qlearning: Qlearning::new(exploration),
             rounds,
             first_player,
@@ -22,9 +22,9 @@ impl QLEngine {
     }
 }
 
-impl Engine for QLEngine {
+impl Agent for QLAgent {
     fn get_id(&self) -> String {
-        "qlearning engine".to_string()
+        "qlearning agent".to_string()
     }
 
     fn reset_board(&mut self) {

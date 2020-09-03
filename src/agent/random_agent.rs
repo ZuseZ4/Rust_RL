@@ -1,22 +1,22 @@
 use rand::Rng;
 
 use crate::board::board_trait::BoardInfo;
-use crate::engine::engine_trait::Engine;
+use crate::agent::agent_trait::Agent;
 
 #[allow(dead_code)]
-pub struct RandomEngine {
+pub struct RandomAgent {
     rounds: u8,
 }
 
-impl RandomEngine {
+impl RandomAgent {
     pub fn new(rounds: u8, _is_first_player: bool) -> Self {
-        RandomEngine {rounds: rounds,}
+        RandomAgent {rounds: rounds,}
     }
 }
 
-impl Engine for RandomEngine {
+impl Agent for RandomAgent {
     fn get_id(&self) -> String {
-        "random engine".to_string()
+        "random agent".to_string()
     }
 
     fn get_move(&mut self, board: &impl BoardInfo) -> usize {

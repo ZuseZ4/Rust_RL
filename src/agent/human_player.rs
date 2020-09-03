@@ -1,6 +1,6 @@
 use std::io;
 use crate::board::board_trait::BoardInfo;
-use crate::engine::engine_trait::Engine;
+use crate::agent::agent_trait::Agent;
 
 #[allow(dead_code)]
 pub struct HumanPlayer {
@@ -13,7 +13,7 @@ impl HumanPlayer {
     }
 }
 
-impl Engine for HumanPlayer {
+impl Agent for HumanPlayer {
     fn get_id(&self) -> String {
         "human player".to_string()
     }

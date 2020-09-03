@@ -1,4 +1,4 @@
-use crate::engine::engine_trait::Engine;
+use crate::agent::agent_trait::Agent;
 use crate::board::board_trait::BoardInfo;
 use crate::network::nn::NeuralNetwork;
 use ndarray::{Array,Array1};
@@ -6,7 +6,7 @@ use rand::Rng;
 
 //""" Trains an agent with Policy Gradients on Fortress. kind of based on OpenAI Gym. """
 
-pub struct GDEngine{
+pub struct GDAgent{
   _first_player: bool,
   _rounds: u8,
   games_played: usize,
@@ -15,7 +15,7 @@ pub struct GDEngine{
   move_stats: (usize,usize), //legal vs illegal
 }
 
-impl GDEngine {
+impl GDAgent {
     pub fn new(_rounds: u8, _first_player: bool) -> Self {
       let mut nn = NeuralNetwork::new1d(36,"bce".to_string());
       nn.add_dense(36); //Dense with 2 / 3 output neurons
@@ -23,7 +23,7 @@ impl GDEngine {
       nn.add_dense(36); //Dense with 1 output neuron
       nn.add_activation("sigmoid"); //Sigmoid
         
-        GDEngine {
+        GDAgent {
             _first_player,
             _rounds,
             games_played: 0,
@@ -60,9 +60,9 @@ fn expand_to_36(legal_moves: Vec<f32>) -> Array1<f32> {
   expanded_arr
 }
 
-impl Engine for GDEngine {
+impl Agent for GDAgent {
     fn get_id(&self) -> String {
-        "gd engine".to_string()
+        "gd agent".to_string()
     }
 
     fn get_move(&mut self, board: &impl BoardInfo) -> usize {

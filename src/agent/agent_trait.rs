@@ -1,5 +1,5 @@
 use crate::board::board_trait::BoardInfo;
-pub trait Engine {
+pub trait Agent {
     fn get_id(&self) -> String;
 
     fn get_move(&mut self, board: &impl BoardInfo) -> usize;
