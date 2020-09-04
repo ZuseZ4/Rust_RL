@@ -46,6 +46,7 @@ mod MLP {
 
     #[allow(non_snake_case)]
     #[test]
+    #[ignore]
     fn MNIST() {
       let (trn_size, rows, cols) = (60_000, 28, 28);
 
