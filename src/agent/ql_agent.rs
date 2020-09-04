@@ -27,10 +27,6 @@ impl Agent for QLAgent {
         "qlearning agent".to_string()
     }
 
-    fn reset_board(&mut self) {
-      self.qlearning.reset_board();
-    }
-
     fn finish_round(&mut self, mut result: i32) { // -1 for loss, 0 for draw, 1 for win
       if !self.first_player {
         result *= -1;

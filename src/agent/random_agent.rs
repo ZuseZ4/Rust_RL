@@ -27,8 +27,6 @@ impl Agent for RandomAgent {
 
     fn finish_round(&mut self, _single_res: i32) {}
 
-    fn reset_board(&mut self) {}
-
     fn get_exploration_rate(&self) -> f32 {
       42.
     }

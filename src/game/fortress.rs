@@ -98,9 +98,6 @@ impl Game {
                 self.agent1.finish_round(self.last_result);
                 self.agent2.finish_round(self.last_result);
             }
-
-            self.agent1.reset_board();
-            self.agent2.reset_board();
         }
         self.res
     }

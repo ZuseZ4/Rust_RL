@@ -4,14 +4,12 @@ use crate::agent::QLAgent;
 use crate::agent::DQLAgent;
 use crate::agent::RandomAgent;
 use crate::agent::HumanPlayer;
-use crate::agent::GDAgent;
 
 pub enum AgentType {
     R(RandomAgent),
     Q(QLAgent),
     D(DQLAgent),
     H(HumanPlayer),
-    G(GDAgent),
 }
 
 impl AgentType {
@@ -25,29 +23,18 @@ impl AgentType {
             2 => Ok(AgentType::Q(QLAgent::new(rounds_per_game, first_agent, 1.))),// start with always exploring
             3 => Ok(AgentType::D(DQLAgent::new(rounds_per_game, first_agent,1.))),
             4 => Ok(AgentType::H(HumanPlayer::new(rounds_per_game, first_agent))),
-            5 => Ok(AgentType::G(GDAgent::new(rounds_per_game, first_agent))),
             _ => Err(format!("Bad agent: {}", agent_number)),
         }
     }
 }
 
 impl Agent for AgentType {
-    fn reset_board(&mut self) {
-        match self {
-            AgentType::R(r_agent) => r_agent.reset_board(),
-            AgentType::Q(ql_agent) => ql_agent.reset_board(),
-            AgentType::D(dql_agent) => dql_agent.reset_board(),
-            AgentType::H(human_player) => human_player.reset_board(),
-            AgentType::G(gd_agent) => gd_agent.reset_board(),
-        }
-    }
     fn get_id(&self) -> String {
         match self {
             AgentType::R(r_agent) => r_agent.get_id(),
             AgentType::Q(ql_agent) => ql_agent.get_id(),
             AgentType::D(dql_agent) => dql_agent.get_id(),
             AgentType::H(human_player) => human_player.get_id(),
-            AgentType::G(gd_agent) => gd_agent.get_id(),
         }
     }
     fn get_move(&mut self, board: &impl BoardInfo) -> usize {
@@ -56,7 +43,6 @@ impl Agent for AgentType {
             AgentType::Q(ql_agent) => ql_agent.get_move(board),
             AgentType::D(dql_agent) => dql_agent.get_move(board),
             AgentType::H(human_player) => human_player.get_move(board),
-            AgentType::G(gd_agent) => gd_agent.get_move(board),
         }
     }
     fn finish_round(&mut self, result: i32) {
@@ -65,7 +51,6 @@ impl Agent for AgentType {
             AgentType::Q(ql_agent) => ql_agent.finish_round(result),
             AgentType::D(dql_agent) => dql_agent.finish_round(result),
             AgentType::H(human_player) => human_player.finish_round(result),
-            AgentType::G(gd_agent) => gd_agent.finish_round(result),
         }
     }
     fn get_exploration_rate(&self) -> f32 {

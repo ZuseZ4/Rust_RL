@@ -27,10 +27,6 @@ impl Agent for DQLAgent {
         "dqlearning agent".to_string()
     }
 
-    fn reset_board(&mut self) {
-      self.dqlearning.reset_board();
-    }
-
     fn finish_round(&mut self, mut result: i32) { // -1 for loss, 0 for draw, 1 for win
       if !self.first_player {
         result *= -1;
