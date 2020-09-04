@@ -65,6 +65,18 @@ impl Layer for LayerType {
             LayerType::R(relu_layer) => relu_layer.get_type(),
         }
     }
+    fn get_output_shape(&self, input_shape: Vec<usize>) -> Vec<usize> {
+        match self {
+            LayerType::D(dense_layer) => dense_layer.get_output_shape(input_shape),
+            LayerType::DR(dropout_layer) => dropout_layer.get_output_shape(input_shape),
+            LayerType::C(conv_layer) => conv_layer.get_output_shape(input_shape),
+            LayerType::SO(softmax_layer) => softmax_layer.get_output_shape(input_shape),
+            LayerType::SI(sigmoid_layer) => sigmoid_layer.get_output_shape(input_shape),
+            LayerType::F(flatten_layer) => flatten_layer.get_output_shape(input_shape), 
+            LayerType::L(leaky_relu_layer) => leaky_relu_layer.get_output_shape(input_shape),
+            LayerType::R(relu_layer) => relu_layer.get_output_shape(input_shape),
+        }
+    }
     fn predict(&mut self, input: ArrayD<f32>) -> ArrayD<f32> {
         match self {
             LayerType::D(dense_layer) => dense_layer.predict(input),

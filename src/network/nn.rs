@@ -99,18 +99,23 @@ impl NeuralNetwork {
     self.h_p.learning_rate(learning_rate);
   }
 
-  pub fn add_activation(&mut self, layer_kind: &str) {
-    let new_activation = LayerType::new_activation(layer_kind.to_string());
-    match new_activation {
+  fn store_layer(&mut self, layer: Result<LayerType, String>) {
+    match layer {
       Err(error) => {
         eprintln!("{}",error); 
         return;
       }
-      Ok(activation) => {
-        self.layers.push(activation);
-        self.input_dims.push(self.input_dims.last().unwrap().clone()); // activation layers don't change dimensions
+      Ok(layer) => {
+        let input_shape = self.input_dims.last().unwrap().clone();
+        self.input_dims.push(layer.get_output_shape(input_shape));
+        self.layers.push(layer);
       }
     }
+  }
+
+  pub fn add_activation(&mut self, layer_kind: &str) {
+    let new_activation = LayerType::new_activation(layer_kind.to_string());
+    self.store_layer(new_activation);
     match (self.error.as_str(), layer_kind) {
       ("bce", "sigmoid") => self.from_logits = true,
       ("cce", "softmax") => self.from_logits = true,
@@ -128,22 +133,7 @@ impl NeuralNetwork {
       filter_depth = input_dim[0];
     }
     let conv_layer = LayerType::new_convolution(filter_shape, filter_depth, filter_number, self.h_p.batch_size, self.h_p.learning_rate);
-    match conv_layer {
-      Err(err) => {
-        eprintln!("{}",err);
-        return;
-      }
-      Ok(conv) => {
-        self.layers.push(conv);
-        let input = self.input_dims.last().unwrap().clone();
-        let (mut dim_n, mut dim_m) = (0,1); // expect 2d input 
-        if input.len() == 3 { // last two dimensions are relevant, so adjust for 3d input
-          dim_n += 1;
-          dim_m += 1;
-        }
-        self.input_dims.push(vec![filter_number, input[dim_n]-filter_shape.0+1, input[dim_m]-filter_shape.1+1]);
-      }
-    }
+    self.store_layer(conv_layer);
     self.from_logits = false;
   }
 
@@ -158,16 +148,7 @@ impl NeuralNetwork {
       return;
     }
     let dense_layer = LayerType::new_connection(input_dims[0], output_dim, self.h_p.batch_size, self.h_p.learning_rate);
-    match dense_layer {
-      Err(err) => {
-        eprintln!("{}",err);
-        return;
-      }
-      Ok(dense) => {
-        self.layers.push(dense);
-        self.input_dims.push(vec![output_dim]);
-      }
-    }
+    self.store_layer(dense_layer);
     self.from_logits = false;
   }
 
@@ -177,17 +158,7 @@ impl NeuralNetwork {
       return
     }
     let dropout_layer = LayerType::new_dropout(dropout_prob);
-    match dropout_layer {
-      Err(error) => {
-        eprintln!("{}", error);
-        return;
-      }
-      Ok(dropout) => {
-        self.layers.push(dropout);
-        let output = self.input_dims.last().unwrap().clone();
-        self.input_dims.push(output);
-      }
-    }
+    self.store_layer(dropout_layer);
     self.from_logits = false;
   }
 
@@ -198,17 +169,7 @@ impl NeuralNetwork {
       return;
     }
     let flatten_layer = LayerType::new_flatten(input_dims.to_vec());
-    match flatten_layer {
-      Err(error) => {
-        eprintln!("{}",error);
-        return;
-      }
-      Ok(flatten) => {
-        self.layers.push(flatten);
-        let elements = input_dims.iter().fold(1, |prod, val| prod * val);
-        self.input_dims.push(vec![elements]); 
-      }
-    }
+    self.store_layer(flatten_layer);
     self.from_logits = false;
   }
 
@@ -248,7 +209,6 @@ impl NeuralNetwork {
     input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
   }
 
-  // fix test to work on something else than just 2D input
   pub fn test(&mut self, input: ArrayD<f32>, target: Array2<f32>) {
     let n = target.len_of(Axis(0));
     let mut loss: Array1<f32> = Array1::zeros(n);

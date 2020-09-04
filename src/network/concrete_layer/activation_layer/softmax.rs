@@ -20,6 +20,11 @@ impl Layer for SoftmaxLayer {
   fn get_type(&self) -> String {
     "Softmax Layer".to_string()
   }
+  
+  fn get_output_shape(&self, input_dim: Vec<usize>) -> Vec<usize> {
+    input_dim
+  }
+
 
   fn predict(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
     // ignore nans on sum and max

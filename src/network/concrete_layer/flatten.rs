@@ -20,6 +20,10 @@ impl Layer for FlattenLayer {
   fn get_type(&self) -> String {
     "Flatten Layer".to_string()
   }
+  
+  fn get_output_shape(&self, input_dim: Vec<usize>) -> Vec<usize> {
+    vec![input_dim.iter().product()]
+  }
 
   fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
     self.forward(x)

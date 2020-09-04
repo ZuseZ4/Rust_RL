@@ -17,6 +17,11 @@ impl Layer for SigmoidLayer {
   fn get_type(&self) -> String {
     "Sigmoid Layer".to_string()
   }
+  
+  fn get_output_shape(&self, input_dim: Vec<usize>) -> Vec<usize> {
+    input_dim
+  }
+
 
   fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
     self.forward(x)

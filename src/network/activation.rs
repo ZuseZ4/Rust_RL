@@ -38,6 +38,17 @@ impl LayerType {
 }
 
 impl Layer for LayerType {
+     
+    fn get_output_shape(&self, input_dim: Vec<usize>) -> Vec<usize> {
+        match self {
+            LayerType::D(dense_layer) => dense_layer.get_output_shape(input_dim),
+            LayerType::SO(softmax_layer) => softmax_layer.get_output_shape(input_dim),
+            LayerType::SI(sigmoid_layer) => sigmoid_layer.get_output_shape(input_dim),
+            LayerType::F(flatten_layer) => flatten_layer.get_output_shape(input_dim), 
+            LayerType::L(leaky_relu_layer) => leaky_relu_layer.get_output_shape(input_dim),
+            LayerType::R(relu_layer) => relu_layer.get_output_shape(input_dim),
+        }
+    }
     fn get_type(&self) -> String {
         match self {
             LayerType::D(dense_layer) => dense_layer.get_type(),

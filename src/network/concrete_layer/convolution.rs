@@ -108,18 +108,25 @@ impl ConvolutionLayer {
 impl Layer for ConvolutionLayer {
   
   fn get_type(&self) -> String {
+    let output = format!("Convolution Layer with {} {}x{} Kernels.", self.kernels.nrows(), self.filter_shape.0, self.filter_shape.1);
     //self.print_kernel();
-    println!("{} kernels",self.kernels.nrows());
-    "Convolution Layer".to_string()
+    output
+  }
+
+  fn get_output_shape(&self, input_shape: Vec<usize>) -> Vec<usize> {
+    let mut res = vec![self.kernels.nrows(),0,0];
+    let num_dim = input_shape.len();
+    res[1] = input_shape[num_dim-2] - self.filter_shape.0 + 1;
+    res[2] = input_shape[num_dim-1] - self.filter_shape.1 + 1;
+    res
   }
   
   fn predict(&mut self, input: ArrayD<f32>) -> ArrayD<f32> { // 2d input, 3d out currently
-    let k = self.filter_shape.0;
-    let n_dim = input.ndim();
-    let (output_shape_x, output_shape_y) = (input.shape()[n_dim-2]-k+1, input.shape()[n_dim-1]-k+1);
+    let tmp = self.get_output_shape(input.shape().to_vec());
+    let (output_shape_x, output_shape_y) = (tmp[1], tmp[2]);
 
     // prepare input matrix
-    let x_unfolded = self.unfold_matrix(input,k,true);
+    let x_unfolded = self.unfold_matrix(input,self.filter_shape.0,true);
 
     // calculate convolution (=output for next layer)
     let n = self.kernels.nrows();
