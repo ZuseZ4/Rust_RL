@@ -3,6 +3,7 @@ use crate::network::layer::LayerType;
 use crate::network::layer_trait::Layer;
 use crate::network::error::ErrorType;
 use crate::network::error_trait::Error;
+use ndarray::parallel::prelude::*;
 
 pub struct HyperParameter {
   batch_size: usize,
@@ -226,8 +227,10 @@ impl NeuralNetwork {
       }
       i += 1;
     }
-    let avg_loss = loss.iter().sum::<f32>()/(n as f32);
-    let acc  = correct.iter().sum::<f32>()/(n as f32);
+    //let avg_loss = loss.iter().sum::<f32>()/(n as f32);
+    //let acc  = correct.iter().sum::<f32>()/(n as f32);
+    let avg_loss = loss.par_iter().sum::<f32>()/(n as f32);
+    let acc  = correct.par_iter().sum::<f32>()/(n as f32);
     println!("avg loss: {}, percentage correct: {}", avg_loss, acc);
   }
 
