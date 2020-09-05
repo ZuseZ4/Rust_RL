@@ -1,48 +1,45 @@
 use crate::network::error_trait::Error;
-use crate::network::layer_trait::Layer;
 use crate::network::layer::LayerType;
+use crate::network::layer_trait::Layer;
 use ndarray::ArrayD;
 
 pub struct BinaryCrossEntropyError {
-  activation_function: LayerType,
+    activation_function: LayerType,
 }
 
 impl BinaryCrossEntropyError {
-  pub fn new() -> Self {
-    BinaryCrossEntropyError{
-      activation_function: LayerType::new_activation("sigmoid".to_string()).unwrap(),
+    pub fn new() -> Self {
+        BinaryCrossEntropyError {
+            activation_function: LayerType::new_activation("sigmoid".to_string()).unwrap(),
+        }
     }
-  }
 }
 
-
-
 impl Error for BinaryCrossEntropyError {
+    fn get_type(&self) -> String {
+        "Binary Crossentropy Error".to_string()
+    }
 
-  fn get_type(&self) -> String {
-    "Binary Crossentropy Error".to_string()
-  }
+    // loss after activation function (which probably was sigmoid)
+    fn forward(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        -target.clone() * input.mapv(|x| x.ln()) - (1. - target) * input.mapv(|x| (1. - x).ln())
+    }
 
-  // loss after activation function (which probably was sigmoid)
-  fn forward(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-    -target.clone()*input.mapv(|x| x.ln()) - (1. - target)*input.mapv(|x| (1.-x).ln())
-  }
+    // deriv after activation function (which probably was sigmoid)
+    fn backward(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        -&target / &input + (1.0 - target) / (1.0 - input)
+    }
 
-  // deriv after activation function (which probably was sigmoid)
-  fn backward(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32>{
-    -&target / &input + (1.0-target) / (1.0-input)
-  }
+    // takes input from last dense/conv/.. layer directly, without activation function in between
+    //Loss(y,z) = max(z,0) - yz + log(1+ e^(-|z|)), y is label
+    fn loss_from_logits(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        input.mapv(|x| f32::max(0., x)) + input.mapv(|x| 1. + (-f32::abs(x)).exp()) - input * target
+    }
 
-  // takes input from last dense/conv/.. layer directly, without activation function in between
-  //Loss(y,z) = max(z,0) - yz + log(1+ e^(-|z|)), y is label
-  fn loss_from_logits(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-    input.mapv(|x| f32::max(0.,x)) + input.mapv(|x| 1.+(-f32::abs(x)).exp()) - input*target
-  }
-
-  // takes input from last dense/conv/.. layer directly, without activation function in between
-  fn deriv_from_logits(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-    self.activation_function.forward(input) - target
-  }
+    // takes input from last dense/conv/.. layer directly, without activation function in between
+    fn deriv_from_logits(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        self.activation_function.forward(input) - target
+    }
 }
 
 //https://gombru.github.io/2018/05/23/cross_entropy_loss/

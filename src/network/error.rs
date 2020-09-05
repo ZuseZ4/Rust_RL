@@ -1,8 +1,8 @@
 use crate::network::concrete_error;
 
-use concrete_error::noop::NoopError;
-use concrete_error::cce::CategoricalCrossEntropyError;
 use concrete_error::bce::BinaryCrossEntropyError;
+use concrete_error::cce::CategoricalCrossEntropyError;
+use concrete_error::noop::NoopError;
 
 use crate::network::error_trait::Error;
 use ndarray::ArrayD;
@@ -14,13 +14,11 @@ pub enum ErrorType {
 }
 
 impl ErrorType {
-
     pub fn new_noop() -> ErrorType {
-      ErrorType::N(NoopError::new())
+        ErrorType::N(NoopError::new())
     }
 
-   
-    pub fn new_error(error_type: String) -> Result<ErrorType, String>{
+    pub fn new_error(error_type: String) -> Result<ErrorType, String> {
         match error_type.as_str() {
             "bce" => Ok(ErrorType::BCE(BinaryCrossEntropyError::new())),
             "cce" => Ok(ErrorType::CCE(CategoricalCrossEntropyError::new())),

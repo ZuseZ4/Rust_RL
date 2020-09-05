@@ -1,8 +1,8 @@
-use std::collections::HashSet;
 use crate::board::board_trait::BoardInfo;
 use fnv::FnvHashSet;
 #[allow(unused_imports)]
 use ndarray::{Array, Array1, Array2, Array3, ArrayD, Axis, Ix1};
+use std::collections::HashSet;
 
 pub struct Board {
     field: [i8; 36],
@@ -17,42 +17,40 @@ pub struct Board {
 }
 
 impl BoardInfo for Board {
+    // return values:
+    // 6x6 field with current board
+    // 6x6 field with 1's for possible moves, 0's for impossible moves
+    fn step2(&self) -> (Array2<f32>, Array1<f32>, f32) {
+        // storing current position into ndarray
+        let position = Array2::from_shape_vec((6, 6), self.field.to_vec()).unwrap();
+        let position = position.mapv(|x| x as f32);
 
-  // return values:
-  // 6x6 field with current board
-  // 6x6 field with 1's for possible moves, 0's for impossible moves
-  fn step2(&self) -> (Array2<f32>, Array1<f32>, f32) {
-    
-    // storing current position into ndarray
-    let position = Array2::from_shape_vec((6,6), self.field.to_vec()).unwrap();
-    let position = position.mapv(|x| x as f32);
+        // collecting allowed moves
+        let mut moves = Array::zeros(36); // start as a ndarray of length 36
+        let possible_actions = self.get_possible_moves();
+        for action in possible_actions {
+            moves[action] = 1.;
+        }
+        //let moves = moves.into_shape((6,6)).unwrap(); // transform into 6x6
+        let moves: Array1<f32> = moves.mapv(|x| x as f32); // transform from usize to f32
 
-    // collecting allowed moves
-    let mut moves = Array::zeros(36); // start as a ndarray of length 36
-    let possible_actions = self.get_possible_moves();
-    for action in possible_actions {
-      moves[action] = 1.;
+        // get rewards
+        let reward = self.get_reward();
+
+        (position, moves, reward as f32)
     }
-    //let moves = moves.into_shape((6,6)).unwrap(); // transform into 6x6
-    let moves: Array1<f32> = moves.mapv(|x| x as f32); // transform from usize to f32
 
-    // get rewards
-    let reward = self.get_reward();
+    fn step(&self) -> (String, Vec<usize>, f32) {
+        let current_pos = self
+            .field
+            .iter()
+            .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
+        let possible_actions = self.get_possible_moves();
+        let reward = self.get_reward();
+        (current_pos, possible_actions, reward as f32)
+    }
 
-    (position, moves, reward as f32)
-  }
-
-  fn step(&self) -> (String, Vec<usize>, f32) {
-    let current_pos = self
-        .field
-        .iter()
-        .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
-    let possible_actions = self.get_possible_moves();
-    let reward = self.get_reward();
-    (current_pos, possible_actions, reward as f32)
-  }
-
-  fn print_board(&self) {
+    fn print_board(&self) {
         let mut fst;
         let mut snd;
         let mut val;
@@ -71,38 +69,40 @@ impl BoardInfo for Board {
         println!();
     }
 
-  fn get_board_position(&self) -> [i8;36] {
-    self.field
-  }
-  
-  fn get_possible_moves(&self) -> Vec<usize> {
-      if self.first_player_turn { self.first_player_moves.iter().copied().collect() } 
-      else {self.second_player_moves.iter().copied().collect()}
-  }
+    fn get_board_position(&self) -> [i8; 36] {
+        self.field
+    }
 
-  fn get_possible_positions(&self) -> (Vec<String>, Vec<usize>) {
-      let moves = self.get_possible_moves();
-      let res = self
-          .field
-          .iter()
-          .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
+    fn get_possible_moves(&self) -> Vec<usize> {
+        if self.first_player_turn {
+            self.first_player_moves.iter().copied().collect()
+        } else {
+            self.second_player_moves.iter().copied().collect()
+        }
+    }
 
-      // prepare one entry for every new game position we can reach by one single, legal move
-      let mut result_vector = vec![res; moves.len()];
-      let player_val = if self.first_player_turn { 1 } else { -1 };
+    fn get_possible_positions(&self) -> (Vec<String>, Vec<usize>) {
+        let moves = self.get_possible_moves();
+        let res = self
+            .field
+            .iter()
+            .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
 
-      for move_num in 0..moves.len() {
-          //update the corresponding result position to the corresponding move
-          let pos = moves[move_num];
-          result_vector[move_num].replace_range(
-              pos..(pos + 1),
-              &(self.field[pos] + 3 + player_val).to_string(),
-          );
-      }
-      (result_vector, moves)
+        // prepare one entry for every new game position we can reach by one single, legal move
+        let mut result_vector = vec![res; moves.len()];
+        let player_val = if self.first_player_turn { 1 } else { -1 };
+
+        for move_num in 0..moves.len() {
+            //update the corresponding result position to the corresponding move
+            let pos = moves[move_num];
+            result_vector[move_num].replace_range(
+                pos..(pos + 1),
+                &(self.field[pos] + 3 + player_val).to_string(),
+            );
+        }
+        (result_vector, moves)
     }
 }
-
 
 impl Board {
     pub fn get_board(rounds: u8) -> Board {
@@ -147,8 +147,8 @@ impl Board {
         let mut first_player_hashset = FnvHashSet::default();
         let mut second_player_hashset = FnvHashSet::default();
         for i in 0..36 {
-          first_player_hashset.insert(i);
-          second_player_hashset.insert(i);
+            first_player_hashset.insert(i);
+            second_player_hashset.insert(i);
         }
         Board {
             field: [0; 36],
@@ -175,20 +175,19 @@ impl Board {
         }
     }
 
-
     fn store_update(&mut self, pos: &usize, player_val: &i8) {
         self.field[*pos] += *player_val;
         self.flags[*pos] += *player_val;
         if self.field[*pos].abs() == 3 {
-          // buildings on lv. 3 can't be upgraded
-          self.second_player_moves.remove(pos);
-          self.first_player_moves.remove(pos);
-          return;
+            // buildings on lv. 3 can't be upgraded
+            self.second_player_moves.remove(pos);
+            self.first_player_moves.remove(pos);
+            return;
         }
         if *player_val == 1 {
-          self.second_player_moves.remove(pos);
+            self.second_player_moves.remove(pos);
         } else {
-          self.first_player_moves.remove(pos);
+            self.first_player_moves.remove(pos);
         }
     }
 
@@ -196,8 +195,8 @@ impl Board {
         let player_val = if self.first_player_turn { 1 } else { -1 };
 
         // check that field is not controlled by enemy, no enemy building on field, no own building on max lv (3) already exists
-        if (self.first_player_turn && self.first_player_moves.contains(&pos)) ||
-          (!self.first_player_turn && self.second_player_moves.contains(&pos)) 
+        if (self.first_player_turn && self.first_player_moves.contains(&pos))
+            || (!self.first_player_turn && self.second_player_moves.contains(&pos))
         {
             self.store_update(&pos, &player_val);
             self.update_neighbours(pos, player_val);
@@ -211,20 +210,18 @@ impl Board {
     }
 
     fn get_reward(&self) -> i32 {
-      let controlled_fields = self.eval();
-      let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
-      if !self.first_player_turn {
-        reward *= -1;
-      }
-      reward
+        let controlled_fields = self.eval();
+        let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
+        if !self.first_player_turn {
+            reward *= -1;
+        }
+        reward
     }
-
 
     pub fn eval(&self) -> (u8, u8) {
         let mut fields_one = 0;
         let mut fields_two = 0;
         for (&building_lv, &flags) in self.field.iter().zip(self.flags.iter()) {
-
             if building_lv > 0 || (building_lv == 0 && flags > 0) {
                 fields_one += 1;
             } else if building_lv == 0 && flags == 0 {
@@ -233,11 +230,10 @@ impl Board {
                 fields_two += 1;
             }
         }
-        (fields_one, fields_two)   
+        (fields_one, fields_two)
     }
-    
+
     pub fn get_total_rounds(&self) -> usize {
         self.total_rounds
     }
-
 }

@@ -1,5 +1,5 @@
 [package]
-name = "hello_rust"
+name = "rust-rl"
 version = "0.1.0"
 authors = ["zuse"]
 edition = "2018"
@@ -13,8 +13,11 @@ debug = true
 rand = "0.5.5"
 fnv = "1.0.7"
 ndarray-rand = "0.11.0"
-mnist = "0.4.0"
 cifar-10 = {git = "https://github.com/quietlychris/cifar-10", branch="master"}
+
+[dependencies.mnist]
+version = "0.4.1"
+features = ["download"]
 
 [dependencies.ndarray]
 version = "0.13.1"

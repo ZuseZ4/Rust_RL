@@ -1,9 +1,9 @@
-use crate::board::board_trait::BoardInfo;
 use crate::agent::agent_trait::Agent;
-use crate::agent::QLAgent;
 use crate::agent::DQLAgent;
-use crate::agent::RandomAgent;
 use crate::agent::HumanPlayer;
+use crate::agent::QLAgent;
+use crate::agent::RandomAgent;
+use crate::board::board_trait::BoardInfo;
 
 pub enum AgentType {
     R(RandomAgent),
@@ -20,8 +20,12 @@ impl AgentType {
     ) -> Result<AgentType, String> {
         match agent_number {
             1 => Ok(AgentType::R(RandomAgent::new(rounds_per_game, first_agent))),
-            2 => Ok(AgentType::Q(QLAgent::new(rounds_per_game, first_agent, 1.))),// start with always exploring
-            3 => Ok(AgentType::D(DQLAgent::new(rounds_per_game, first_agent,1.))),
+            2 => Ok(AgentType::Q(QLAgent::new(rounds_per_game, first_agent, 1.))), // start with always exploring
+            3 => Ok(AgentType::D(DQLAgent::new(
+                rounds_per_game,
+                first_agent,
+                1.,
+            ))),
             4 => Ok(AgentType::H(HumanPlayer::new(rounds_per_game, first_agent))),
             _ => Err(format!("Bad agent: {}", agent_number)),
         }
@@ -54,17 +58,29 @@ impl Agent for AgentType {
         }
     }
     fn get_exploration_rate(&self) -> f32 {
-      match self {
-            AgentType::Q(ql_agent) => {return ql_agent.get_exploration_rate();},
-            AgentType::D(dql_agent) => {return dql_agent.get_exploration_rate();},
-            _ => {return 42.;},
-      }
+        match self {
+            AgentType::Q(ql_agent) => {
+                return ql_agent.get_exploration_rate();
+            }
+            AgentType::D(dql_agent) => {
+                return dql_agent.get_exploration_rate();
+            }
+            _ => {
+                return 42.;
+            }
+        }
     }
-    fn set_exploration_rate(&mut self, e: f32) -> Result<(),String> {
-      match self {
-            AgentType::Q(ql_agent) => {return ql_agent.set_exploration_rate(e);},
-            AgentType::D(dql_agent) => {return dql_agent.set_exploration_rate(e);},
-            _ => {return Ok(());},
-      }
+    fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {
+        match self {
+            AgentType::Q(ql_agent) => {
+                return ql_agent.set_exploration_rate(e);
+            }
+            AgentType::D(dql_agent) => {
+                return dql_agent.set_exploration_rate(e);
+            }
+            _ => {
+                return Ok(());
+            }
+        }
     }
 }

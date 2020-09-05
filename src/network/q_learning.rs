@@ -1,25 +1,25 @@
+use crate::board::board_trait::BoardInfo;
 use rand::Rng;
 use rand::ThreadRng;
 use std::collections::HashMap;
-use crate::board::board_trait::BoardInfo;
 
 #[allow(dead_code)]
 pub struct Qlearning {
     exploration: f32,
     learning_rate: f32,
     discount_factor: f32,
-    scores: HashMap<(String,usize), f32>, // (State,Action), reward
+    scores: HashMap<(String, usize), f32>, // (State,Action), reward
     last_state: String,
     last_action: usize, //TODO change action to String for generalization
     rng: ThreadRng,
 }
 
 // based on Q-learning using a HashMap as table
-// 
+//
 impl Qlearning {
     pub fn new(exploration: f32) -> Self {
-      let learning_rate = 0.1f32;
-      let discount_factor = 0.95f32;
+        let learning_rate = 0.1f32;
+        let discount_factor = 0.95f32;
         Qlearning {
             exploration,
             learning_rate,
@@ -32,32 +32,31 @@ impl Qlearning {
     }
 
     pub fn get_exploration_rate(&self) -> f32 {
-      self.exploration
+        self.exploration
     }
 
-    pub fn set_exploration_rate(&mut self, e: f32) -> Result<(),String>{
-      if e < 0. || e > 1. {
-        return Err("exploration rate must be in [0,1]!".to_string());
-      }
-      self.exploration = e;
-      Ok(())
+    pub fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {
+        if e < 0. || e > 1. {
+            return Err("exploration rate must be in [0,1]!".to_string());
+        }
+        self.exploration = e;
+        Ok(())
     }
 }
 
-
 impl Qlearning {
-
-    pub fn reset_board(&mut self) {
-    }
+    pub fn reset_board(&mut self) {}
 
     // update "table" based on last action and their result
-    pub fn finish_round(&mut self, result: i32) { // -1 for loss, 0 for draw, 1 for win
-      self.update_Map(50.*(result as f32), 0.); // 50*res, since the final result is what matters most
+    pub fn finish_round(&mut self, result: i32) {
+        // -1 for loss, 0 for draw, 1 for win
+        self.update_Map(50. * (result as f32), 0.); // 50*res, since the final result is what matters most
     }
-    
-    pub fn get_move(&mut self, board: &impl BoardInfo) -> usize { //get reward for previous move
 
-        let (board_string, actions, reward) = board.step(); 
+    pub fn get_move(&mut self, board: &impl BoardInfo) -> usize {
+        //get reward for previous move
+
+        let (board_string, actions, reward) = board.step();
 
         let (best_move, max_future_q) = self.get_best_move(actions.clone());
 
@@ -68,12 +67,11 @@ impl Qlearning {
         self.last_state = board_string;
 
         if self.exploration > rand::thread_rng().gen() {
-          self.last_action = self.get_random_move(actions);
+            self.last_action = self.get_random_move(actions);
         }
 
         self.last_action
     }
-
 
     fn get_random_move(&mut self, actions: Vec<usize>) -> usize {
         let position = self.rng.gen_range(0, actions.len()) as usize;
@@ -81,26 +79,30 @@ impl Qlearning {
     }
 
     fn get_best_move(&mut self, actions: Vec<usize>) -> (usize, f32) {
-
         //42 is illegal board position, would result in error
         let mut best_pair: (usize, f32) = (42, f32::MIN);
 
         //println!("#possible actions: {}", actions.len());
         for &move_candidate in actions.iter() {
-            let score = self.scores.entry((self.last_state.clone(), move_candidate)).or_insert(self.rng.gen_range(-0.5,0.5));
+            let score = self
+                .scores
+                .entry((self.last_state.clone(), move_candidate))
+                .or_insert(self.rng.gen_range(-0.5, 0.5));
             if *score > best_pair.1 {
-              best_pair = (move_candidate, *score);
+                best_pair = (move_candidate, *score);
             }
         }
         //println!("{:?}", best_pair);
         best_pair
     }
- 
+
     #[allow(non_snake_case)]
     fn update_Map(&mut self, reward: f32, max_future_q: f32) {
-        let score = self.scores.entry((self.last_state.clone(), self.last_action.clone()))
-          .or_insert(self.rng.gen_range(-0.5,0.5));
-        *score = (1.-self.learning_rate) * (*score) + self.learning_rate * (reward+self.discount_factor*max_future_q);
+        let score = self
+            .scores
+            .entry((self.last_state.clone(), self.last_action.clone()))
+            .or_insert(self.rng.gen_range(-0.5, 0.5));
+        *score = (1. - self.learning_rate) * (*score)
+            + self.learning_rate * (reward + self.discount_factor * max_future_q);
     }
-
 }
