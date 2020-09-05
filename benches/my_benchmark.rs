@@ -1,6 +1,6 @@
-use hello_rust::game::fortress::Game;
 #[allow(unused_imports)]
 use hello_rust::engine::{ai_engine, random_engine};
+use hello_rust::game::fortress::Game;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
@@ -20,20 +20,26 @@ pub fn criterion_benchmark_train(c: &mut Criterion) {
     c.bench_function("train only", |b| b.iter(|| main_train()));
 }
 
-criterion_group!(benches, criterion_benchmark_rand, criterion_benchmark_ai_rand, criterion_benchmark_ai, criterion_benchmark_train);
+criterion_group!(
+    benches,
+    criterion_benchmark_rand,
+    criterion_benchmark_ai_rand,
+    criterion_benchmark_ai,
+    criterion_benchmark_train
+);
 criterion_main!(benches);
 
-pub fn main_rand() -> Result<(),String> {
+pub fn main_rand() -> Result<(), String> {
     let rounds: u8 = 25;
     let engines: u8 = 11;
-    let bench_games: u64 = 100; 
-    
+    let bench_games: u64 = 100;
+
     let mut game = Game::new(rounds, engines)?;
     game.bench(bench_games);
     Ok(())
 }
 
-pub fn main_ai_rand() -> Result<(),String> {
+pub fn main_ai_rand() -> Result<(), String> {
     let rounds: u8 = 25;
     let engines: u8 = 21;
     let train_games: u64 = 50;
@@ -45,7 +51,7 @@ pub fn main_ai_rand() -> Result<(),String> {
     Ok(())
 }
 
-pub fn main_ai() -> Result<(),String> {
+pub fn main_ai() -> Result<(), String> {
     let rounds: u8 = 25;
     let engines: u8 = 22;
     let train_games: u64 = 50;
@@ -57,7 +63,7 @@ pub fn main_ai() -> Result<(),String> {
     Ok(())
 }
 
-pub fn main_train() -> Result<(),String> {
+pub fn main_train() -> Result<(), String> {
     let rounds: u8 = 25;
     let engines: u8 = 22;
     let train_games: u64 = 50;
