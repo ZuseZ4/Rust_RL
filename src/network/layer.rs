@@ -41,6 +41,7 @@ impl LayerType {
         filter_shape: (usize, usize),
         filter_depth: usize,
         filter_number: usize,
+        padding: usize,
         batch_size: usize,
         learning_rate: f32,
     ) -> Result<Self, String> {
@@ -48,6 +49,7 @@ impl LayerType {
             filter_shape,
             filter_depth,
             filter_number,
+            padding,
             batch_size,
             learning_rate,
         )))

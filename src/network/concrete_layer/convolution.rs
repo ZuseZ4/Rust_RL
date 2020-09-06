@@ -1,5 +1,5 @@
 use crate::network::layer_trait::Layer;
-use ndarray::{Array, Array1, Array2, Array3, ArrayD, Axis, Ix2, Ix3};
+use ndarray::{s, Array, Array1, Array2, Array3, ArrayD, Axis, Ix2, Ix3};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be cleaner & faster
 use ndarray_rand::RandomExt;
 
@@ -8,6 +8,7 @@ pub struct ConvolutionLayer {
     kernels: Array2<f32>,
     filter_shape: (usize, usize),
     filter_depth: usize,
+    padding: usize,
     //bias: Array1<f32>,
     last_input: ArrayD<f32>,
     kernel_updates: Array2<f32>,
@@ -37,6 +38,7 @@ impl ConvolutionLayer {
         filter_shape: (usize, usize),
         filter_depth: usize,
         filter_number: usize,
+        padding: usize,
         batch_size: usize,
         learning_rate: f32,
     ) -> Self {
@@ -59,6 +61,7 @@ impl ConvolutionLayer {
             learning_rate,
             kernels,
             filter_depth,
+            padding,
             last_input: Array::zeros(0).into_dyn(),
             kernel_updates: Array::zeros((filter_number, kernel_elements)),
             batch_size,
@@ -112,6 +115,26 @@ impl ConvolutionLayer {
         }
         xx
     }
+  
+    fn add_padding(&self, input: ArrayD<f32>) -> ArrayD<f32> {
+        let shape = input.shape().clone();
+        let n = input.ndim();
+        let x = shape[n-2] + 2*self.padding;
+        let y = shape[n-1] + 2*self.padding;
+        let start: isize = self.padding as isize;
+        let x_stop: isize = self.padding as isize + shape[n-2] as isize;
+        let y_stop: isize = self.padding as isize + shape[n-1] as isize;
+        let mut out: ArrayD<f32>;
+        if n == 2 {
+            out = Array::zeros((x,y)).into_dyn();
+            out.slice_mut(s![start..x_stop,start..y_stop]).assign(&input);
+        } else {
+            let z = shape[n-3];
+            out = Array::zeros((z,x,y)).into_dyn();
+            out.slice_mut(s![..,start..x_stop,start..y_stop]).assign(&input);
+        }
+        return out;
+    }
 
     fn fold_output(
         &self,
@@ -123,9 +146,7 @@ impl ConvolutionLayer {
 
     fn shape_into_kernel(&self, x: Array3<f32>) -> Array2<f32> {
         let (shape_0, shape_1, shape_2) = (x.shape()[0], x.shape()[1], x.shape()[2]);
-        //println!("shaping into kernel {}, {} {}", shape_0, shape_1, shape_2);
         let res = x.into_shape((shape_0, shape_1 * shape_2)).unwrap();
-        //res.invert_axis(Axis(0));
         res
     }
 }
@@ -133,10 +154,11 @@ impl ConvolutionLayer {
 impl Layer for ConvolutionLayer {
     fn get_type(&self) -> String {
         let output = format!(
-            "Convolution Layer with {} {}x{} Kernels.",
+            "Convolution Layer with {} {}x{} Kernels and {} padding.",
             self.kernels.nrows(),
             self.filter_shape.0,
-            self.filter_shape.1
+            self.filter_shape.1,
+            self.padding
         );
         //self.print_kernel();
         output
@@ -145,15 +167,15 @@ impl Layer for ConvolutionLayer {
     fn get_output_shape(&self, input_shape: Vec<usize>) -> Vec<usize> {
         let mut res = vec![self.kernels.nrows(), 0, 0];
         let num_dim = input_shape.len();
-        res[1] = input_shape[num_dim - 2] - self.filter_shape.0 + 1;
-        res[2] = input_shape[num_dim - 1] - self.filter_shape.1 + 1;
+        res[1] = input_shape[num_dim - 2] - self.filter_shape.0 + 1 + 2 * self.padding;
+        res[2] = input_shape[num_dim - 1] - self.filter_shape.1 + 1 + 2 * self.padding;
         res
     }
 
     fn predict(&mut self, input: ArrayD<f32>) -> ArrayD<f32> {
-        // 2d input, 3d out currently
         let tmp = self.get_output_shape(input.shape().to_vec());
         let (output_shape_x, output_shape_y) = (tmp[1], tmp[2]);
+        let input = self.add_padding(input);
 
         // prepare input matrix
         let x_unfolded = self.unfold_matrix(input, self.filter_shape.0, true);
@@ -173,7 +195,7 @@ impl Layer for ConvolutionLayer {
 
     fn forward(&mut self, input: ArrayD<f32>) -> ArrayD<f32> {
         // 2d input, 3d out currently
-        self.last_input = input.clone();
+        self.last_input = self.add_padding(input.clone());
         self.predict(input)
     }
 

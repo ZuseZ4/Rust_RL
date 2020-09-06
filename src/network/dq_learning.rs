@@ -8,7 +8,7 @@ fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new2d((6, 6), "cce".to_string());
     nn.set_batch_size(32);
     nn.set_learning_rate(0.1);
-    nn.add_convolution((3, 3), 32);
+    nn.add_convolution((3, 3), 32, 1);
     nn.add_activation("sigmoid");
     nn.add_flatten();
     //nn.add_dense(100); //Dense with 10 output neuron

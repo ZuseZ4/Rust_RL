@@ -1,20 +1,16 @@
 use crate::network::nn::NeuralNetwork;
 use cifar_10::*;
-#[allow(unused_imports)]
-use ndarray::{Array2, Array3, Array4, Axis};
+use ndarray::{Array2, Array4, Axis};
 use rand::Rng;
 
 fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new3d((3, 32, 32), "cce".to_string());
     nn.set_batch_size(32);
     nn.set_learning_rate(0.1);
-    //nn.add_convolution((3,3), 32);
-    nn.add_convolution((3, 3), 16);
+    nn.add_convolution((3, 3), 16, 1);
     nn.add_activation("sigmoid");
     nn.add_dropout(0.);
     nn.add_flatten();
-    //nn.add_dense(25); //Dense with 10 output neuron
-    //nn.add_activation("sigmoid");
     nn.add_dense(10); //Dense with 10 output neuron
     nn.add_activation("softmax");
     nn
@@ -48,27 +44,15 @@ pub fn test_Cifar10() {
     let test_lbl: Array2<f32> = tst_lbl.mapv(|x| x as f32);
     let mut train_img: Array4<f32> = trn_img.mapv(|x| x as f32);
     let mut test_img: Array4<f32> = tst_img.mapv(|x| x as f32);
-    //let mut train_img: Array4<f32> = Array4::from_shape_vec((train_size,depth,rows,cols), trn_img).unwrap().mapv(|x| x as f32);
-    //let mut test_img:  Array4<f32> = Array4::from_shape_vec((test_size,depth,rows,cols), tst_img).unwrap().mapv(|x| x as f32);
     assert_eq!(train_img.shape(), &[train_size, depth, rows, cols]);
     assert_eq!(test_img.shape(), &[test_size, depth, rows, cols]);
     println!("mapping image values from [0,255] to [0,1]");
     train_img.mapv_inplace(|x| x / 256.0);
     test_img.mapv_inplace(|x| x / 256.0);
 
-    // Get the label of the first digit.
-    let n = 1;
-    //let first_label = train_lbl.index_axis(Axis(0),n);
-    //println!("The first digit is a {}.", first_label);
-
     // Get the image of the first digit.
-    let first_image = train_img.index_axis(Axis(0), n);
+    let first_image = train_img.index_axis(Axis(0), 0);
     assert_eq!(first_image.shape(), &[3, 32, 32]);
-
-    // Get the image of the first digit and round the values to the nearest tenth. Show it.
-    //let train_show = train_img.mapv(|x| (x*10.0).round()/10.0) ;//only to show
-    //let first_image = train_show.index_axis(Axis(0),n);
-    //println!("The image looks like... \n{:#?}", first_image);
 
     let mut nn = new();
     nn.print_setup();

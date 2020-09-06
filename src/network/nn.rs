@@ -124,12 +124,13 @@ impl NeuralNetwork {
         }
     }
 
-    pub fn add_convolution(&mut self, filter_shape: (usize, usize), filter_number: usize) {
+    pub fn add_convolution(&mut self, filter_shape: (usize, usize), filter_number: usize, padding: usize) {
         let filter_depth: usize;
         let input_dim = self.input_dims.last().unwrap().clone();
         assert!(
             input_dim.len() == 2 || input_dim.len() == 3,
-            "only implemented conv for 2d or 3d input!"
+            "only implemented conv for 2d or 3d input! {}",
+            input_dim.len()
         );
         if input_dim.len() == 2 {
             filter_depth = 1;
@@ -140,6 +141,7 @@ impl NeuralNetwork {
             filter_shape,
             filter_depth,
             filter_number,
+            padding,
             self.h_p.batch_size,
             self.h_p.learning_rate,
         );

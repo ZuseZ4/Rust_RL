@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use hello_rust::examples::{cifar10, fortress, mnist, xor};
+use rust_rl::examples::{cifar10, fortress, mnist, xor};
 
 fn main() -> Result<(), String> {
     mnist::test_MNIST(); //not learning usefull results
