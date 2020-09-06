@@ -124,7 +124,12 @@ impl NeuralNetwork {
         }
     }
 
-    pub fn add_convolution(&mut self, filter_shape: (usize, usize), filter_number: usize, padding: usize) {
+    pub fn add_convolution(
+        &mut self,
+        filter_shape: (usize, usize),
+        filter_number: usize,
+        padding: usize,
+    ) {
         let filter_depth: usize;
         let input_dim = self.input_dims.last().unwrap().clone();
         assert!(

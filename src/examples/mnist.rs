@@ -7,7 +7,7 @@ fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new2d((28, 28), "cce".to_string());
     nn.set_batch_size(32);
     nn.set_learning_rate(0.05);
-    nn.add_convolution((3,3), 10, 1);
+    nn.add_convolution((3, 3), 10, 1);
     nn.add_flatten();
     nn.add_activation("sigmoid");
     nn.add_dropout(0.);
@@ -29,8 +29,7 @@ fn train(nn: &mut NeuralNetwork, num: usize, input: &Array3<f32>, fb: &Array2<f3
     }
 }
 
-#[allow(non_snake_case)]
-pub fn test_MNIST() {
+pub fn test_mnist() {
     let (train_size, test_size, rows, cols) = (60_000, 10_000, 28, 28);
 
     // Deconstruct the returned Mnist struct.

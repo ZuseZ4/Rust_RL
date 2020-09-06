@@ -29,8 +29,7 @@ fn train(nn: &mut NeuralNetwork, num: usize, input: &Array4<f32>, fb: &Array2<f3
     }
 }
 
-#[allow(non_snake_case)]
-pub fn test_Cifar10() {
+pub fn test_cifar10() {
     let (train_size, test_size, depth, rows, cols) = (50_000, 10_000, 3, 32, 32);
 
     // Deconstruct the returned Cifar struct.
