@@ -1,4 +1,4 @@
-use crate::board::board_trait::BoardInfo;
+use crate::env::env_trait::Environment;
 use fnv::FnvHashSet;
 #[allow(unused_imports)]
 use ndarray::{Array, Array1, Array2, Array3, ArrayD, Axis, Ix1};
@@ -16,11 +16,11 @@ pub struct Board {
     second_player_moves: HashSet<usize, std::hash::BuildHasherDefault<fnv::FnvHasher>>,
 }
 
-impl BoardInfo for Board {
+impl Environment for Board {
     // return values:
     // 6x6 field with current board
     // 6x6 field with 1's for possible moves, 0's for impossible moves
-    fn step2(&self) -> (Array2<f32>, Array1<f32>, f32) {
+    fn step(&self) -> (Array2<f32>, Array1<f32>, f32) {
         // storing current position into ndarray
         let position = Array2::from_shape_vec((6, 6), self.field.to_vec()).unwrap();
         let position = position.mapv(|x| x as f32);
@@ -40,15 +40,23 @@ impl BoardInfo for Board {
         (position, moves, reward as f32)
     }
 
-    fn step(&self) -> (String, Vec<usize>, f32) {
-        let current_pos = self
-            .field
-            .iter()
-            .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
-        let possible_actions = self.get_possible_moves();
-        let reward = self.get_reward();
-        (current_pos, possible_actions, reward as f32)
+    fn get_legal_actions(&self) -> Array1<usize> {
+        if self.first_player_turn {
+            self.first_player_moves.iter().copied().collect()
+        } else {
+            self.second_player_moves.iter().copied().collect()
+        }
     }
+
+    //fn step(&self) -> (String, Vec<usize>, f32) {
+    //    let current_pos = self
+    //        .field
+    //        .iter()
+    //        .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
+    //    let possible_actions = self.get_possible_moves();
+    //    let reward = self.get_reward();
+    //    (current_pos, possible_actions, reward as f32)
+    //}
 
     fn print_board(&self) {
         let mut fst;
@@ -68,44 +76,11 @@ impl BoardInfo for Board {
         }
         println!();
     }
-
-    fn get_board_position(&self) -> [i8; 36] {
-        self.field
-    }
-
-    fn get_possible_moves(&self) -> Vec<usize> {
-        if self.first_player_turn {
-            self.first_player_moves.iter().copied().collect()
-        } else {
-            self.second_player_moves.iter().copied().collect()
-        }
-    }
-
-    fn get_possible_positions(&self) -> (Vec<String>, Vec<usize>) {
-        let moves = self.get_possible_moves();
-        let res = self
-            .field
-            .iter()
-            .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
-
-        // prepare one entry for every new game position we can reach by one single, legal move
-        let mut result_vector = vec![res; moves.len()];
-        let player_val = if self.first_player_turn { 1 } else { -1 };
-
-        for move_num in 0..moves.len() {
-            //update the corresponding result position to the corresponding move
-            let pos = moves[move_num];
-            result_vector[move_num].replace_range(
-                pos..(pos + 1),
-                &(self.field[pos] + 3 + player_val).to_string(),
-            );
-        }
-        (result_vector, moves)
-    }
 }
 
+
 impl Board {
-    pub fn get_board(rounds: u8) -> Board {
+    pub fn get_board(rounds: u8) -> Self {
         let neighbours_list = [
             vec![1, 6],
             vec![0, 2, 7],
@@ -160,6 +135,7 @@ impl Board {
             second_player_moves: second_player_hashset,
         }
     }
+    
 
     fn update_neighbours(&mut self, pos: usize, update_val: i8) {
         let neighbours: Vec<usize> = self.neighbours[pos].clone().into_iter().collect();
@@ -188,6 +164,13 @@ impl Board {
             self.second_player_moves.remove(pos);
         } else {
             self.first_player_moves.remove(pos);
+        }
+    }
+    fn get_possible_moves(&self) -> Vec<usize> {
+        if self.first_player_turn {
+            self.first_player_moves.iter().copied().collect()
+        } else {
+            self.second_player_moves.iter().copied().collect()
         }
     }
 

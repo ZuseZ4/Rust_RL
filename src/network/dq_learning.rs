@@ -1,6 +1,6 @@
 use rand::{Rng, ThreadRng};
 //use std::collections::HashMap;
-use crate::board::board_trait::BoardInfo;
+use crate::env::env_trait::Environment;
 use crate::network::nn::NeuralNetwork;
 use ndarray::{Array, Array1, Array2};
 
@@ -8,7 +8,7 @@ fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new2d((6, 6), "cce".to_string());
     nn.set_batch_size(32);
     nn.set_learning_rate(0.1);
-    nn.add_convolution((3, 3), 32, 1);
+    nn.add_convolution((3, 3), 32, 0);
     nn.add_activation("sigmoid");
     nn.add_flatten();
     //nn.add_dense(100); //Dense with 10 output neuron
@@ -112,11 +112,11 @@ impl DQlearning {
         self.nn.train2d(input, target);
     }
 
-    pub fn get_move(&mut self, board: &impl BoardInfo) -> usize {
+    pub fn get_move(&mut self, board: &impl Environment) -> usize {
         //get reward for previous move
 
-        let (_board_string, actions, _reward) = board.step();
-        let (board_arr, action_arr, reward) = board.step2();
+        let (board_arr, action_arr, reward) = board.step();
+        let actions = board.get_legal_actions();
         //let reward = reward / 20.;
         //assert!(reward >= 0. && reward <= 1., "reward: {}", reward);
 
@@ -182,9 +182,9 @@ impl DQlearning {
         }
     }
 
-    fn get_random_move(&mut self, actions: Vec<usize>) -> usize {
+    fn get_random_move(&mut self, actions: Array1<usize>) -> usize {
         assert!(actions.len() > 0, "No move possible!!!");
         let position = self.rng.gen_range(0, actions.len()) as usize;
-        return actions[position];
+        actions[position]
     }
 }

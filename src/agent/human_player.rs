@@ -1,5 +1,5 @@
 use crate::agent::agent_trait::Agent;
-use crate::board::board_trait::BoardInfo;
+use crate::env::env_trait::Environment;
 use std::io;
 
 #[allow(dead_code)]
@@ -18,19 +18,19 @@ impl Agent for HumanPlayer {
         "human player".to_string()
     }
 
-    fn get_move(&mut self, board: &impl BoardInfo) -> usize {
+    fn get_move(&mut self, board: &impl Environment) -> usize {
         board.print_board();
-        let moves = board.get_possible_moves();
-        let mut next_move = String::new();
+        let (_, actions, _) = board.step();
+        let mut next_action = String::new();
 
         loop {
-            println!("please insert the next move.");
+            println!("please insert the number of your next action.\n It should be a number between 1 and {}", actions.len());
             io::stdin()
-                .read_line(&mut next_move)
+                .read_line(&mut next_action)
                 .expect("Failed to read number of rounds");
-            let next_move: usize = next_move.trim().parse().expect("please type a number");
-            if moves.contains(&next_move) {
-                return next_move;
+            let next_action: usize = next_action.trim().parse().expect("please type a number");
+            if next_action >= 1 && next_action <= actions.len() && actions[next_action-1] == 1. {
+                return next_action;
             }
         }
     }

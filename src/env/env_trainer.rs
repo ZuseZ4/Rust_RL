@@ -1,9 +1,9 @@
 use crate::agent::agent::AgentType;
 use crate::agent::agent_trait::Agent;
-use crate::board::smart_board;
+use crate::env::fortress;
 use std::cmp::Ordering;
 
-pub struct Game {
+pub struct Trainer {
     rounds: u8,
     res: (u32, u32, u32),
     last_result: i32,
@@ -11,13 +11,13 @@ pub struct Game {
     agent2: AgentType,
 }
 
-impl Game {
+impl Trainer {
     pub fn new(rounds_per_game: u8, game_type: u8) -> Result<Self, String> {
         // first digit encondes type of first agent, second digit the type of the second agent
         let first_agent = AgentType::create_agent(rounds_per_game, game_type / 10, true)?; //first_player = true
         let second_agent = AgentType::create_agent(rounds_per_game, game_type % 10, false)?; // first_player = false
 
-        Ok(Game {
+        Ok(Trainer {
             rounds: rounds_per_game,
             res: (0, 0, 0),
             last_result: 42, //init value shouldn't be used
@@ -69,11 +69,11 @@ impl Game {
         self.res = (0, 0, 0);
         let exploration_rate1 = self.agent1.get_exploration_rate();
         let exploration_rate2 = self.agent2.get_exploration_rate();
-        let mut board: smart_board::Board;
+        let mut board: fortress::Board;
         let sub_epoch: u64 = (num_games / 10) as u64;
 
         for game in 0..num_games {
-            board = smart_board::Board::get_board(self.rounds);
+            board = fortress::Board::get_board(self.rounds);
             if (game % sub_epoch) == 0 && train {
                 let sub_epoch_nr: f32 = (game / sub_epoch) as f32;
                 let (new_exploration_rate1, new_exploration_rate2) = (
@@ -101,8 +101,10 @@ impl Game {
             }
 
             let game_res = board.eval(); // umstellen auf 1-hot encoded
+            //println!("game_res: {:?}", game_res);
             self.update_results(game_res.0, game_res.1);
             if train {
+                //println!("FOO");
                 self.agent1.finish_round(self.last_result);
                 self.agent2.finish_round(self.last_result);
             }

@@ -1,4 +1,4 @@
-use crate::game::fortress;
+use crate::env::env_trainer::Trainer;
 use std::io;
 
 fn parse_train_num() -> u64 {
@@ -74,7 +74,7 @@ pub fn test_fortress() {
     let bench_games = params.2;
     let agents = params.3;
 
-    let mut game = fortress::Game::new(rounds, agents).unwrap();
+    let mut game = Trainer::new(rounds, agents).unwrap();
     game.train(training_games);
 
     let res: (u32, u32, u32) = game.bench(bench_games);

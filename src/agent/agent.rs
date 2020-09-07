@@ -3,7 +3,7 @@ use crate::agent::DQLAgent;
 use crate::agent::HumanPlayer;
 use crate::agent::QLAgent;
 use crate::agent::RandomAgent;
-use crate::board::board_trait::BoardInfo;
+use crate::env::env_trait::Environment;
 
 pub enum AgentType {
     R(RandomAgent),
@@ -41,7 +41,7 @@ impl Agent for AgentType {
             AgentType::H(human_player) => human_player.get_id(),
         }
     }
-    fn get_move(&mut self, board: &impl BoardInfo) -> usize {
+    fn get_move(&mut self, board: &impl Environment) -> usize {
         match self {
             AgentType::R(r_agent) => r_agent.get_move(board),
             AgentType::Q(ql_agent) => ql_agent.get_move(board),

@@ -1,16 +1,14 @@
 use rand::Rng;
 
 use crate::agent::agent_trait::Agent;
-use crate::board::board_trait::BoardInfo;
+use crate::env::env_trait::Environment;
 
-#[allow(dead_code)]
 pub struct RandomAgent {
-    rounds: u8,
 }
 
 impl RandomAgent {
-    pub fn new(rounds: u8, _is_first_player: bool) -> Self {
-        RandomAgent { rounds: rounds }
+    pub fn new(_rounds: u8, _is_first_player: bool) -> Self {
+        RandomAgent {}
     }
 }
 
@@ -19,10 +17,29 @@ impl Agent for RandomAgent {
         "random agent".to_string()
     }
 
-    fn get_move(&mut self, board: &impl BoardInfo) -> usize {
-        let moves = board.get_possible_moves();
-        let move_number = rand::thread_rng().gen_range(0, moves.len()) as usize;
-        moves[move_number]
+    fn get_move(&mut self, board: &impl Environment) -> usize {
+        let (_, actions, _) = board.step();
+        let num_legal_actions = actions.iter().sum::<f32>() as usize;
+        assert!(num_legal_actions > 0, "no legal action available!");
+        let mut action_number = rand::thread_rng().gen_range(0, num_legal_actions) as usize;
+        // find the n'th legal action
+        let mut i = 0;
+        
+        loop {
+          if i >= actions.len() {
+            panic!("Illegal code section in RandomAgent. rand function broken?");
+          }
+          while actions[i] != 1. {
+            i += 1;
+          }
+          if action_number == 0 {
+            //println!("making move {} {} {}", i, num_legal_actions, actions);
+            return i;
+          } else {
+            action_number -= 1;
+            i += 1;
+          }
+        }
     }
 
     fn finish_round(&mut self, _single_res: i32) {}
