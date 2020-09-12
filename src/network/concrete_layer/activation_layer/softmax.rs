@@ -1,6 +1,7 @@
 use crate::network::layer_trait::Layer;
 use ndarray::{Array, ArrayD};
 
+#[derive(Default)]
 pub struct SoftmaxLayer {
     output: ArrayD<f32>,
 }
@@ -27,12 +28,10 @@ impl Layer for SoftmaxLayer {
         let max: f32 = x.iter().fold(f32::MIN, |acc, &x| {
             if x.is_nan() {
                 acc
+            } else if acc <= x {
+                x
             } else {
-                if acc <= x {
-                    x
-                } else {
-                    acc
-                }
+                acc
             }
         });
         x.mapv_inplace(|x| (x - max).exp());
@@ -47,6 +46,6 @@ impl Layer for SoftmaxLayer {
     }
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
-        (&self.output - &feedback).clone()
+        &self.output - &feedback
     }
 }

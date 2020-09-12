@@ -7,7 +7,7 @@ pub struct FlattenLayer {
 
 impl FlattenLayer {
     pub fn new(input_shape: Vec<usize>) -> Self {
-        let num_elements = input_shape.clone().iter().fold(1, |prod, x| prod * x);
+        let num_elements = input_shape.clone().iter().product();
         FlattenLayer {
             input_shape,
             num_elements,

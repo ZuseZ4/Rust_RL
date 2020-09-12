@@ -73,12 +73,13 @@ impl ConvolutionLayer {
     fn unfold_matrix(&self, input: ArrayD<f32>, k: usize, forward: bool) -> Array2<f32> {
         let n_dim = input.ndim();
         let (len_y, len_x) = (input.shape()[n_dim - 2], input.shape()[n_dim - 1]);
-        let mut xx: Array2<f32>;
-        if input.ndim() == 3 && !forward {
-            xx = Array::zeros(((len_y - k + 1) * (len_x - k + 1) * self.filter_depth, k * k));
+
+        let mut xx = if input.ndim() == 3 && !forward {
+            Array::zeros(((len_y - k + 1) * (len_x - k + 1) * self.filter_depth, k * k))
         } else {
-            xx = Array::zeros(((len_y - k + 1) * (len_x - k + 1), k * k * self.filter_depth));
-        }
+            Array::zeros(((len_y - k + 1) * (len_x - k + 1), k * k * self.filter_depth))
+        };
+
         let mut row_num = 0;
 
         if input.ndim() == 2 {
@@ -115,25 +116,27 @@ impl ConvolutionLayer {
         }
         xx
     }
-  
+
     fn add_padding(&self, input: ArrayD<f32>) -> ArrayD<f32> {
-        let shape = input.shape().clone();
+        let shape: &[usize] = input.shape().clone();
         let n = input.ndim();
-        let x = shape[n-2] + 2*self.padding;
-        let y = shape[n-1] + 2*self.padding;
+        let x = shape[n - 2] + 2 * self.padding;
+        let y = shape[n - 1] + 2 * self.padding;
         let start: isize = self.padding as isize;
-        let x_stop: isize = self.padding as isize + shape[n-2] as isize;
-        let y_stop: isize = self.padding as isize + shape[n-1] as isize;
+        let x_stop: isize = self.padding as isize + shape[n - 2] as isize;
+        let y_stop: isize = self.padding as isize + shape[n - 1] as isize;
         let mut out: ArrayD<f32>;
         if n == 2 {
-            out = Array::zeros((x,y)).into_dyn();
-            out.slice_mut(s![start..x_stop,start..y_stop]).assign(&input);
+            out = Array::zeros((x, y)).into_dyn();
+            out.slice_mut(s![start..x_stop, start..y_stop])
+                .assign(&input);
         } else {
-            let z = shape[n-3];
-            out = Array::zeros((z,x,y)).into_dyn();
-            out.slice_mut(s![..,start..x_stop,start..y_stop]).assign(&input);
+            let z = shape[n - 3];
+            out = Array::zeros((z, x, y)).into_dyn();
+            out.slice_mut(s![.., start..x_stop, start..y_stop])
+                .assign(&input);
         }
-        return out;
+        out
     }
 
     fn fold_output(
@@ -146,8 +149,7 @@ impl ConvolutionLayer {
 
     fn shape_into_kernel(&self, x: Array3<f32>) -> Array2<f32> {
         let (shape_0, shape_1, shape_2) = (x.shape()[0], x.shape()[1], x.shape()[2]);
-        let res = x.into_shape((shape_0, shape_1 * shape_2)).unwrap();
-        res
+        x.into_shape((shape_0, shape_1 * shape_2)).unwrap()
     }
 }
 

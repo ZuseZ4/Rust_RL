@@ -1,5 +1,7 @@
 use crate::network::error_trait::Error;
 use ndarray::{Array1, ArrayD};
+
+#[derive(Default)]
 pub struct NoopError {}
 
 impl NoopError {

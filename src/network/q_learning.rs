@@ -1,8 +1,8 @@
 use crate::env::env_trait::Environment;
+use ndarray::Array1;
 use rand::Rng;
 use rand::ThreadRng;
 use std::collections::HashMap;
-use ndarray::Array1;
 
 #[allow(dead_code)]
 pub struct Qlearning {
@@ -11,7 +11,7 @@ pub struct Qlearning {
     discount_factor: f32,
     scores: HashMap<(String, usize), f32>, // (State,Action), reward
     last_state: String,
-    last_action: usize, 
+    last_action: usize,
     rng: ThreadRng,
 }
 
@@ -46,8 +46,6 @@ impl Qlearning {
 }
 
 impl Qlearning {
-
-
     pub fn reset_board(&mut self) {}
 
     // update "table" based on last action and their result
@@ -78,7 +76,7 @@ impl Qlearning {
 
     fn get_random_move(&mut self, actions: Array1<usize>) -> usize {
         let position = self.rng.gen_range(0, actions.len()) as usize;
-        return actions[position];
+        actions[position]
     }
 
     fn get_best_move(&mut self, actions: Array1<usize>) -> (usize, f32) {
@@ -102,7 +100,7 @@ impl Qlearning {
     fn update_map(&mut self, reward: f32, max_future_q: f32) {
         let score = self
             .scores
-            .entry((self.last_state.clone(), self.last_action.clone()))
+            .entry((self.last_state.clone(), self.last_action))
             .or_insert(self.rng.gen_range(-0.5, 0.5));
         *score = (1. - self.learning_rate) * (*score)
             + self.learning_rate * (reward + self.discount_factor * max_future_q);

@@ -13,7 +13,7 @@ pub struct Trainer {
 
 impl Trainer {
     pub fn new(env: EnvType, agents: Vec<AgentType>) -> Result<Self, String> {
-        if agents.len() == 0 {
+        if agents.is_empty() {
             return Err("At least one agent required!".to_string());
         }
         Ok(Trainer {
@@ -55,7 +55,7 @@ impl Trainer {
         println!("New exploration rates: {:?}", exploration_rates);
     }
 
-    fn update_results(&mut self, new_res: &Vec<i8>) {
+    fn update_results(&mut self, new_res: &[i8]) {
         assert_eq!(
             new_res.len(),
             self.agents.len(),

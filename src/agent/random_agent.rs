@@ -3,8 +3,7 @@ use rand::Rng;
 use crate::agent::agent_trait::Agent;
 use crate::env::env_trait::Environment;
 
-pub struct RandomAgent {
-}
+pub struct RandomAgent {}
 
 impl RandomAgent {
     pub fn new(_rounds: u8, _is_first_player: bool) -> Self {
@@ -24,21 +23,21 @@ impl Agent for RandomAgent {
         let mut action_number = rand::thread_rng().gen_range(0, num_legal_actions) as usize;
         // find the n'th legal action
         let mut i = 0;
-        
+
         loop {
-          if i >= actions.len() {
-            panic!("Illegal code section in RandomAgent. rand function broken?");
-          }
-          while actions[i] != 1. {
-            i += 1;
-          }
-          if action_number == 0 {
-            //println!("making move {} {} {}", i, num_legal_actions, actions);
-            return i;
-          } else {
-            action_number -= 1;
-            i += 1;
-          }
+            if i >= actions.len() {
+                panic!("Illegal code section in RandomAgent. rand function broken?");
+            }
+            while actions[i] != 1. {
+                i += 1;
+            }
+            if action_number == 0 {
+                //println!("making move {} {} {}", i, num_legal_actions, actions);
+                return i;
+            } else {
+                action_number -= 1;
+                i += 1;
+            }
         }
     }
 

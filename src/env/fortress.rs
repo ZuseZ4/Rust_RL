@@ -1,7 +1,6 @@
 use crate::env::env_trait::Environment;
 use fnv::FnvHashSet;
-#[allow(unused_imports)]
-use ndarray::{Array, Array1, Array2, Array3, ArrayD, Axis, Ix1};
+use ndarray::{Array, Array1, Array2};
 use std::collections::HashSet;
 
 pub struct Board {
@@ -59,8 +58,8 @@ impl Environment for Board {
             return true;
         }
         // no moves possible so finish game
-        if (self.first_player_moves.len() == 0 && self.first_player_turn)
-            || (self.second_player_moves.len() == 0 && !self.first_player_turn)
+        if (self.first_player_moves.is_empty() && self.first_player_turn)
+            || (self.second_player_moves.is_empty() && !self.first_player_turn)
         {
             return true;
         }

@@ -1,5 +1,7 @@
 use crate::network::layer_trait::Layer;
 use ndarray::{Array1, ArrayD};
+
+#[derive(Default)]
 pub struct SigmoidLayer {
     output: ArrayD<f32>,
 }

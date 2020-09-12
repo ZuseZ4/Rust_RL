@@ -183,7 +183,7 @@ impl DQlearning {
     }
 
     fn get_random_move(&mut self, actions: Array1<usize>) -> usize {
-        assert!(actions.len() > 0, "No move possible!!!");
+        assert!(!actions.is_empty(), "No move possible!!!");
         let position = self.rng.gen_range(0, actions.len()) as usize;
         actions[position]
     }

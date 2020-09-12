@@ -5,6 +5,7 @@ use crate::network::layer_trait::Layer;
 use ndarray::parallel::prelude::*;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
 
+#[derive(Default)]
 pub struct HyperParameter {
     batch_size: usize,
     learning_rate: f32,
@@ -26,7 +27,7 @@ impl HyperParameter {
         }
     }
     pub fn batch_size(&mut self, batch_size: usize) {
-        if batch_size <= 0 {
+        if batch_size == 0 {
             eprintln!("batch size should be > 0! Doing nothing!");
             return;
         }
@@ -104,7 +105,6 @@ impl NeuralNetwork {
         match layer {
             Err(error) => {
                 eprintln!("{}", error);
-                return;
             }
             Ok(layer) => {
                 let input_shape = self.input_dims.last().unwrap().clone();
@@ -155,7 +155,7 @@ impl NeuralNetwork {
     }
 
     pub fn add_dense(&mut self, output_dim: usize) {
-        if output_dim <= 0 {
+        if output_dim == 0 {
             eprintln!("output dimension should be > 0! Doing nothing!");
             return;
         }

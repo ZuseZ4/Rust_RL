@@ -40,7 +40,7 @@ impl Agent for QLAgent {
     }
 
     fn get_exploration_rate(&self) -> f32 {
-        return self.qlearning.get_exploration_rate();
+        self.qlearning.get_exploration_rate()
     }
 
     fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {

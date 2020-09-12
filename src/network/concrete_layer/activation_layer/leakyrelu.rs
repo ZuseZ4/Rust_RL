@@ -1,5 +1,7 @@
 use crate::network::layer_trait::Layer;
 use ndarray::ArrayD;
+
+#[derive(Default)]
 pub struct LeakyReLuLayer {}
 
 impl LeakyReLuLayer {

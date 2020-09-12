@@ -59,28 +59,16 @@ impl Agent for AgentType {
     }
     fn get_exploration_rate(&self) -> f32 {
         match self {
-            AgentType::Q(ql_agent) => {
-                return ql_agent.get_exploration_rate();
-            }
-            AgentType::D(dql_agent) => {
-                return dql_agent.get_exploration_rate();
-            }
-            _ => {
-                return 42.;
-            }
+            AgentType::Q(ql_agent) => ql_agent.get_exploration_rate(),
+            AgentType::D(dql_agent) => dql_agent.get_exploration_rate(),
+            _ => 42.,
         }
     }
     fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {
         match self {
-            AgentType::Q(ql_agent) => {
-                return ql_agent.set_exploration_rate(e);
-            }
-            AgentType::D(dql_agent) => {
-                return dql_agent.set_exploration_rate(e);
-            }
-            _ => {
-                return Ok(());
-            }
+            AgentType::Q(ql_agent) => ql_agent.set_exploration_rate(e),
+            AgentType::D(dql_agent) => dql_agent.set_exploration_rate(e),
+            _ => Ok(()),
         }
     }
 }

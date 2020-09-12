@@ -40,7 +40,7 @@ impl Agent for DQLAgent {
     }
 
     fn get_exploration_rate(&self) -> f32 {
-        return self.dqlearning.get_exploration_rate();
+        self.dqlearning.get_exploration_rate()
     }
 
     fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {

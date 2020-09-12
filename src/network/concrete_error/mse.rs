@@ -1,7 +1,7 @@
 use crate::network::error_trait::Error;
-#[allow(unused_imports)]
 use ndarray::{ArrayD, Array, Array1, Ix1};
 
+#[derive(Default)]
 pub struct MeanSquareError {
 }
 
