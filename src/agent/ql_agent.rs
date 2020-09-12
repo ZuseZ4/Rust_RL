@@ -1,7 +1,7 @@
 use crate::network::q_learning::Qlearning;
 
 use crate::agent::agent_trait::Agent;
-use crate::env::env_trait::Environment;
+use crate::env::Environment;
 
 #[allow(dead_code)]
 pub struct QLAgent {
@@ -35,7 +35,7 @@ impl Agent for QLAgent {
         self.qlearning.finish_round(result);
     }
 
-    fn get_move(&mut self, board: &impl Environment) -> usize {
+    fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
         self.qlearning.get_move(board)
     }
 

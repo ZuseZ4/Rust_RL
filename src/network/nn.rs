@@ -6,7 +6,7 @@ use ndarray::parallel::prelude::*;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
 
 #[derive(Default)]
-pub struct HyperParameter {
+struct HyperParameter {
     batch_size: usize,
     learning_rate: f32,
     _gamma: f32,

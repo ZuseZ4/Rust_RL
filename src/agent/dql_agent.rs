@@ -1,7 +1,7 @@
 use crate::network::dq_learning::DQlearning;
 
 use crate::agent::agent_trait::Agent;
-use crate::env::env_trait::Environment;
+use crate::env::Environment;
 
 #[allow(dead_code)]
 pub struct DQLAgent {
@@ -35,7 +35,7 @@ impl Agent for DQLAgent {
         self.dqlearning.finish_round(result);
     }
 
-    fn get_move(&mut self, board: &impl Environment) -> usize {
+    fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
         self.dqlearning.get_move(board)
     }
 

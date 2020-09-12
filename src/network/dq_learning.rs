@@ -1,6 +1,6 @@
 use rand::{Rng, ThreadRng};
 //use std::collections::HashMap;
-use crate::env::env_trait::Environment;
+use crate::env::Environment;
 use crate::network::nn::NeuralNetwork;
 use ndarray::{Array, Array1, Array2};
 
@@ -112,7 +112,7 @@ impl DQlearning {
         self.nn.train2d(input, target);
     }
 
-    pub fn get_move(&mut self, board: &impl Environment) -> usize {
+    pub fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
         //get reward for previous move
 
         let (board_arr, action_arr, reward) = board.step();

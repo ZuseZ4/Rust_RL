@@ -17,7 +17,7 @@ cifar-10 = {git = "https://github.com/quietlychris/cifar-10", branch="master"}
 
 [dependencies.mnist]
 version = "0.4.1"
-features = ["download"]
+#features = ["download"]
 
 [dependencies.ndarray]
 version = "0.13.1"

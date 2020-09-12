@@ -1,12 +1,13 @@
 use rand::Rng;
 
 use crate::agent::agent_trait::Agent;
-use crate::env::env_trait::Environment;
+use crate::env::Environment;
 
+#[derive(Default)]
 pub struct RandomAgent {}
 
 impl RandomAgent {
-    pub fn new(_rounds: u8, _is_first_player: bool) -> Self {
+    pub fn new() -> Self {
         RandomAgent {}
     }
 }
@@ -16,7 +17,7 @@ impl Agent for RandomAgent {
         "random agent".to_string()
     }
 
-    fn get_move(&mut self, board: &impl Environment) -> usize {
+    fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
         let (_, actions, _) = board.step();
         let num_legal_actions = actions.iter().sum::<f32>() as usize;
         assert!(num_legal_actions > 0, "no legal action available!");

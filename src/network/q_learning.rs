@@ -1,4 +1,4 @@
-use crate::env::env_trait::Environment;
+use crate::env::Environment;
 use ndarray::Array1;
 use rand::Rng;
 use rand::ThreadRng;
@@ -54,7 +54,7 @@ impl Qlearning {
         self.update_map(50. * (result as f32), 0.); // 50*res, since the final result is what matters most
     }
 
-    pub fn get_move(&mut self, board: &impl Environment) -> usize {
+    pub fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
         //get reward for previous move
 
         let (board_arr, _actions, reward) = board.step();

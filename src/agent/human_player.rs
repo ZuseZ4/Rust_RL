@@ -1,15 +1,13 @@
 use crate::agent::agent_trait::Agent;
-use crate::env::env_trait::Environment;
+use crate::env::Environment;
 use std::io;
 
-#[allow(dead_code)]
-pub struct HumanPlayer {
-    rounds: u8,
-}
+#[derive(Default)]
+pub struct HumanPlayer {}
 
 impl HumanPlayer {
-    pub fn new(rounds: u8, _is_first_player: bool) -> Self {
-        HumanPlayer { rounds }
+    pub fn new() -> Self {
+        HumanPlayer {}
     }
 }
 
@@ -18,19 +16,22 @@ impl Agent for HumanPlayer {
         "human player".to_string()
     }
 
-    fn get_move(&mut self, board: &impl Environment) -> usize {
+    fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
         board.render();
-        let (_, actions, _) = board.step();
+        //let (_, actions, _) = board.step();
+        let actions = board.get_legal_actions();
         let mut next_action = String::new();
 
         loop {
             println!("please insert the number of your next action.\n It should be a number between 1 and {}", actions.len());
+            println!("{}", actions);
             io::stdin()
                 .read_line(&mut next_action)
                 .expect("Failed to read number of rounds");
             let next_action: usize = next_action.trim().parse().expect("please type a number");
-            if next_action >= 1 && next_action <= actions.len() && actions[next_action - 1] == 1. {
-                return next_action;
+            if next_action >= 1 && next_action <= actions.len() {
+                // human(non cs) friendly counting
+                return actions[next_action - 1];
             }
         }
     }

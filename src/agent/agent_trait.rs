@@ -1,8 +1,8 @@
-use crate::env::env_trait::Environment;
+use crate::env::Environment;
 pub trait Agent {
     fn get_id(&self) -> String;
 
-    fn get_move(&mut self, board: &impl Environment) -> usize;
+    fn get_move(&mut self, board: &Box<dyn Environment>) -> usize;
 
     fn finish_round(&mut self, result: i32);
 

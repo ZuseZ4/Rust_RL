@@ -1,6 +1,6 @@
-use crate::agent::agent::AgentType;
-use crate::env::env::EnvType;
-use crate::env::env_trainer::Trainer;
+use crate::agent::*;
+use crate::env::fortress::Board;
+use crate::env::Trainer;
 use std::io;
 
 pub fn test_fortress() {
@@ -24,12 +24,12 @@ pub fn test_fortress() {
     let training_games = params.1;
     let bench_games = params.2;
     let agents = params.3;
-    let agent1 = AgentType::create_agent(rounds, agents % 10, true).unwrap();
-    let agent2 = AgentType::create_agent(rounds, agents / 10, false).unwrap();
+    let agent1 = get_agent(agents / 10, rounds, true).unwrap();
+    let agent2 = get_agent(agents % 10, rounds, false).unwrap();
 
-    let game = EnvType::create_env(25, 1).unwrap();
+    let game = Board::new(rounds);
 
-    let mut trainer = Trainer::new(game, vec![agent1, agent2]).unwrap();
+    let mut trainer = Trainer::new(Box::new(game), vec![agent1, agent2]).unwrap();
     trainer.train(training_games);
 
     let res: Vec<(u32, u32, u32)> = trainer.bench(bench_games);
@@ -99,4 +99,14 @@ fn parse_input() -> (u8, u64, u64, u8) {
         rounds, training_games, bench_games
     );
     (rounds, training_games, bench_games, agents)
+}
+
+fn get_agent(agent_num: u8, rounds: u8, first_player: bool) -> Result<Box<dyn Agent>, String> {
+    match agent_num {
+        1 => Ok(Box::new(DQLAgent::new(rounds, first_player, 1.))),
+        2 => Ok(Box::new(QLAgent::new(rounds, first_player, 1.))),
+        3 => Ok(Box::new(RandomAgent::new())),
+        4 => Ok(Box::new(HumanPlayer::new())),
+        _ => Err("Only implemented agents 1-4!".to_string()),
+    }
 }

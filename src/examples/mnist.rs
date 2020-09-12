@@ -40,6 +40,7 @@ pub fn test_mnist() {
         tst_lbl,
         ..
     } = MnistBuilder::new()
+        .use_fashion_data()
         .label_format_one_hot() //0..9
         .download_and_extract()
         .finalize();

@@ -1,18 +1,14 @@
-use crate::agent::agent::AgentType;
-use crate::agent::agent_trait::Agent;
-use crate::env::env::EnvType;
-use crate::env::env_trait::Environment;
-//use crate::env::fortress;
+use crate::agent::Agent;
+use crate::env::Environment;
 
 pub struct Trainer {
-    //rounds: u8,
-    env: EnvType,
+    env: Box<dyn Environment>,
     res: Vec<(u32, u32, u32)>,
-    agents: Vec<AgentType>,
+    agents: Vec<Box<dyn Agent>>,
 }
 
 impl Trainer {
-    pub fn new(env: EnvType, agents: Vec<AgentType>) -> Result<Self, String> {
+    pub fn new(env: Box<dyn Environment>, agents: Vec<Box<dyn Agent>>) -> Result<Self, String> {
         if agents.is_empty() {
             return Err("At least one agent required!".to_string());
         }
