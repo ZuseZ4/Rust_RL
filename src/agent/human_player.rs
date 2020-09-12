@@ -19,7 +19,7 @@ impl Agent for HumanPlayer {
     }
 
     fn get_move(&mut self, board: &impl Environment) -> usize {
-        board.print_board();
+        board.render();
         let (_, actions, _) = board.step();
         let mut next_action = String::new();
 
@@ -29,7 +29,7 @@ impl Agent for HumanPlayer {
                 .read_line(&mut next_action)
                 .expect("Failed to read number of rounds");
             let next_action: usize = next_action.trim().parse().expect("please type a number");
-            if next_action >= 1 && next_action <= actions.len() && actions[next_action-1] == 1. {
+            if next_action >= 1 && next_action <= actions.len() && actions[next_action - 1] == 1. {
                 return next_action;
             }
         }

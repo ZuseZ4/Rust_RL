@@ -1,114 +1,115 @@
 use crate::agent::agent::AgentType;
 use crate::agent::agent_trait::Agent;
-use crate::env::fortress;
-use std::cmp::Ordering;
+use crate::env::env::EnvType;
+use crate::env::env_trait::Environment;
+//use crate::env::fortress;
 
 pub struct Trainer {
-    rounds: u8,
-    res: (u32, u32, u32),
-    last_result: i32,
-    agent1: AgentType,
-    agent2: AgentType,
+    //rounds: u8,
+    env: EnvType,
+    res: Vec<(u32, u32, u32)>,
+    agents: Vec<AgentType>,
 }
 
 impl Trainer {
-    pub fn new(rounds_per_game: u8, game_type: u8) -> Result<Self, String> {
-        // first digit encondes type of first agent, second digit the type of the second agent
-        let first_agent = AgentType::create_agent(rounds_per_game, game_type / 10, true)?; //first_player = true
-        let second_agent = AgentType::create_agent(rounds_per_game, game_type % 10, false)?; // first_player = false
-
+    pub fn new(env: EnvType, agents: Vec<AgentType>) -> Result<Self, String> {
+        if agents.len() == 0 {
+            return Err("At least one agent required!".to_string());
+        }
         Ok(Trainer {
-            rounds: rounds_per_game,
-            res: (0, 0, 0),
-            last_result: 42, //init value shouldn't be used
-            agent1: first_agent,
-            agent2: second_agent,
+            //rounds: rounds_per_game,
+            env,
+            res: vec![(0, 0, 0); agents.len()],
+            agents,
         })
     }
 
-    fn update_results(&mut self, first_player_fields: u8, second_player_fields: u8) {
-        match first_player_fields.cmp(&second_player_fields) {
-            Ordering::Greater => {
-                self.res.0 += 1;
-                self.last_result = 1;
-            }
-            Ordering::Less => {
-                self.res.2 += 1;
-                self.last_result = -1;
-            }
-            Ordering::Equal => {
-                self.res.1 += 1;
-                self.last_result = 0;
-            }
-        }
+    pub fn get_results(&self) -> Vec<(u32, u32, u32)> {
+        self.res.clone()
     }
 
-    pub fn get_results(&self) -> (u32, u32, u32) {
-        self.res
-    }
-
-    pub fn get_agent_ids(&self) -> (String, String) {
-        (self.agent1.get_id(), self.agent2.get_id())
+    pub fn get_agent_ids(&self) -> Vec<String> {
+        self.agents.iter().map(|a| a.get_id()).collect()
     }
 
     pub fn train(&mut self, num_games: u64) {
         self.play_games(num_games, true);
     }
 
-    pub fn bench(&mut self, num_games: u64) -> (u32, u32, u32) {
-        self.agent1.set_exploration_rate(0.).unwrap(); // exploration rate is in [0,1], so ignore error possibility
-        self.agent2.set_exploration_rate(0.).unwrap();
+    pub fn bench(&mut self, num_games: u64) -> Vec<(u32, u32, u32)> {
+        self.agents
+            .iter_mut()
+            .for_each(|a| a.set_exploration_rate(0.).unwrap());
         self.play_games(num_games, false)
     }
 
-    //fn get_reward(&mut self) -> f32 {
-    //  42.
-    //}
+    fn adjust_learning_rate(&mut self, sub_epoch_nr: u64, orig_learning_rate: Vec<f32>) {
+        let exploration_rates: Vec<f32> = orig_learning_rate
+            .iter()
+            .map(|e| e * (10. - sub_epoch_nr as f32) / 10.)
+            .collect();
+        self.agents
+            .iter_mut()
+            .zip(exploration_rates.iter())
+            .for_each(|(a, &e)| a.set_exploration_rate(e).unwrap());
+        println!("New exploration rates: {:?}", exploration_rates);
+    }
 
-    fn play_games(&mut self, num_games: u64, train: bool) -> (u32, u32, u32) {
-        self.res = (0, 0, 0);
-        let exploration_rate1 = self.agent1.get_exploration_rate();
-        let exploration_rate2 = self.agent2.get_exploration_rate();
-        let mut board: fortress::Board;
-        let sub_epoch: u64 = (num_games / 10) as u64;
-
-        for game in 0..num_games {
-            board = fortress::Board::get_board(self.rounds);
-            if (game % sub_epoch) == 0 && train {
-                let sub_epoch_nr: f32 = (game / sub_epoch) as f32;
-                let (new_exploration_rate1, new_exploration_rate2) = (
-                    (exploration_rate1 * (10. - sub_epoch_nr) / 10.),
-                    (exploration_rate2 * (10. - sub_epoch_nr) / 10.),
-                );
-                self.agent1
-                    .set_exploration_rate(new_exploration_rate1)
-                    .unwrap();
-                self.agent2
-                    .set_exploration_rate(new_exploration_rate2)
-                    .unwrap();
-                println!(
-                    "New exploration rates: {}, {}",
-                    new_exploration_rate1, new_exploration_rate2
-                );
-            }
-
-            for _round in 0..board.get_total_rounds() {
-                //TODO what if no move possible?
-                // parallelize
-
-                board.try_move(self.agent1.get_move(&board));
-                board.try_move(self.agent2.get_move(&board));
-            }
-
-            let game_res = board.eval(); // umstellen auf 1-hot encoded
-            //println!("game_res: {:?}", game_res);
-            self.update_results(game_res.0, game_res.1);
-            if train {
-                //println!("FOO");
-                self.agent1.finish_round(self.last_result);
-                self.agent2.finish_round(self.last_result);
+    fn update_results(&mut self, new_res: &Vec<i8>) {
+        assert_eq!(
+            new_res.len(),
+            self.agents.len(),
+            "results and number of agents differ!"
+        );
+        for (i, res) in new_res.iter().enumerate() {
+            match res {
+                -1 => self.res[i].0 += 1,
+                0 => self.res[i].1 += 1,
+                1 => self.res[i].2 += 1,
+                _ => panic!("only allowed results are -1,0,1"),
             }
         }
-        self.res
+    }
+
+    fn play_games(&mut self, num_games: u64, train: bool) -> Vec<(u32, u32, u32)> {
+        self.res = vec![(0, 0, 0); self.agents.len()];
+        let sub_epoch: u64 = (num_games / 10) as u64;
+        let orig_exploration_rates: Vec<f32> = self
+            .agents
+            .iter()
+            .map(|a| a.get_exploration_rate())
+            .collect();
+
+        // parallelize
+        for game in 0..num_games {
+            self.env.reset();
+            if (game % sub_epoch) == 0 && train {
+                let sub_epoch_nr = game / sub_epoch;
+                self.adjust_learning_rate(sub_epoch_nr, orig_exploration_rates.clone());
+            }
+
+            let mut done = false;
+            loop {
+                for agent in self.agents.iter_mut() {
+                    if self.env.done() {
+                        done = true;
+                        break;
+                    }
+                    self.env.take_action(agent.get_move(&self.env));
+                }
+                if done {
+                    break;
+                }
+            }
+
+            let game_res = self.env.eval();
+            self.update_results(&game_res);
+            if train {
+                for (i, agent) in self.agents.iter_mut().enumerate() {
+                    agent.finish_round(game_res[i].into());
+                }
+            }
+        }
+        self.res.clone()
     }
 }

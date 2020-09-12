@@ -1,5 +1,54 @@
+use crate::agent::agent::AgentType;
+use crate::env::env::EnvType;
 use crate::env::env_trainer::Trainer;
 use std::io;
+
+pub fn test_fortress() {
+    let mut auto_fill = String::new();
+    println!("Run with default parameters? (1/0/2)");
+    io::stdin()
+        .read_line(&mut auto_fill)
+        .expect("Failed to read 1 or 0 or 2");
+    let auto_fill: usize = auto_fill.trim().parse().expect("please type 0 or 1 or 2");
+
+    let params;
+    if auto_fill == 1 {
+        params = (25, 4_000, 1000, 13);
+    } else if auto_fill == 2 {
+        params = (25, parse_train_num(), 1000, 13);
+    } else {
+        params = parse_input();
+    }
+
+    let rounds = params.0;
+    let training_games = params.1;
+    let bench_games = params.2;
+    let agents = params.3;
+    let agent1 = AgentType::create_agent(rounds, agents % 10, true).unwrap();
+    let agent2 = AgentType::create_agent(rounds, agents / 10, false).unwrap();
+
+    let game = EnvType::create_env(25, 1).unwrap();
+
+    let mut trainer = Trainer::new(game, vec![agent1, agent2]).unwrap();
+    trainer.train(training_games);
+
+    let res: Vec<(u32, u32, u32)> = trainer.bench(bench_games);
+
+    println!(
+        "agent1 ({}): lost: {}, draw: {}, won: {}",
+        trainer.get_agent_ids()[0],
+        res[0].0,
+        res[0].1,
+        res[0].2
+    );
+    println!(
+        "agent2 ({}): lost: {}, draw: {}, won: {}",
+        trainer.get_agent_ids()[1],
+        res[1].0,
+        res[1].1,
+        res[1].2
+    );
+}
 
 fn parse_train_num() -> u64 {
     let mut training_games = String::new();
@@ -50,36 +99,4 @@ fn parse_input() -> (u8, u64, u64, u8) {
         rounds, training_games, bench_games
     );
     (rounds, training_games, bench_games, agents)
-}
-
-pub fn test_fortress() {
-    let mut auto_fill = String::new();
-    println!("Run with default parameters? (1/0/2)");
-    io::stdin()
-        .read_line(&mut auto_fill)
-        .expect("Failed to read 1 or 0 or 2");
-    let auto_fill: usize = auto_fill.trim().parse().expect("please type 0 or 1 or 2");
-
-    let params;
-    if auto_fill == 1 {
-        params = (25, 4_000, 1000, 13);
-    } else if auto_fill == 2 {
-        params = (25, parse_train_num(), 1000, 13);
-    } else {
-        params = parse_input();
-    }
-
-    let rounds = params.0;
-    let training_games = params.1;
-    let bench_games = params.2;
-    let agents = params.3;
-
-    let mut game = Trainer::new(rounds, agents).unwrap();
-    game.train(training_games);
-
-    let res: (u32, u32, u32) = game.bench(bench_games);
-
-    println!("agent1 ({}): {}", game.get_agent_ids().0, res.0);
-    println!("draw: {}", res.1);
-    println!("agent2 ({}): {}", game.get_agent_ids().1, res.2);
 }

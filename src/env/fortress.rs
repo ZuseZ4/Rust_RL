@@ -9,7 +9,8 @@ pub struct Board {
     flags: [i8; 36],
     neighbours: [Vec<usize>; 36],
     first_player_turn: bool,
-    total_rounds: usize,
+    rounds: u32,
+    total_rounds: u8,
     //first_player_moves: Vec<usize>, //TODO HashSet is slower than recalculating possible moves each time. remove it?
     //second_player_moves: Vec<usize>,
     first_player_moves: HashSet<usize, std::hash::BuildHasherDefault<fnv::FnvHasher>>,
@@ -48,17 +49,25 @@ impl Environment for Board {
         }
     }
 
-    //fn step(&self) -> (String, Vec<usize>, f32) {
-    //    let current_pos = self
-    //        .field
-    //        .iter()
-    //        .fold("".to_string(), |acc, x| acc + &(x + 3).to_string()); //+3 to not border with +-
-    //    let possible_actions = self.get_possible_moves();
-    //    let reward = self.get_reward();
-    //    (current_pos, possible_actions, reward as f32)
-    //}
+    fn reset(&mut self) {
+        *self = Board::new(self.total_rounds);
+    }
 
-    fn print_board(&self) {
+    fn done(&self) -> bool {
+        // just played sufficient moves
+        if self.rounds == (self.total_rounds * 2).into() {
+            return true;
+        }
+        // no moves possible so finish game
+        if (self.first_player_moves.len() == 0 && self.first_player_turn)
+            || (self.second_player_moves.len() == 0 && !self.first_player_turn)
+        {
+            return true;
+        }
+        false
+    }
+
+    fn render(&self) {
         let mut fst;
         let mut snd;
         let mut val;
@@ -76,11 +85,43 @@ impl Environment for Board {
         }
         println!();
     }
+
+    fn take_action(&mut self, pos: usize) -> bool {
+        let player_val = if self.first_player_turn { 1 } else { -1 };
+
+        // check that field is not controlled by enemy, no enemy building on field, no own building on max lv (3) already exists
+        if (self.first_player_turn && self.first_player_moves.contains(&pos))
+            || (!self.first_player_turn && self.second_player_moves.contains(&pos))
+        {
+            self.store_update(pos, player_val);
+            self.update_neighbours(pos, player_val);
+            self.first_player_turn = !self.first_player_turn;
+            self.rounds += 1;
+            return true;
+        }
+        self.render();
+        let current_player = if self.first_player_turn { 1 } else { 2 };
+        eprintln!("WARNING ILLEGAL MOVE {} BY PLAYER {}", pos, current_player);
+        false // move wasn't allowed, do nothing
+    }
+
+    fn eval(&self) -> Vec<i8> {
+        let controlled_fields = self.controlled_fields();
+        let mut diff = controlled_fields.0 as i8 - controlled_fields.1 as i8; // diff \in [-36,36]
+        if diff != 0 {
+            diff = diff / diff.abs();
+        }
+        match diff {
+            -1 => vec![-1, 1],
+            0 => vec![0, 0], //draw
+            1 => vec![1, -1],
+            _ => panic!("false implementation of eval in fortress.rs!"),
+        }
+    }
 }
 
-
 impl Board {
-    pub fn get_board(rounds: u8) -> Self {
+    pub fn new(total_rounds: u8) -> Self {
         let neighbours_list = [
             vec![1, 6],
             vec![0, 2, 7],
@@ -130,12 +171,12 @@ impl Board {
             flags: [0; 36],
             neighbours: neighbours_list,
             first_player_turn: true,
-            total_rounds: rounds as usize,
+            rounds: 0,
+            total_rounds,
             first_player_moves: first_player_hashset,
             second_player_moves: second_player_hashset,
         }
     }
-    
 
     fn update_neighbours(&mut self, pos: usize, update_val: i8) {
         let neighbours: Vec<usize> = self.neighbours[pos].clone().into_iter().collect();
@@ -151,19 +192,19 @@ impl Board {
         }
     }
 
-    fn store_update(&mut self, pos: &usize, player_val: &i8) {
-        self.field[*pos] += *player_val;
-        self.flags[*pos] += *player_val;
-        if self.field[*pos].abs() == 3 {
+    fn store_update(&mut self, pos: usize, player_val: i8) {
+        self.field[pos] += player_val;
+        self.flags[pos] += player_val;
+        if self.field[pos].abs() == 3 {
             // buildings on lv. 3 can't be upgraded
-            self.second_player_moves.remove(pos);
-            self.first_player_moves.remove(pos);
+            self.second_player_moves.remove(&pos);
+            self.first_player_moves.remove(&pos);
             return;
         }
-        if *player_val == 1 {
-            self.second_player_moves.remove(pos);
+        if player_val == 1 {
+            self.second_player_moves.remove(&pos);
         } else {
-            self.first_player_moves.remove(pos);
+            self.first_player_moves.remove(&pos);
         }
     }
     fn get_possible_moves(&self) -> Vec<usize> {
@@ -174,26 +215,8 @@ impl Board {
         }
     }
 
-    pub fn try_move(&mut self, pos: usize) -> bool {
-        let player_val = if self.first_player_turn { 1 } else { -1 };
-
-        // check that field is not controlled by enemy, no enemy building on field, no own building on max lv (3) already exists
-        if (self.first_player_turn && self.first_player_moves.contains(&pos))
-            || (!self.first_player_turn && self.second_player_moves.contains(&pos))
-        {
-            self.store_update(&pos, &player_val);
-            self.update_neighbours(pos, player_val);
-            self.first_player_turn = !self.first_player_turn;
-            return true;
-        }
-        self.print_board();
-        let current_player = if self.first_player_turn { 1 } else { 2 };
-        eprintln!("WARNING ILLEGAL MOVE {} BY PLAYER {}", pos, current_player);
-        false // move wasn't allowed, do nothing
-    }
-
     fn get_reward(&self) -> i32 {
-        let controlled_fields = self.eval();
+        let controlled_fields = self.controlled_fields();
         let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
         if !self.first_player_turn {
             reward *= -1;
@@ -201,7 +224,7 @@ impl Board {
         reward
     }
 
-    pub fn eval(&self) -> (u8, u8) {
+    fn controlled_fields(&self) -> (u8, u8) {
         let mut fields_one = 0;
         let mut fields_two = 0;
         for (&building_lv, &flags) in self.field.iter().zip(self.flags.iter()) {
@@ -216,7 +239,7 @@ impl Board {
         (fields_one, fields_two)
     }
 
-    pub fn get_total_rounds(&self) -> usize {
+    pub fn get_total_rounds(&self) -> u8 {
         self.total_rounds
     }
 }
