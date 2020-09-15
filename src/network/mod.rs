@@ -1,11 +1,5 @@
-pub mod concrete_error;
-pub mod concrete_layer;
-pub mod dq_learning;
 pub mod error;
-mod error_trait;
 pub mod layer;
-mod layer_trait;
 pub mod nn;
-pub mod q_learning;
 mod tests;
 pub mod optimizer;

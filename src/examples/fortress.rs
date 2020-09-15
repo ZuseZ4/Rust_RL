@@ -1,6 +1,6 @@
-use crate::agent::*;
-use crate::env::fortress::Board;
-use crate::env::Trainer;
+use crate::rl::agent::*;
+use crate::rl::env::fortress::Board;
+use crate::rl::training::Trainer;
 use std::io;
 
 pub fn test_fortress() {

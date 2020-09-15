@@ -1,10 +1,13 @@
-use crate::network::error::ErrorType;
-use crate::network::error_trait::Error;
-use crate::network::layer::LayerType;
-use crate::network::layer_trait::Layer;
-use crate::network::optimizer::*;
+use crate::network;
+use network::optimizer::*;
+use network::layer::{Layer, ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer};
+use network::layer::activation_layer::{LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer};
+use network::error::{Error, BinaryCrossEntropyError, CategoricalCrossEntropyError, NoopError};
+
 use ndarray::parallel::prelude::*;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
+
+
 
 #[derive(Default)]
 struct HyperParameter {
@@ -46,14 +49,33 @@ impl HyperParameter {
 pub struct NeuralNetwork {
     input_dims: Vec<Vec<usize>>, //each layer takes a  1 to 4-dim input. Store details here
     h_p: HyperParameter,
-    layers: Vec<LayerType>,
+    layers: Vec<Box<dyn Layer>>,
     error: String, //remove due to error_function
-    error_function: ErrorType,
+    error_function: Box<dyn Error>,
     optimizer_function: Box<dyn Optimizer>,
     from_logits: bool,
 }
 
 impl NeuralNetwork {
+
+    fn get_activation(activation_type: String) -> Result<Box<dyn Layer>, String> {
+      match activation_type.as_str() {
+            "softmax" => Ok(Box::new(SoftmaxLayer::new())),
+            "sigmoid" => Ok(Box::new(SigmoidLayer::new())),
+            "relu" => Ok(Box::new(ReLuLayer::new())),
+            "leakyrelu" => Ok(Box::new(LeakyReLuLayer::new())),
+            _ => Err(format!("Bad Activation Layer: {}", activation_type)),
+      }
+    }
+
+    fn get_error(error_type: String) -> Result<Box<dyn Error>, String> {
+        match error_type.as_str() {
+            "bce" => Ok(Box::new(BinaryCrossEntropyError::new())),
+            "cce" => Ok(Box::new(CategoricalCrossEntropyError::new())),
+            "noop" => Ok(Box::new(NoopError::new())),
+            _ => Err(format!("Unknown Error Function: {}", error_type)),
+        }
+    }
 
     fn get_optimizer(optimizer: String) -> Result<Box<dyn Optimizer>, String> {
       match optimizer.as_str() {
@@ -68,11 +90,11 @@ impl NeuralNetwork {
 
     fn new(error: String, optimizer: String) -> Self {
         let error_function;
-        match ErrorType::new_error(error.clone()) {
+        match NeuralNetwork::get_error(error.clone()) {
             Ok(error_fun) => error_function = error_fun,
             Err(warning) => {
                 eprintln!("{}", warning);
-                error_function = ErrorType::new_noop();
+                error_function = Box::new(NoopError::new());
             }
         }
         let optimizer_function;
@@ -129,22 +151,23 @@ impl NeuralNetwork {
         self.h_p.learning_rate(learning_rate);
     }
 
-    fn store_layer(&mut self, layer: Result<LayerType, String>) {
-        match layer {
-            Err(error) => {
-                eprintln!("{}", error);
-            }
-            Ok(layer) => {
-                let input_shape = self.input_dims.last().unwrap().clone();
-                self.input_dims.push(layer.get_output_shape(input_shape));
-                self.layers.push(layer);
-            }
-        }
+    fn store_layer(&mut self, layer: Box<dyn Layer>) {
+        let input_shape = self.input_dims.last().unwrap().clone();
+        self.input_dims.push(layer.get_output_shape(input_shape));
+        self.layers.push(layer);
     }
 
     pub fn add_activation(&mut self, layer_kind: &str) {
-        let new_activation = LayerType::new_activation(layer_kind.to_string());
-        self.store_layer(new_activation);
+        let new_activation = NeuralNetwork::get_activation(layer_kind.to_string());
+        match new_activation {
+          Err(error) => {
+            eprintln!("{}, doing nothing", error);
+            return;
+          }
+          Ok(layer) => {
+            self.store_layer(layer);
+          }
+        }
         match (self.error.as_str(), layer_kind) {
             ("bce", "sigmoid") => self.from_logits = true,
             ("cce", "softmax") => self.from_logits = true,
@@ -170,7 +193,8 @@ impl NeuralNetwork {
         } else {
             filter_depth = input_dim[0];
         }
-        let conv_layer = LayerType::new_convolution(
+        //let conv_layer = LayerType::new_convolution(
+        let conv_layer = ConvolutionLayer::new(
             filter_shape,
             filter_depth,
             filter_number,
@@ -179,7 +203,7 @@ impl NeuralNetwork {
             self.h_p.learning_rate,
             self.optimizer_function.clone(),
         );
-        self.store_layer(conv_layer);
+        self.store_layer(Box::new(conv_layer));
         self.from_logits = false;
     }
 
@@ -193,14 +217,14 @@ impl NeuralNetwork {
             eprintln!("Dense just accepts 1d input! Doing nothing!");
             return;
         }
-        let dense_layer = LayerType::new_connection(
+        let dense_layer = DenseLayer::new(
             input_dims[0],
             output_dim,
             self.h_p.batch_size,
             self.h_p.learning_rate,
             self.optimizer_function.clone(),
         );
-        self.store_layer(dense_layer);
+        self.store_layer(Box::new(dense_layer));
         self.from_logits = false;
     }
 
@@ -209,8 +233,8 @@ impl NeuralNetwork {
             eprintln!("dropout probability has to be between 0. and 1.");
             return;
         }
-        let dropout_layer = LayerType::new_dropout(dropout_prob);
-        self.store_layer(dropout_layer);
+        let dropout_layer = DropoutLayer::new(dropout_prob);
+        self.store_layer(Box::new(dropout_layer));
         self.from_logits = false;
     }
 
@@ -220,8 +244,8 @@ impl NeuralNetwork {
             eprintln!("Input dimension is already one! Doing nothing!");
             return;
         }
-        let flatten_layer = LayerType::new_flatten(input_dims.to_vec());
-        self.store_layer(flatten_layer);
+        let flatten_layer = FlattenLayer::new(input_dims.to_vec());
+        self.store_layer(Box::new(flatten_layer));
         self.from_logits = false;
     }
 
