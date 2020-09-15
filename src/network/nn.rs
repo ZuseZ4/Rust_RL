@@ -2,6 +2,7 @@ use crate::network::error::ErrorType;
 use crate::network::error_trait::Error;
 use crate::network::layer::LayerType;
 use crate::network::layer_trait::Layer;
+use crate::network::optimizer::*;
 use ndarray::parallel::prelude::*;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
 
@@ -48,11 +49,24 @@ pub struct NeuralNetwork {
     layers: Vec<LayerType>,
     error: String, //remove due to error_function
     error_function: ErrorType,
+    optimizer_function: Box<dyn Optimizer>,
     from_logits: bool,
 }
 
 impl NeuralNetwork {
-    fn new(error: String) -> Self {
+
+    fn get_optimizer(optimizer: String) -> Result<Box<dyn Optimizer>, String> {
+      match optimizer.as_str() {
+        "adagrad" => Ok(Box::new(AdaGrad::new())),
+        "rmsprop" => Ok(Box::new(RMSProp::new(0.9))),
+        "momentum" => Ok(Box::new(Momentum::new(0.9))),
+        "adam" => Ok(Box::new(Adam::new(0.9, 0.999))),
+        "none" => Ok(Box::new(Noop::new())),
+        _  => Err(format!("Unknown optimizer: {}", optimizer)),
+      }
+    }
+
+    fn new(error: String, optimizer: String) -> Self {
         let error_function;
         match ErrorType::new_error(error.clone()) {
             Ok(error_fun) => error_function = error_fun,
@@ -61,9 +75,19 @@ impl NeuralNetwork {
                 error_function = ErrorType::new_noop();
             }
         }
+        let optimizer_function;
+        match NeuralNetwork::get_optimizer(optimizer) {
+          Ok(optimizer) => optimizer_function = optimizer,
+          Err(warning) => {
+            eprintln!("{}", warning);
+            optimizer_function = Box::new(Noop::new());
+          }
+        }
+
         NeuralNetwork {
             error,
             error_function,
+            optimizer_function,
             input_dims: vec![vec![]],
             layers: vec![],
             h_p: HyperParameter::new(),
@@ -71,26 +95,30 @@ impl NeuralNetwork {
         }
     }
 
-    pub fn new1d(input_dim: usize, error: String) -> Self {
+    pub fn new1d(input_dim: usize, error: String, optimizer: String) -> Self {
         NeuralNetwork {
             input_dims: vec![vec![input_dim]],
-            ..NeuralNetwork::new(error)
+            ..NeuralNetwork::new(error, optimizer)
         }
     }
-    pub fn new2d((input_dim1, input_dim2): (usize, usize), error: String) -> Self {
+    pub fn new2d((input_dim1, input_dim2): (usize, usize), error: String, optimizer: String) -> Self {
         NeuralNetwork {
             input_dims: vec![vec![input_dim1, input_dim2]],
-            ..NeuralNetwork::new(error)
+            ..NeuralNetwork::new(error, optimizer)
         }
     }
     pub fn new3d(
         (input_dim1, input_dim2, input_dim3): (usize, usize, usize),
-        error: String,
+        error: String, optimizer: String,
     ) -> Self {
         NeuralNetwork {
             input_dims: vec![vec![input_dim1, input_dim2, input_dim3]],
-            ..NeuralNetwork::new(error)
+            ..NeuralNetwork::new(error, optimizer)
         }
+    }
+
+    pub fn set_optimizer(&mut self, optimizer: Box<dyn Optimizer>) {
+        self.optimizer_function = optimizer;
     }
 
     pub fn set_batch_size(&mut self, batch_size: usize) {
@@ -149,6 +177,7 @@ impl NeuralNetwork {
             padding,
             self.h_p.batch_size,
             self.h_p.learning_rate,
+            self.optimizer_function.clone(),
         );
         self.store_layer(conv_layer);
         self.from_logits = false;
@@ -169,6 +198,7 @@ impl NeuralNetwork {
             output_dim,
             self.h_p.batch_size,
             self.h_p.learning_rate,
+            self.optimizer_function.clone(),
         );
         self.store_layer(dense_layer);
         self.from_logits = false;

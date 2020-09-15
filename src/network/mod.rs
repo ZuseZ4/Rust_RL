@@ -8,3 +8,4 @@ mod layer_trait;
 pub mod nn;
 pub mod q_learning;
 mod tests;
+pub mod optimizer;

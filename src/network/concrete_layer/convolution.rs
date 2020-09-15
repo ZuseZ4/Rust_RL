@@ -2,6 +2,7 @@ use crate::network::layer_trait::Layer;
 use ndarray::{s, Array, Array1, Array2, Array3, ArrayD, Axis, Ix2, Ix3};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be cleaner & faster
 use ndarray_rand::RandomExt;
+use crate::network::optimizer::Optimizer;
 
 pub struct ConvolutionLayer {
     learning_rate: f32,
@@ -14,6 +15,7 @@ pub struct ConvolutionLayer {
     kernel_updates: Array2<f32>,
     batch_size: usize,
     num_in_batch: usize,
+    weight_optimizer: Box<dyn Optimizer>,
 }
 
 impl ConvolutionLayer {
@@ -41,6 +43,7 @@ impl ConvolutionLayer {
         padding: usize,
         batch_size: usize,
         learning_rate: f32,
+        optimizer: Box<dyn Optimizer>,
     ) -> Self {
         assert_eq!(
             filter_shape.0, filter_shape.1,
@@ -56,6 +59,8 @@ impl ConvolutionLayer {
             (filter_number, kernel_elements),
             Normal::new(0.0, 1.0 as f32).unwrap(),
         );
+        let mut weight_optimizer = optimizer.clone();
+        weight_optimizer.set_input_shape(vec![filter_number, kernel_elements]);
         ConvolutionLayer {
             filter_shape,
             learning_rate,
@@ -66,6 +71,7 @@ impl ConvolutionLayer {
             kernel_updates: Array::zeros((filter_number, kernel_elements)),
             batch_size,
             num_in_batch: 0,
+            weight_optimizer,
         }
     }
 
@@ -226,8 +232,8 @@ impl Layer for ConvolutionLayer {
 
         if self.num_in_batch == self.batch_size {
             self.num_in_batch = 0;
-            self.kernels = self.kernels.clone()
-                - self.learning_rate / (self.batch_size as f32) * self.kernel_updates.clone();
+            let weight_delta = self.learning_rate / (self.batch_size as f32) * self.kernel_updates.clone();
+            self.kernels = self.kernels.clone() - self.weight_optimizer.optimize2d(weight_delta);
         }
 
         //calc feedback for the previous layer:

@@ -2,6 +2,7 @@ use crate::network::layer_trait::Layer;
 use ndarray::{Array, Array1, Array2, ArrayD, Axis, Ix1};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be better & faster
 use ndarray_rand::RandomExt;
+use crate::network::optimizer::Optimizer;
 
 pub struct DenseLayer {
     input_dim: usize,
@@ -13,17 +14,23 @@ pub struct DenseLayer {
     feedback: Array2<f32>,
     batch_size: usize,
     predictions: usize,
+    weight_optimizer: Box<dyn Optimizer>,
+    bias_optimizer: Box<dyn Optimizer>,
 }
 
 impl DenseLayer {
-    pub fn new(input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32) -> Self {
+    pub fn new(input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32, optimizer: Box<dyn Optimizer>) -> Self {
         //xavier init
         let weights: Array2<f32> = Array::random(
             (output_dim, input_dim),
             Normal::new(0.0, 2.0 / ((output_dim + input_dim) as f32).sqrt()).unwrap(),
         );
         let bias: Array1<f32> = Array::zeros(output_dim); //https://cs231n.github.io/neural-networks-2/#init
-                                                          //let bias: Array1<f32> = Array::random((output_dim),Normal::new(0.0, 1.0/(output_dim as f32/2.0)).unwrap());//https://cs231n.github.io/neural-networks-2/#init
+        //let bias: Array1<f32> = Array::random((output_dim),Normal::new(0.0, 1.0/(output_dim as f32/2.0)).unwrap());//https://cs231n.github.io/neural-networks-2/#init
+        let mut weight_optimizer = optimizer.clone();
+        let mut bias_optimizer = optimizer;
+        weight_optimizer.set_input_shape(vec![output_dim, input_dim]);
+        bias_optimizer.set_input_shape(vec![output_dim]);
         DenseLayer {
             input_dim,
             output_dim,
@@ -34,6 +41,8 @@ impl DenseLayer {
             feedback: Array::zeros((output_dim, batch_size)),
             batch_size,
             predictions: 0,
+            weight_optimizer,
+            bias_optimizer,
         }
     }
 }
@@ -84,8 +93,8 @@ impl Layer for DenseLayer {
             assert_eq!(d_w.shape(), self.weights.shape());
             assert_eq!(d_b.shape(), self.bias.shape());
 
-            self.weights -= &d_w;
-            self.bias -= &d_b;
+            self.weights -= &self.weight_optimizer.optimize2d(d_w);
+            self.bias -= &self.bias_optimizer.optimize1d(d_b);
 
             self.net = Array::zeros((self.input_dim, self.batch_size)); //can be skipped, just ignore/overwrite old vals
             self.feedback = Array::zeros((self.output_dim, self.batch_size)); //can be skipped, just ignore/overwrite old vals

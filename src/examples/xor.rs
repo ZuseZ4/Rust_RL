@@ -3,7 +3,7 @@ use ndarray::{array, Array2};
 use rand::Rng;
 
 pub fn new() -> NeuralNetwork {
-    let mut nn = NeuralNetwork::new1d(2, "none".to_string());
+    let mut nn = NeuralNetwork::new1d(2, "none".to_string(), "adam".to_string());
     nn.set_batch_size(4);
     nn.set_learning_rate(0.01);
     nn.add_dense(2); //Dense with 2 output neurons

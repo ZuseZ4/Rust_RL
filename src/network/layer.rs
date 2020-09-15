@@ -1,13 +1,11 @@
 use crate::network::concrete_layer;
-use concrete_layer::activation_layer::leakyrelu::LeakyReLuLayer;
-use concrete_layer::activation_layer::relu::ReLuLayer;
-use concrete_layer::activation_layer::sigmoid::SigmoidLayer;
-use concrete_layer::activation_layer::softmax::SoftmaxLayer;
+use concrete_layer::activation_layer::{LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer};
 use concrete_layer::convolution::ConvolutionLayer;
 use concrete_layer::dense::DenseLayer;
 use concrete_layer::dropout::DropoutLayer;
 use concrete_layer::flatten::FlattenLayer;
 
+use crate::network::optimizer::Optimizer;
 use crate::network::layer_trait::Layer;
 use ndarray::ArrayD;
 
@@ -28,12 +26,14 @@ impl LayerType {
         output_dim: usize,
         batch_size: usize,
         learning_rate: f32,
+        optimizer: Box<dyn Optimizer>,
     ) -> Result<Self, String> {
         Ok(LayerType::D(DenseLayer::new(
             input_dim,
             output_dim,
             batch_size,
             learning_rate,
+            optimizer,
         )))
     }
 
@@ -44,6 +44,7 @@ impl LayerType {
         padding: usize,
         batch_size: usize,
         learning_rate: f32,
+        optimizer: Box<dyn Optimizer>,
     ) -> Result<Self, String> {
         Ok(LayerType::C(ConvolutionLayer::new(
             filter_shape,
@@ -52,6 +53,7 @@ impl LayerType {
             padding,
             batch_size,
             learning_rate,
+            optimizer,
         )))
     }
 

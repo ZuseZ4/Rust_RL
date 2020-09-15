@@ -4,10 +4,10 @@ use ndarray::{Array2, Array4, Axis};
 use rand::Rng;
 
 fn new() -> NeuralNetwork {
-    let mut nn = NeuralNetwork::new3d((3, 32, 32), "cce".to_string());
+    let mut nn = NeuralNetwork::new3d((3, 32, 32), "cce".to_string(), "adam".to_string());
     nn.set_batch_size(32);
     nn.set_learning_rate(0.1);
-    nn.add_convolution((3, 3), 16, 1);
+    nn.add_convolution((3, 3), 10, 1);
     nn.add_activation("sigmoid");
     nn.add_dropout(0.);
     nn.add_flatten();
