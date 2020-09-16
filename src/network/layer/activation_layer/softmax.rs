@@ -1,5 +1,6 @@
 use crate::network::layer::Layer;
 use ndarray::{Array, ArrayD};
+use ndarray_stats::QuantileExt;
 
 #[derive(Default)]
 pub struct SoftmaxLayer {
@@ -24,18 +25,9 @@ impl Layer for SoftmaxLayer {
     }
 
     fn predict(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
-        // ignore nans on sum and max
-        let max: f32 = x.iter().fold(f32::MIN, |acc, &x| {
-            if x.is_nan() {
-                acc
-            } else if acc <= x {
-                x
-            } else {
-                acc
-            }
-        });
+        let max: f32 = *x.max_skipnan();
         x.mapv_inplace(|x| (x - max).exp());
-        let sum: f32 = x.iter().sum();
+        let sum: f32 = x.iter().filter(|x| !x.is_nan()).sum::<f32>();
         x.mapv_inplace(|x| x / sum);
         x
     }

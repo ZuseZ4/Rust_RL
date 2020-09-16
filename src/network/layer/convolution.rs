@@ -10,12 +10,14 @@ pub struct ConvolutionLayer {
     filter_shape: (usize, usize),
     filter_depth: usize,
     padding: usize,
-    //bias: Array1<f32>,
+    bias: Array1<f32>,
     last_input: ArrayD<f32>,
     kernel_updates: Array2<f32>,
+    bias_updates: Array1<f32>,
     batch_size: usize,
     num_in_batch: usize,
     weight_optimizer: Box<dyn Optimizer>,
+    bias_optimizer: Box<dyn Optimizer>,
 }
 
 impl ConvolutionLayer {
@@ -60,18 +62,23 @@ impl ConvolutionLayer {
             Normal::new(0.0, 1.0 as f32).unwrap(),
         );
         let mut weight_optimizer = optimizer.clone();
+        let mut bias_optimizer = optimizer;
         weight_optimizer.set_input_shape(vec![filter_number, kernel_elements]);
+        bias_optimizer.set_input_shape(vec![filter_number]);
         ConvolutionLayer {
             filter_shape,
             learning_rate,
             kernels,
             filter_depth,
             padding,
+            bias: Array::zeros(filter_number), //http://cs231n.github.io/neural-networks-2/
             last_input: Array::zeros(0).into_dyn(),
             kernel_updates: Array::zeros((filter_number, kernel_elements)),
+            bias_updates: Array::zeros(filter_number),
             batch_size,
             num_in_batch: 0,
             weight_optimizer,
+            bias_optimizer,
         }
     }
 
@@ -193,7 +200,7 @@ impl Layer for ConvolutionLayer {
         let mut prod = Array::zeros((n, output_shape_x * output_shape_y));
         for i in 0..n {
             let kernel = &self.kernels.row(i);
-            prod.row_mut(i).assign(&x_unfolded.dot(kernel)); // add bias?
+            prod.row_mut(i).assign(&(x_unfolded.dot(kernel) + self.bias[i])); // add bias? -> Done :)
         }
 
         // reshape product for next layer
@@ -202,41 +209,46 @@ impl Layer for ConvolutionLayer {
     }
 
     fn forward(&mut self, input: ArrayD<f32>) -> ArrayD<f32> {
-        // 2d input, 3d out currently
         self.last_input = self.add_padding(input.clone());
         self.predict(input)
     }
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
-        //println!("backward {:?}", feedback.shape());
         // precalculate the weight updates for this batch_element
 
         // prepare input matrix
         let x: Array3<f32> = feedback.into_dimensionality::<Ix3>().unwrap();
-        let feedback_as_kernel = self.shape_into_kernel(x);
+        let feedback_as_kernel = self.shape_into_kernel(x.clone());
 
         //prepare feedback
         let k: usize = (feedback_as_kernel.shape()[1] as f64).sqrt() as usize;
         let input_unfolded = self.unfold_matrix(self.last_input.clone(), k, false);
 
         //calculate kernel updates
-        //println!("{:?}\n\n{:?}",input_unfolded.shape(), feedback_as_kernel.shape());
         let prod = input_unfolded.dot(&feedback_as_kernel.t()).t().into_owned();
+        let sum: Array1<f32>  = x.sum_axis(Axis(1)).sum_axis(Axis(1));
 
         if self.num_in_batch == 0 {
             self.kernel_updates = prod;
+            self.bias_updates = sum;
         } else {
             self.kernel_updates += &prod;
+            self.bias_updates += &sum;
         }
         self.num_in_batch += 1;
 
         if self.num_in_batch == self.batch_size {
             self.num_in_batch = 0;
-            let weight_delta = self.learning_rate / (self.batch_size as f32) * self.kernel_updates.clone();
-            self.kernels = self.kernels.clone() - self.weight_optimizer.optimize2d(weight_delta);
+            let weight_delta = 1. / (self.batch_size as f32) * self.kernel_updates.clone();
+            let bias_delta = 1. / (self.batch_size as f32) * self.bias_updates.clone();
+            self.kernels -= &(self.weight_optimizer.optimize2d(weight_delta) * self.learning_rate);
+            self.bias -= &(self.bias_optimizer.optimize1d(bias_delta) * self.learning_rate);
+            //println!("{:}", self.kernels);
+            //println!("{:}", self.kernels.index_axis(Axis(0),3));
+            //println!("bias {:}", self.bias);
         }
 
-        //calc feedback for the previous layer:
+        // calc feedback for the previous layer:
         // use fliped kernel vectors here
         // https://medium.com/@pavisj/convolutions-and-backpropagations-46026a8f5d2c
         // return that

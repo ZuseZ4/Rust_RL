@@ -1,10 +1,12 @@
 mod bce;
 mod cce;
 mod noop;
-//pub mod mse;
+mod mse;
+mod rmse;
 
 mod error_trait;
-
+pub use mse::MeanSquareError;
+pub use rmse::RootMeanSquareError;
 pub use bce::BinaryCrossEntropyError;
 pub use cce::CategoricalCrossEntropyError;
 pub use noop::NoopError;

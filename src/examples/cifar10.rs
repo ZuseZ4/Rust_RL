@@ -34,7 +34,7 @@ pub fn test_cifar10() {
 
     // Deconstruct the returned Cifar struct.
     let (trn_img, trn_lbl, tst_img, tst_lbl) = Cifar10::default()
-        .show_images(true)
+        .show_images(false)
         .build()
         .expect("Failed to build CIFAR-10 data");
 

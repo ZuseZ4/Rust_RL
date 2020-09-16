@@ -2,7 +2,7 @@ use crate::network;
 use network::optimizer::*;
 use network::layer::{Layer, ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer};
 use network::layer::activation_layer::{LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer};
-use network::error::{Error, BinaryCrossEntropyError, CategoricalCrossEntropyError, NoopError};
+use network::error::{Error, BinaryCrossEntropyError, CategoricalCrossEntropyError, NoopError, MeanSquareError, RootMeanSquareError};
 
 use ndarray::parallel::prelude::*;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
@@ -70,6 +70,8 @@ impl NeuralNetwork {
 
     fn get_error(error_type: String) -> Result<Box<dyn Error>, String> {
         match error_type.as_str() {
+            "mse" => Ok(Box::new(MeanSquareError::new())),
+            "rmse" => Ok(Box::new(RootMeanSquareError::new())),
             "bce" => Ok(Box::new(BinaryCrossEntropyError::new())),
             "cce" => Ok(Box::new(CategoricalCrossEntropyError::new())),
             "noop" => Ok(Box::new(NoopError::new())),
@@ -193,7 +195,6 @@ impl NeuralNetwork {
         } else {
             filter_depth = input_dim[0];
         }
-        //let conv_layer = LayerType::new_convolution(
         let conv_layer = ConvolutionLayer::new(
             filter_shape,
             filter_depth,
@@ -301,9 +302,24 @@ impl NeuralNetwork {
     }
 
     pub fn loss_from_prediction(&mut self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
-        let loss = self
-            .error_function
-            .forward(prediction.into_dyn(), target.into_dyn());
+        let y = prediction.into_dyn();
+        let t = target.into_dyn();
+        let loss = self.error_function.forward(y, t);
+        loss[0]
+    }
+
+    pub fn loss_from_input(&mut self, mut input: ArrayD<f32>, target: Array1<f32>) -> f32 {
+        let n = self.layers.len();
+        for i in 0..(n - 1) {
+            input = self.layers[i].forward(input);
+        }
+
+        let loss;
+        if self.from_logits {
+          loss = self.error_function.loss_from_logits(input, target.into_dyn());
+        } else {
+          loss = self.error_function.forward(input, target.into_dyn());
+        };
         loss[0]
     }
 

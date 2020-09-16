@@ -2,35 +2,38 @@ use crate::network::error::Error;
 use ndarray::{ArrayD, Array1, Ix1};
 
 #[derive(Default)]
-pub struct MeanSquareError {
+pub struct RootMeanSquareError {
+  err: f32,
 }
 
-impl MeanSquareError {
+impl RootMeanSquareError {
   pub fn new() -> Self {
-    MeanSquareError{
+    RootMeanSquareError{
+      err: 0.,
     }
   }
 }
 
 
 
-impl Error for MeanSquareError {
+impl Error for RootMeanSquareError {
 
   fn get_type(&self) -> String {
-    "Mean Square Error".to_string()
+    "Root Mean Square Error".to_string()
   }
 
   fn forward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
     let output = output.into_dimensionality::<Ix1>().unwrap();
     let target = target.into_dimensionality::<Ix1>().unwrap();
     let n = output.len() as f32;
-    let err = output.iter().zip(target.iter()).fold(0., |err, val| err+f32::powf(val.0-val.1,2.)) / n;
-    Array1::<f32>::from_elem(1,0.5 * err).into_dyn()
+    let err = output.iter().zip(target.iter()).fold(0., |err, val| err+f32::powf(val.0-val.1,2.)) / (2. * n);
+    self.err = f32::sqrt(err);
+    Array1::<f32>::from_elem(1, self.err.clone()).into_dyn()
   }
 
   fn backward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32>{
-    let n = target.len() as f32;
-    (output - target) / n
+    let div = 2. * target.len() as f32 * self.err.clone();
+    (output - target) / div
   }
 
   fn loss_from_logits(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {

@@ -1,7 +1,7 @@
-use crate::network::error::error_trait::Error;
+use crate::network::error::Error;
 use crate::network::layer::Layer;
 use crate::network::layer::activation_layer::SigmoidLayer;
-use ndarray::ArrayD;
+use ndarray::{ArrayD, Array};
 
 pub struct BinaryCrossEntropyError {
     activation_function: Box<dyn Layer>,
@@ -22,7 +22,7 @@ impl Error for BinaryCrossEntropyError {
 
     // loss after activation function (which probably was sigmoid)
     fn forward(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-        -target.clone() * input.mapv(|x| x.ln()) - (1. - target) * input.mapv(|x| (1. - x).ln())
+        -target.clone() * input.mapv(f32::ln) - (1. - target) * input.mapv(|x| (1. - x).ln())
     }
 
     // deriv after activation function (which probably was sigmoid)
@@ -31,9 +31,12 @@ impl Error for BinaryCrossEntropyError {
     }
 
     // takes input from last dense/conv/.. layer directly, without activation function in between
-    //Loss(y,z) = max(z,0) - yz + log(1+ e^(-|z|)), y is label
+    //Loss(t,z) = max(z,0) - tz + log(1+ e^(-|z|)), t is label
     fn loss_from_logits(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-        input.mapv(|x| f32::max(0., x)) + input.mapv(|x| 1. + (-f32::abs(x)).exp()) - input * target
+        let tmp = input.mapv(|z| 1. + (-f32::abs(z)).exp());
+        let loss = input.mapv(|x| f32::max(0., x)) + tmp.mapv(f32::ln) - input * target.clone();
+        let cost: f32 = loss.sum() / target.len() as f32;
+        Array::from_elem(1, cost).into_dyn()
     }
 
     // takes input from last dense/conv/.. layer directly, without activation function in between

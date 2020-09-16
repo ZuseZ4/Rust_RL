@@ -7,7 +7,7 @@ mod MLP {
     use rand::Rng;
 
     fn new(i_dim: usize, bs: usize, lr: f32) -> NeuralNetwork {
-        let mut nn = NeuralNetwork::new1d(i_dim, "bce".to_string());
+        let mut nn = NeuralNetwork::new1d(i_dim, "bce".to_string(), "adam".to_string());
         nn.set_batch_size(bs);
         nn.set_learning_rate(lr);
         nn.add_dense(2); //Dense with 2 output neurons
@@ -25,11 +25,11 @@ mod MLP {
             current_feedback = feedback.row(i).into_owned().clone();
 
             let prediction = nn.predict1d(current_input.clone());
-            let diff = nn.loss_from_prediction(prediction.clone(), current_feedback.clone());
-
+            //let diff = nn.loss_from_prediction(prediction.clone(), current_feedback.clone());
+            let diff = nn.loss_from_input(current_input.clone().into_dyn(), current_feedback.clone());
             assert!(
-                diff < 0.1,
-                "failed learning: {}. Achieved loss: {}\n input: {} output was: {:?} should {:?}",
+                diff < 0.2,
+                "failed learning: {}. Achieved loss: {}\n input: {} output was: {:} should {:}",
                 testname,
                 diff,
                 current_input.clone(),
@@ -75,15 +75,6 @@ mod MLP {
             .unwrap()
             .mapv(|x| x as f32);
         trn_img.mapv_inplace(|x| x / 256.0);
-
-        // Get the image of the first digit.
-        let first_image = trn_img.index_axis(Axis(0), n);
-        assert_eq!(first_image.shape(), &[28, 28]);
-
-        // Get the image of the first digit and round the values to the nearest tenth.
-        let trn_show = trn_img.mapv(|x| (x * 10.0).round() / 20.0); //only to show
-        let first_image = trn_show.index_axis(Axis(0), n);
-        println!("The image looks like... \n{:#?}", first_image);
     }
 
     #[test]
@@ -91,7 +82,7 @@ mod MLP {
         let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.], [1., 1.], [1., 1.]]; // AND
         let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
         let mut nn = new(2, 6, 0.1);
-        train(&mut nn, 20_000, &input, &feedback);
+        train(&mut nn, 1_000, &input, &feedback);
         test(nn, input, feedback, "and".to_string());
     }
 
@@ -100,7 +91,7 @@ mod MLP {
         let input = array![[0., 0.], [0., 0.], [0., 0.], [0., 1.], [1., 0.], [1., 1.]]; // OR
         let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //OR works great with 200k examples
         let mut nn = new(2, 6, 0.1);
-        train(&mut nn, 20_0000, &input, &feedback);
+        train(&mut nn, 5000, &input, &feedback);
         test(nn, input, feedback, "or".to_string());
     }
 
@@ -109,7 +100,7 @@ mod MLP {
         let input = array![[0.], [1.]];
         let feedback = array![[1.], [0.]]; // NOT works great with 200k examples
         let mut nn = new(1, 1, 0.1);
-        train(&mut nn, 20_000, &input, &feedback);
+        train(&mut nn, 500, &input, &feedback);
         test(nn, input, feedback, "not".to_string());
     }
 
@@ -118,7 +109,7 @@ mod MLP {
         let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.]]; // FIRST
         let feedback = array![[0.], [0.], [1.], [1.]]; //First works good with 200k examples
         let mut nn = new(2, 4, 0.1);
-        train(&mut nn, 20_000, &input, &feedback);
+        train(&mut nn, 500, &input, &feedback);
         test(nn, input, feedback, "first".to_string());
     }
 
@@ -126,9 +117,8 @@ mod MLP {
     fn xor() {
         let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.]];
         let feedback = array![[0.], [1.], [1.], [0.]]; //XOR
-        let mut nn = new(2, 2, 0.1);
-        //let mut nn = new(2, 2, 0.1);
-        train(&mut nn, 20_000, &input, &feedback);
+        let mut nn = new(2, 4, 0.1);
+        train(&mut nn, 10_000, &input, &feedback);
         test(nn, input, feedback, "xor".to_string());
     }
 }
