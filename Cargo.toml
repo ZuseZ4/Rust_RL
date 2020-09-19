@@ -14,11 +14,15 @@ rand = "0.5.5"
 fnv = "1.0.7"
 ndarray-rand = "0.11.0"
 ndarray-stats = "0.3.0"
-cifar-10 = {git = "https://github.com/quietlychris/cifar-10", branch="master"}
 
-[dependencies.mnist]
-version = "0.4.1"
-#features = ["download"]
+[features]
+default = []
+download = ["datasets/download"]
+
+[dependencies.datasets]
+git = "https://github.com/ZuseZ4/Datasets"
+branch = "master"
+default-features = false
 
 [dependencies.ndarray]
 version = "0.13.1"

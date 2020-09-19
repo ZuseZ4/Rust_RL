@@ -1,5 +1,5 @@
 use crate::network::nn::NeuralNetwork;
-use mnist::{Mnist, MnistBuilder};
+use datasets::mnist_fashion;
 use ndarray::{Array2, Array3, Axis};
 use rand::Rng;
 
@@ -32,47 +32,27 @@ fn train(nn: &mut NeuralNetwork, num: usize, input: &Array3<f32>, fb: &Array2<f3
 pub fn test_mnist() {
     let (train_size, test_size, rows, cols) = (60_000, 10_000, 28, 28);
 
-    // Deconstruct the returned Mnist struct.
-    let Mnist {
+    #[cfg(features = "download")]
+    mnist_fashion::download_and_extract();
+    let mnist_fashion::Data {
         trn_img,
         trn_lbl,
         tst_img,
         tst_lbl,
         ..
-    } = MnistBuilder::new()
-        .use_fashion_data()
-        .label_format_one_hot() //0..9
-        .download_and_extract()
-        .finalize();
-
-    // changing mnist train dataset from long u8 vectors to f32 matrices
-    let train_lbl = Array2::from_shape_vec((train_size, 10), trn_lbl)
-        .unwrap()
-        .mapv(|x| x as f32);
-    let test_lbl = Array2::from_shape_vec((test_size, 10), tst_lbl)
-        .unwrap()
-        .mapv(|x| x as f32);
-    let mut train_img: Array3<f32> = Array3::from_shape_vec((train_size, rows, cols), trn_img)
-        .unwrap()
-        .mapv(|x| x as f32);
-    let mut test_img: Array3<f32> = Array3::from_shape_vec((test_size, rows, cols), tst_img)
-        .unwrap()
-        .mapv(|x| x as f32);
-    assert_eq!(train_img.shape(), &[train_size, rows, cols]);
-    assert_eq!(test_img.shape(), &[test_size, rows, cols]);
-    println!("mapping image values from [0,255] to [0,1]");
-    train_img.mapv_inplace(|x| x / 256.0);
-    test_img.mapv_inplace(|x| x / 256.0);
+    } = mnist_fashion::new_normalized();
+    assert_eq!(trn_img.shape(), &[train_size, rows, cols]);
+    assert_eq!(tst_img.shape(), &[test_size, rows, cols]);
 
     // Get the image of the first digit.
-    let first_image = train_img.index_axis(Axis(0), 0);
+    let first_image = trn_img.index_axis(Axis(0), 0);
     assert_eq!(first_image.shape(), &[28, 28]);
 
     let mut nn = new();
     nn.print_setup();
     for i in 0..5 {
-        println!("{}", i);
-        train(&mut nn, 60_000, &train_img, &train_lbl); //60_000
-        test(&mut nn, &test_img, &test_lbl);
+        print!("{}: ", i + 1);
+        train(&mut nn, 60_000, &trn_img, &trn_lbl); //60_000
+        test(&mut nn, &tst_img, &tst_lbl);
     }
 }
