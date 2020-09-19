@@ -1,43 +1,42 @@
 use crate::network::error::Error;
-use ndarray::{ArrayD, Array1, Ix1};
+use ndarray::{Array1, ArrayD, Ix1};
 
 #[derive(Default)]
-pub struct MeanSquareError {
-}
+pub struct MeanSquareError {}
 
 impl MeanSquareError {
-  pub fn new() -> Self {
-    MeanSquareError{
+    pub fn new() -> Self {
+        MeanSquareError {}
     }
-  }
 }
 
-
-
 impl Error for MeanSquareError {
+    fn get_type(&self) -> String {
+        format!("Mean Square")
+    }
 
-  fn get_type(&self) -> String {
-    "Mean Square Error".to_string()
-  }
+    fn forward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        let output = output.into_dimensionality::<Ix1>().unwrap();
+        let target = target.into_dimensionality::<Ix1>().unwrap();
+        let n = output.len() as f32;
+        let err = output
+            .iter()
+            .zip(target.iter())
+            .fold(0., |err, val| err + f32::powf(val.0 - val.1, 2.))
+            / n;
+        Array1::<f32>::from_elem(1, 0.5 * err).into_dyn()
+    }
 
-  fn forward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-    let output = output.into_dimensionality::<Ix1>().unwrap();
-    let target = target.into_dimensionality::<Ix1>().unwrap();
-    let n = output.len() as f32;
-    let err = output.iter().zip(target.iter()).fold(0., |err, val| err+f32::powf(val.0-val.1,2.)) / n;
-    Array1::<f32>::from_elem(1,0.5 * err).into_dyn()
-  }
+    fn backward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        let n = target.len() as f32;
+        (output - target) / n
+    }
 
-  fn backward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32>{
-    let n = target.len() as f32;
-    (output - target) / n
-  }
+    fn loss_from_logits(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        self.forward(output, target)
+    }
 
-  fn loss_from_logits(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-    self.forward(output, target)
-  }
-
-  fn deriv_from_logits(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-    self.backward(output, target)
-  }
+    fn deriv_from_logits(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        self.backward(output, target)
+    }
 }

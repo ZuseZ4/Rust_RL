@@ -1,8 +1,8 @@
 use crate::network::layer::Layer;
+use crate::network::optimizer::Optimizer;
 use ndarray::{s, Array, Array1, Array2, Array3, ArrayD, Axis, Ix2, Ix3};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be cleaner & faster
 use ndarray_rand::RandomExt;
-use crate::network::optimizer::Optimizer;
 
 pub struct ConvolutionLayer {
     learning_rate: f32,
@@ -168,15 +168,12 @@ impl ConvolutionLayer {
 
 impl Layer for ConvolutionLayer {
     fn get_type(&self) -> String {
-        let output = format!(
-            "Convolution Layer with {} {}x{} Kernels and {} padding.",
-            self.kernels.nrows(),
-            self.filter_shape.0,
-            self.filter_shape.1,
-            self.padding
-        );
+        format!("Conv")
         //self.print_kernel();
-        output
+    }
+
+    fn get_num_parameter(&self) -> usize {
+        self.kernels.nrows() * self.kernels.ncols() + self.kernels.nrows() // num_kernels * size_kernels + bias
     }
 
     fn get_output_shape(&self, input_shape: Vec<usize>) -> Vec<usize> {
@@ -200,7 +197,8 @@ impl Layer for ConvolutionLayer {
         let mut prod = Array::zeros((n, output_shape_x * output_shape_y));
         for i in 0..n {
             let kernel = &self.kernels.row(i);
-            prod.row_mut(i).assign(&(x_unfolded.dot(kernel) + self.bias[i])); // add bias? -> Done :)
+            prod.row_mut(i)
+                .assign(&(x_unfolded.dot(kernel) + self.bias[i])); // add bias? -> Done :)
         }
 
         // reshape product for next layer
@@ -226,7 +224,7 @@ impl Layer for ConvolutionLayer {
 
         //calculate kernel updates
         let prod = input_unfolded.dot(&feedback_as_kernel.t()).t().into_owned();
-        let sum: Array1<f32>  = x.sum_axis(Axis(1)).sum_axis(Axis(1));
+        let sum: Array1<f32> = x.sum_axis(Axis(1)).sum_axis(Axis(1));
 
         if self.num_in_batch == 0 {
             self.kernel_updates = prod;

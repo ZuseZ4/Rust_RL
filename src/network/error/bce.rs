@@ -1,10 +1,16 @@
 use crate::network::error::Error;
-use crate::network::layer::Layer;
 use crate::network::layer::activation_layer::SigmoidLayer;
-use ndarray::{ArrayD, Array};
+use crate::network::layer::Layer;
+use ndarray::{Array, ArrayD};
 
 pub struct BinaryCrossEntropyError {
     activation_function: Box<dyn Layer>,
+}
+
+impl Default for BinaryCrossEntropyError {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BinaryCrossEntropyError {
@@ -17,7 +23,7 @@ impl BinaryCrossEntropyError {
 
 impl Error for BinaryCrossEntropyError {
     fn get_type(&self) -> String {
-        "Binary Crossentropy Error".to_string()
+        format!("Binary Crossentropy")
     }
 
     // loss after activation function (which probably was sigmoid)

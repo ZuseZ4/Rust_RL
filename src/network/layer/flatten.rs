@@ -17,7 +17,11 @@ impl FlattenLayer {
 
 impl Layer for FlattenLayer {
     fn get_type(&self) -> String {
-        "Flatten Layer".to_string()
+        "Flatten".to_string()
+    }
+
+    fn get_num_parameter(&self) -> usize {
+        0
     }
 
     fn get_output_shape(&self, input_dim: Vec<usize>) -> Vec<usize> {

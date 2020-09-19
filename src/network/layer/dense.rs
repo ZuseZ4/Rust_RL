@@ -1,8 +1,8 @@
 use crate::network::layer::Layer;
+use crate::network::optimizer::Optimizer;
 use ndarray::{Array, Array1, Array2, ArrayD, Axis, Ix1};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be better & faster
 use ndarray_rand::RandomExt;
-use crate::network::optimizer::Optimizer;
 
 pub struct DenseLayer {
     input_dim: usize,
@@ -19,7 +19,13 @@ pub struct DenseLayer {
 }
 
 impl DenseLayer {
-    pub fn new(input_dim: usize, output_dim: usize, batch_size: usize, learning_rate: f32, optimizer: Box<dyn Optimizer>) -> Self {
+    pub fn new(
+        input_dim: usize,
+        output_dim: usize,
+        batch_size: usize,
+        learning_rate: f32,
+        optimizer: Box<dyn Optimizer>,
+    ) -> Self {
         //xavier init
         let weights: Array2<f32> = Array::random(
             (output_dim, input_dim),
@@ -48,11 +54,11 @@ impl DenseLayer {
 
 impl Layer for DenseLayer {
     fn get_type(&self) -> String {
-        let output = format!(
-            "Dense Layer with {} input and {} output neurons",
-            self.input_dim, self.output_dim
-        );
-        output
+        format!("Dense")
+    }
+
+    fn get_num_parameter(&self) -> usize {
+        self.input_dim * self.output_dim + self.output_dim // weights + bias
     }
 
     fn get_output_shape(&self, _input_dim: Vec<usize>) -> Vec<usize> {

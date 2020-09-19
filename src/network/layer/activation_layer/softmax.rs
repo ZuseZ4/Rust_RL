@@ -24,6 +24,10 @@ impl Layer for SoftmaxLayer {
         input_dim
     }
 
+    fn get_num_parameter(&self) -> usize {
+        0
+    }
+
     fn predict(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
         let max: f32 = *x.max_skipnan();
         x.mapv_inplace(|x| (x - max).exp());

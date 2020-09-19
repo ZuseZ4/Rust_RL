@@ -2,12 +2,10 @@ use crate::network::layer::Layer;
 use ndarray::{Array, ArrayD};
 use ndarray_rand::rand_distr::Binomial;
 use ndarray_rand::RandomExt;
-//use rand::{Rng, ThreadRng};
 
 pub struct DropoutLayer {
     drop_prob: f64,
     dropout_matrix: ArrayD<f32>,
-    //rng: ThreadRng,
 }
 
 impl DropoutLayer {
@@ -15,18 +13,18 @@ impl DropoutLayer {
         DropoutLayer {
             drop_prob: dropout_prob as f64,
             dropout_matrix: Array::zeros(0).into_dyn(),
-            //rng: rand::thread_rng(),
         }
     }
 }
 
 impl Layer for DropoutLayer {
     fn get_type(&self) -> String {
-        let output = format!(
-            "Dropout Layer with a {:.2}% drop probability",
-            self.drop_prob * 100.
-        );
+        let output = format!("Dropout: ~{:.2}%", self.drop_prob * 100.);
         output
+    }
+
+    fn get_num_parameter(&self) -> usize {
+        0
     }
 
     fn get_output_shape(&self, input_dim: Vec<usize>) -> Vec<usize> {

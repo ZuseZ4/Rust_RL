@@ -1,13 +1,14 @@
 use crate::network;
-use network::optimizer::*;
-use network::layer::{Layer, ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer};
+use network::error::{
+    BinaryCrossEntropyError, CategoricalCrossEntropyError, Error, MeanSquareError, NoopError,
+    RootMeanSquareError,
+};
 use network::layer::activation_layer::{LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer};
-use network::error::{Error, BinaryCrossEntropyError, CategoricalCrossEntropyError, NoopError, MeanSquareError, RootMeanSquareError};
+use network::layer::{ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer, Layer};
+use network::optimizer::*;
 
 use ndarray::parallel::prelude::*;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
-
-
 
 #[derive(Default)]
 struct HyperParameter {
@@ -57,15 +58,14 @@ pub struct NeuralNetwork {
 }
 
 impl NeuralNetwork {
-
     fn get_activation(activation_type: String) -> Result<Box<dyn Layer>, String> {
-      match activation_type.as_str() {
+        match activation_type.as_str() {
             "softmax" => Ok(Box::new(SoftmaxLayer::new())),
             "sigmoid" => Ok(Box::new(SigmoidLayer::new())),
             "relu" => Ok(Box::new(ReLuLayer::new())),
             "leakyrelu" => Ok(Box::new(LeakyReLuLayer::new())),
             _ => Err(format!("Bad Activation Layer: {}", activation_type)),
-      }
+        }
     }
 
     fn get_error(error_type: String) -> Result<Box<dyn Error>, String> {
@@ -80,14 +80,14 @@ impl NeuralNetwork {
     }
 
     fn get_optimizer(optimizer: String) -> Result<Box<dyn Optimizer>, String> {
-      match optimizer.as_str() {
-        "adagrad" => Ok(Box::new(AdaGrad::new())),
-        "rmsprop" => Ok(Box::new(RMSProp::new(0.9))),
-        "momentum" => Ok(Box::new(Momentum::new(0.9))),
-        "adam" => Ok(Box::new(Adam::new(0.9, 0.999))),
-        "none" => Ok(Box::new(Noop::new())),
-        _  => Err(format!("Unknown optimizer: {}", optimizer)),
-      }
+        match optimizer.as_str() {
+            "adagrad" => Ok(Box::new(AdaGrad::new())),
+            "rmsprop" => Ok(Box::new(RMSProp::new(0.9))),
+            "momentum" => Ok(Box::new(Momentum::new(0.9))),
+            "adam" => Ok(Box::new(Adam::new(0.9, 0.999))),
+            "none" => Ok(Box::new(Noop::new())),
+            _ => Err(format!("Unknown optimizer: {}", optimizer)),
+        }
     }
 
     fn new(error: String, optimizer: String) -> Self {
@@ -101,11 +101,11 @@ impl NeuralNetwork {
         }
         let optimizer_function;
         match NeuralNetwork::get_optimizer(optimizer) {
-          Ok(optimizer) => optimizer_function = optimizer,
-          Err(warning) => {
-            eprintln!("{}", warning);
-            optimizer_function = Box::new(Noop::new());
-          }
+            Ok(optimizer) => optimizer_function = optimizer,
+            Err(warning) => {
+                eprintln!("{}", warning);
+                optimizer_function = Box::new(Noop::new());
+            }
         }
 
         NeuralNetwork {
@@ -125,7 +125,11 @@ impl NeuralNetwork {
             ..NeuralNetwork::new(error, optimizer)
         }
     }
-    pub fn new2d((input_dim1, input_dim2): (usize, usize), error: String, optimizer: String) -> Self {
+    pub fn new2d(
+        (input_dim1, input_dim2): (usize, usize),
+        error: String,
+        optimizer: String,
+    ) -> Self {
         NeuralNetwork {
             input_dims: vec![vec![input_dim1, input_dim2]],
             ..NeuralNetwork::new(error, optimizer)
@@ -133,7 +137,8 @@ impl NeuralNetwork {
     }
     pub fn new3d(
         (input_dim1, input_dim2, input_dim3): (usize, usize, usize),
-        error: String, optimizer: String,
+        error: String,
+        optimizer: String,
     ) -> Self {
         NeuralNetwork {
             input_dims: vec![vec![input_dim1, input_dim2, input_dim3]],
@@ -162,13 +167,13 @@ impl NeuralNetwork {
     pub fn add_activation(&mut self, layer_kind: &str) {
         let new_activation = NeuralNetwork::get_activation(layer_kind.to_string());
         match new_activation {
-          Err(error) => {
-            eprintln!("{}, doing nothing", error);
-            return;
-          }
-          Ok(layer) => {
-            self.store_layer(layer);
-          }
+            Err(error) => {
+                eprintln!("{}, doing nothing", error);
+                return;
+            }
+            Ok(layer) => {
+                self.store_layer(layer);
+            }
         }
         match (self.error.as_str(), layer_kind) {
             ("bce", "sigmoid") => self.from_logits = true,
@@ -250,14 +255,49 @@ impl NeuralNetwork {
         self.from_logits = false;
     }
 
+    fn print_separator(&self, separator: &str) {
+        println!(
+            "{}",
+            std::iter::repeat(separator).take(70).collect::<String>()
+        );
+    }
+
     pub fn print_setup(&self) {
-        println!("printing neural network layers");
+        println!(
+            "\nModel: \"sequential\" {:>20} Input shape: {:?}",
+            "", self.input_dims[0]
+        );
+        self.print_separator("─");
+        println!(
+            "{:<20} {:^20} {:>20}",
+            "Layer (type)".to_string(),
+            "Output Shape".to_string(),
+            "Param #".to_string()
+        );
+        self.print_separator("═");
         for i in 0..self.layers.len() {
-            println!("{}", self.layers[i].get_type());
+            let layer_type = format!("{:<20}", self.layers[i].get_type());
+            let layer_params = format!("{:>20}", self.layers[i].get_num_parameter());
+            let output_shape = format!("{:?}", &self.input_dims[i + 1]);
+            println!("{} {:^20} {}", layer_type, output_shape, layer_params);
+            self.print_separator("─");
         }
-        println!("{}", self.error_function.get_type());
-        println!("using from_logits optimization: {}", self.from_logits);
-        println!();
+        println!(
+            "{:<35} {:>30}",
+            "Error function:".to_string(),
+            self.error_function.get_type()
+        );
+        println!(
+            "{:<35} {:>30}",
+            "Optimizer:".to_string(),
+            self.optimizer_function.get_type()
+        );
+        println!(
+            "{:<35} {:>30}",
+            "using from_logits optimization:".to_string(),
+            self.from_logits
+        );
+        self.print_separator("─");
     }
 
     pub fn predict1d(&mut self, input: Array1<f32>) -> Array1<f32> {
@@ -316,9 +356,11 @@ impl NeuralNetwork {
 
         let loss;
         if self.from_logits {
-          loss = self.error_function.loss_from_logits(input, target.into_dyn());
+            loss = self
+                .error_function
+                .loss_from_logits(input, target.into_dyn());
         } else {
-          loss = self.error_function.forward(input, target.into_dyn());
+            loss = self.error_function.forward(input, target.into_dyn());
         };
         loss[0]
     }

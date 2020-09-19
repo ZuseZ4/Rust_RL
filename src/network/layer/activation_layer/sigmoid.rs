@@ -23,6 +23,10 @@ impl Layer for SigmoidLayer {
         input_dim
     }
 
+    fn get_num_parameter(&self) -> usize {
+        0
+    }
+
     fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
         self.forward(x)
     }
