@@ -24,6 +24,7 @@ impl Environment for Board {
         // storing current position into ndarray
         let position = Array2::from_shape_vec((6, 6), self.field.to_vec()).unwrap();
         let position = position.mapv(|x| x as f32);
+        let position = position.mapv(|x| (x + 3.) / 6.); // scale to [0,1]
 
         // collecting allowed moves
         let mut moves = Array::zeros(36); // start as a ndarray of length 36
@@ -54,7 +55,7 @@ impl Environment for Board {
 
     fn done(&self) -> bool {
         // just played sufficient moves
-        if self.rounds == (self.total_rounds * 2).into() {
+        if self.rounds == self.total_rounds as u32 * 2u32 {
             return true;
         }
         // no moves possible so finish game

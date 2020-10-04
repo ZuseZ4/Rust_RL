@@ -2,7 +2,7 @@
 #[allow(non_snake_case)]
 mod MLP {
     use crate::network::nn::NeuralNetwork;
-    use mnist::{Mnist, MnistBuilder};
+    use datasets::mnist;
     use ndarray::{array, Array2, Array3, Axis};
     use rand::Rng;
 
@@ -26,7 +26,8 @@ mod MLP {
 
             let prediction = nn.predict1d(current_input.clone());
             //let diff = nn.loss_from_prediction(prediction.clone(), current_feedback.clone());
-            let diff = nn.loss_from_input(current_input.clone().into_dyn(), current_feedback.clone());
+            let diff =
+                nn.loss_from_input(current_input.clone().into_dyn(), current_feedback.clone());
             assert!(
                 diff < 0.2,
                 "failed learning: {}. Achieved loss: {}\n input: {} output was: {:} should {:}",
@@ -58,23 +59,9 @@ mod MLP {
         let (trn_size, rows, cols) = (60_000, 28, 28);
 
         // Deconstruct the returned Mnist struct.
-        let Mnist {
+        let mnist::Data {
             trn_img, trn_lbl, ..
-        } = MnistBuilder::new()
-            .label_format_one_hot() //0..9
-            .finalize();
-
-        // Get the label of the first digit.
-        let n = 1;
-        let trn_lbl = Array2::from_shape_vec((trn_size, 10), trn_lbl).unwrap();
-        let first_label = trn_lbl.index_axis(Axis(0), n);
-        println!("The first digit is a {}.", first_label);
-
-        // Convert the flattened training images vector to a matrix.
-        let mut trn_img: Array3<f32> = Array3::from_shape_vec((trn_size, rows, cols), trn_img)
-            .unwrap()
-            .mapv(|x| x as f32);
-        trn_img.mapv_inplace(|x| x / 256.0);
+        } = mnist::new_normalized();
     }
 
     #[test]
@@ -114,11 +101,12 @@ mod MLP {
     }
 
     #[test]
+    #[ignore]
     fn xor() {
         let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.]];
         let feedback = array![[0.], [1.], [1.], [0.]]; //XOR
         let mut nn = new(2, 4, 0.1);
-        train(&mut nn, 10_000, &input, &feedback);
+        train(&mut nn, 30_000, &input, &feedback);
         test(nn, input, feedback, "xor".to_string());
     }
 }

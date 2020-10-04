@@ -2,7 +2,7 @@ use crate::network::nn::NeuralNetwork;
 use ndarray::{array, Array2};
 use rand::Rng;
 
-pub fn new() -> NeuralNetwork {
+fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new1d(2, "none".to_string(), "adam".to_string());
     nn.set_batch_size(4);
     nn.set_learning_rate(0.01);
@@ -15,7 +15,7 @@ pub fn new() -> NeuralNetwork {
     nn
 }
 
-pub fn test(nn: &mut NeuralNetwork, input: &Array2<f32>, feedback: &Array2<f32>) {
+fn test(nn: &mut NeuralNetwork, input: &Array2<f32>, feedback: &Array2<f32>) {
     for i in 0..4 {
         println!("input: {}, feedback: {}", input.row(i), feedback.row(i));
         let pred = nn.predict1d(input.row(i).into_owned());

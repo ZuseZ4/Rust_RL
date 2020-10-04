@@ -1,3 +1,7 @@
+//! # Error Interface
+//!
+//! All error functions passed to the neural network are expected to implement this trait
+
 use ndarray::ArrayD;
 
 pub trait Error {

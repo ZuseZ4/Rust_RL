@@ -1,3 +1,12 @@
+//! This submodules bundles all neural network related functionalities.
+//!
+//! A new neural network is created with new1d(..), new2d(..), or new3d(..).
+//! For higher-dimensional input a new() function is available which accepts arbitrary sized input.
+//! The input shape, error function and the optimizer are set during network creation.
+//! If an individual error function or optimizer should be used, they can be set (overwriting the former one) by using set_error_function() or set_optimizer().
+//! Default layers can be added using convenience functions like add_dense(..) or add_convolution(..) which allow setting the main parameters.
+//! For a higher level of controll, or to add own layers, the store_layer(Box<dyn Layer>) function can be used to add a layer to the current network.
+
 use crate::network;
 use network::error::{
     BinaryCrossEntropyError, CategoricalCrossEntropyError, Error, MeanSquareError, NoopError,
@@ -150,6 +159,10 @@ impl NeuralNetwork {
         self.optimizer_function = optimizer;
     }
 
+    pub fn set_error_function(&mut self, error: Box<dyn Error>) {
+        self.error_function = error;
+    }
+
     pub fn set_batch_size(&mut self, batch_size: usize) {
         self.h_p.batch_size(batch_size);
     }
@@ -158,7 +171,7 @@ impl NeuralNetwork {
         self.h_p.learning_rate(learning_rate);
     }
 
-    fn store_layer(&mut self, layer: Box<dyn Layer>) {
+    pub fn store_layer(&mut self, layer: Box<dyn Layer>) {
         let input_shape = self.input_dims.last().unwrap().clone();
         self.input_dims.push(layer.get_output_shape(input_shape));
         self.layers.push(layer);
@@ -366,15 +379,17 @@ impl NeuralNetwork {
     }
 
     pub fn train1d(&mut self, input: Array1<f32>, target: Array1<f32>) {
-        self.train(input.into_dyn(), target)
+        self.train(input.into_dyn(), target);
     }
     pub fn train2d(&mut self, input: Array2<f32>, target: Array1<f32>) {
-        self.train(input.into_dyn(), target)
+        self.train(input.into_dyn(), target);
     }
-    pub fn train3d(&mut self, input: Array3<f32>, target: Array1<f32>) {
+    pub fn train3d(&mut self, input: Array3<f32>, target: Array1<f32>) -> Array1<f32> {
         self.train(input.into_dyn(), target)
+            .into_dimensionality::<Ix1>()
+            .unwrap()
     }
-    pub fn train(&mut self, input: ArrayD<f32>, target: Array1<f32>) {
+    pub fn train(&mut self, input: ArrayD<f32>, target: Array1<f32>) -> ArrayD<f32> {
         //maybe return option(accuracy,None) and add a setter to return accuracy?
         let mut input = input.into_dyn();
         let n = self.layers.len();
@@ -384,6 +399,7 @@ impl NeuralNetwork {
         for i in 0..(n - 1) {
             input = self.layers[i].forward(input);
         }
+        let res = input.clone();
 
         let mut feedback;
         // handle last layer and error function
@@ -406,5 +422,6 @@ impl NeuralNetwork {
         for i in (0..(n - 1)).rev() {
             feedback = self.layers[i].backward(feedback);
         }
+        res
     }
 }
