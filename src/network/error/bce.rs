@@ -3,6 +3,7 @@ use crate::network::layer::activation_layer::SigmoidLayer;
 use crate::network::layer::Layer;
 use ndarray::{Array, ArrayD};
 
+/// This implements the binary crossentropy.
 pub struct BinaryCrossEntropyError {
     activation_function: Box<dyn Layer>,
 }
@@ -14,6 +15,7 @@ impl Default for BinaryCrossEntropyError {
 }
 
 impl BinaryCrossEntropyError {
+    /// No parameters required.
     pub fn new() -> Self {
         BinaryCrossEntropyError {
             activation_function: Box::new(SigmoidLayer::new()),

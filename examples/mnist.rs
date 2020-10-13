@@ -1,7 +1,8 @@
-use crate::network::nn::NeuralNetwork;
-use datasets::mnist_fashion;
+use rust_rl::network::nn::NeuralNetwork;
+use datasets::mnist;
 use ndarray::{Array2, Array3, Axis};
 use rand::Rng;
+use std::time::Instant;
 
 fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new2d((28, 28), "cce".to_string(), "adam".to_string());
@@ -29,18 +30,18 @@ fn train(nn: &mut NeuralNetwork, num: usize, input: &Array3<f32>, fb: &Array2<f3
     }
 }
 
-pub fn test_mnist() {
+pub fn main() {
     let (train_size, test_size, rows, cols) = (60_000, 10_000, 28, 28);
 
-    #[cfg(features = "download")]
-    mnist_fashion::download_and_extract();
-    let mnist_fashion::Data {
+    #[cfg(feature = "download")]
+    mnist::download_and_extract();
+    let mnist::Data {
         trn_img,
         trn_lbl,
         tst_img,
         tst_lbl,
         ..
-    } = mnist_fashion::new_normalized();
+    } = mnist::new_normalized();
     assert_eq!(trn_img.shape(), &[train_size, rows, cols]);
     assert_eq!(tst_img.shape(), &[test_size, rows, cols]);
 
@@ -50,9 +51,11 @@ pub fn test_mnist() {
 
     let mut nn = new();
     nn.print_setup();
+    let start = Instant::now();
     for i in 0..5 {
         print!("{}: ", i + 1);
         train(&mut nn, 60_000, &trn_img, &trn_lbl); //60_000
         test(&mut nn, &tst_img, &tst_lbl);
     }
+    println!("Trained for {} seconds.", start.elapsed().as_secs());
 }

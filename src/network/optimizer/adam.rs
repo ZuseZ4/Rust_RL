@@ -1,6 +1,7 @@
 use super::optimizer_trait::Optimizer;
 use ndarray::{Array, Array1, Array2, Array3, ArrayD, Ix1, Ix2, Ix3};
 
+/// An optimizer for more efficient weight updates.
 #[derive(Clone)]
 pub struct Adam {
     previous_sum: ArrayD<f32>,
@@ -17,6 +18,7 @@ impl Default for Adam {
 }
 
 impl Adam {
+    /// Common values for beta1 and beta2 are 0.9 and 0.999.
     pub fn new(beta1: f32, beta2: f32) -> Self {
         Adam {
             previous_sum: Array::zeros(0).into_dyn(),

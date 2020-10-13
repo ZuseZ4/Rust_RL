@@ -1,9 +1,11 @@
-use crate::rl::agent::*;
-use crate::rl::env::fortress::Board;
-use crate::rl::training::Trainer;
+use rust_rl::rl::{agent, env, training};
+use agent::*;
+use env::fortress::Board;
+use training::Trainer;
 use std::io;
 
-pub fn test_fortress() {
+pub fn main() {
+    /*
     let mut auto_fill = String::new();
     println!("Run with default parameters? (1/0/2)");
     io::stdin()
@@ -13,12 +15,13 @@ pub fn test_fortress() {
 
     let params;
     if auto_fill == 1 {
-        params = (25, 4_000, 1000, 13);
+        params = (25, 500, 1000, 12);
     } else if auto_fill == 2 {
         params = (25, parse_train_num(), 1000, 13);
     } else {
         params = parse_input();
-    }
+    }*/
+    let params = (25, 1_000, 1000, 12);
 
     let rounds = params.0;
     let training_games = params.1;
@@ -103,8 +106,10 @@ fn parse_input() -> (u8, u64, u64, u8) {
 
 fn get_agent(agent_num: u8, rounds: u8, first_player: bool) -> Result<Box<dyn Agent>, String> {
     match agent_num {
-        1 => Ok(Box::new(DQLAgent::new(rounds, first_player, 1.))),
-        2 => Ok(Box::new(QLAgent::new(rounds, first_player, 1.))),
+        1 => Ok(Box::new(DQLAgent::new(1.))),
+        2 => Ok(Box::new(QLAgent::new(1.))),
+        //1 => Ok(Box::new(DQLAgent::new(rounds, first_player, 1.))),
+        //2 => Ok(Box::new(QLAgent::new(rounds, first_player, 1.))),
         3 => Ok(Box::new(RandomAgent::new())),
         4 => Ok(Box::new(HumanPlayer::new())),
         _ => Err("Only implemented agents 1-4!".to_string()),

@@ -4,7 +4,7 @@ use ndarray::{s, Array, Array1, Array2, Array3, ArrayD, Axis, Ix2, Ix3};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be cleaner & faster
 use ndarray_rand::RandomExt;
 
-// This Layer implements a convolution on 2d or 3d input.
+/// This layer implements a convolution on 2d or 3d input.
 pub struct ConvolutionLayer {
     learning_rate: f32,
     kernels: Array2<f32>,
@@ -23,6 +23,10 @@ pub struct ConvolutionLayer {
 }
 
 impl ConvolutionLayer {
+    /// This function prints the kernel values.
+    ///
+    /// It's main purpose is to analyze the learning success of the first convolution layer.
+    /// Later layers might not show clear patterns.
     pub fn print_kernel(&self) {
         let n = self.kernels.nrows();
         println!("printing kernels: \n");

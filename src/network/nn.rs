@@ -56,6 +56,10 @@ impl HyperParameter {
     }
 }
 
+// Refactor in NeuralNetwork::constructor and NeuralNetwork::executor?
+/// The main neural network class. It stores all relevant information.
+///
+/// Especially all layers, as well as their input and output shape are stored and verified.
 pub struct NeuralNetwork {
     input_dims: Vec<Vec<usize>>, //each layer takes a  1 to 4-dim input. Store details here
     h_p: HyperParameter,
@@ -128,12 +132,14 @@ impl NeuralNetwork {
         }
     }
 
+    /// A constructor for a neural network which takes 1d input.
     pub fn new1d(input_dim: usize, error: String, optimizer: String) -> Self {
         NeuralNetwork {
             input_dims: vec![vec![input_dim]],
             ..NeuralNetwork::new(error, optimizer)
         }
     }
+    /// A constructor for a neural network which takes 2d input.
     pub fn new2d(
         (input_dim1, input_dim2): (usize, usize),
         error: String,
@@ -144,6 +150,7 @@ impl NeuralNetwork {
             ..NeuralNetwork::new(error, optimizer)
         }
     }
+    /// A constructor for a neural network which takes 3d input.
     pub fn new3d(
         (input_dim1, input_dim2, input_dim3): (usize, usize, usize),
         error: String,
@@ -155,28 +162,44 @@ impl NeuralNetwork {
         }
     }
 
+    /// A setter to adjust the optimizer.
+    ///
+    /// By default, batch sgd is beeing used.
     pub fn set_optimizer(&mut self, optimizer: Box<dyn Optimizer>) {
         self.optimizer_function = optimizer;
     }
 
+    /// A setter to adjust the error function.
+    ///
+    /// Should be picked accordingly to the last layer and the given task.
     pub fn set_error_function(&mut self, error: Box<dyn Error>) {
         self.error_function = error;
     }
 
+    /// A setter to adjust the batch size.
+    ///
+    /// By default a batch size of 1 is used, which is equal to no batch-processing.
     pub fn set_batch_size(&mut self, batch_size: usize) {
         self.h_p.batch_size(batch_size);
     }
 
+    /// A setter to adjust the learning rate.
+    ///
+    /// By default a learning rate of 0.002 is used.
     pub fn set_learning_rate(&mut self, learning_rate: f32) {
         self.h_p.learning_rate(learning_rate);
     }
 
+    /// This function appends a custom layer to the neural network.
+    ///
+    /// This function might also be used to add a custom activation function to the neural network.
     pub fn store_layer(&mut self, layer: Box<dyn Layer>) {
         let input_shape = self.input_dims.last().unwrap().clone();
         self.input_dims.push(layer.get_output_shape(input_shape));
         self.layers.push(layer);
     }
 
+    /// This function appends one of the implemented activation function to the neural network.
     pub fn add_activation(&mut self, layer_kind: &str) {
         let new_activation = NeuralNetwork::get_activation(layer_kind.to_string());
         match new_activation {
@@ -194,7 +217,18 @@ impl NeuralNetwork {
             _ => self.from_logits = false,
         }
     }
-
+    
+    /// This function appends a convolution layer to the neural network.
+    ///
+    /// Currently filter_shape.0 == filter_shape.1 is requred.  
+    /// If padding > 0 then the x (and if available y) dimension are padded with zeros at both sides.  
+    /// E.g. For padding == 1 and x=y=2 we might receive:   
+    /// 0000   
+    /// 0ab0   
+    /// 0cd0   
+    /// 0000   
+    /// Currently the backpropagation of the error in the convolution layer is not implemented.   
+    /// Adding a convolution layer therefore only works if this layer is the first layer in the neural network.
     pub fn add_convolution(
         &mut self,
         filter_shape: (usize, usize),
@@ -226,6 +260,7 @@ impl NeuralNetwork {
         self.from_logits = false;
     }
 
+    /// This function appends a dense (also called fully_conected) layer to the neural network.
     pub fn add_dense(&mut self, output_dim: usize) {
         if output_dim == 0 {
             eprintln!("output dimension should be > 0! Doing nothing!");
@@ -247,6 +282,12 @@ impl NeuralNetwork {
         self.from_logits = false;
     }
 
+    /// This function appends a dropout layer to the neural network.
+    ///
+    /// The dropout probability has to ly in the range [0,1], where   
+    /// 0 means that this layer just outputs zeros,  
+    /// 1 means that this layer outputs the (unchanged) input,
+    /// any value x in between means that input elements are set to zero with a probability of x.
     pub fn add_dropout(&mut self, dropout_prob: f32) {
         if dropout_prob < 0. || dropout_prob > 1. {
             eprintln!("dropout probability has to be between 0. and 1.");
@@ -257,6 +298,10 @@ impl NeuralNetwork {
         self.from_logits = false;
     }
 
+    /// This function appends a flatten layer to the neural network.
+    ///
+    /// 1d input remains unchanged.
+    /// 2d or higher dimensional input is reshaped into a 1d array.
     pub fn add_flatten(&mut self) {
         let input_dims = self.input_dims.last().unwrap();
         if input_dims.len() == 1 {
@@ -275,6 +320,7 @@ impl NeuralNetwork {
         );
     }
 
+    /// This function prints an overview of the current neural network.
     pub fn print_setup(&self) {
         println!(
             "\nModel: \"sequential\" {:>20} Input shape: {:?}",
@@ -313,16 +359,20 @@ impl NeuralNetwork {
         self.print_separator("─");
     }
 
+    /// This function handles the inference on 1d input.
     pub fn predict1d(&mut self, input: Array1<f32>) -> Array1<f32> {
         self.predict(input.into_dyn())
     }
+    /// This function handles the inference on 2d input.
     pub fn predict2d(&mut self, input: Array2<f32>) -> Array1<f32> {
         self.predict(input.into_dyn())
     }
+    /// This function handles the inference on 3d input.
     pub fn predict3d(&mut self, input: Array3<f32>) -> Array1<f32> {
         self.predict(input.into_dyn())
     }
 
+    /// This function handles the inference on dynamic-dimensional input.
     pub fn predict(&mut self, mut input: ArrayD<f32>) -> Array1<f32> {
         for i in 0..self.layers.len() {
             input = self.layers[i].predict(input);
@@ -330,6 +380,7 @@ impl NeuralNetwork {
         input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
     }
 
+    /// This function calculates the inference accuracy on a testset with given labels.
     pub fn test(&mut self, input: ArrayD<f32>, target: Array2<f32>) {
         let n = target.len_of(Axis(0));
         let mut loss: Array1<f32> = Array1::zeros(n);
@@ -354,6 +405,7 @@ impl NeuralNetwork {
         println!("avg loss: {}, percentage correct: {}", avg_loss, acc);
     }
 
+    /// This function calculates the loss based on the neural network inference and a target label.
     pub fn loss_from_prediction(&mut self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
         let y = prediction.into_dyn();
         let t = target.into_dyn();
@@ -361,6 +413,7 @@ impl NeuralNetwork {
         loss[0]
     }
 
+    /// This function calculates the loss based on the original data and the target label.
     pub fn loss_from_input(&mut self, mut input: ArrayD<f32>, target: Array1<f32>) -> f32 {
         let n = self.layers.len();
         for i in 0..(n - 1) {
@@ -378,17 +431,21 @@ impl NeuralNetwork {
         loss[0]
     }
 
+    /// This function handles training on a single 1d example.
     pub fn train1d(&mut self, input: Array1<f32>, target: Array1<f32>) {
         self.train(input.into_dyn(), target);
     }
+    /// This function handles training on a single 2d example.
     pub fn train2d(&mut self, input: Array2<f32>, target: Array1<f32>) {
         self.train(input.into_dyn(), target);
     }
+    /// This function handles training on a single 3d example.
     pub fn train3d(&mut self, input: Array3<f32>, target: Array1<f32>) -> Array1<f32> {
         self.train(input.into_dyn(), target)
             .into_dimensionality::<Ix1>()
             .unwrap()
     }
+    /// This function handles training on a single dynamic-dimensional example.
     pub fn train(&mut self, input: ArrayD<f32>, target: Array1<f32>) -> ArrayD<f32> {
         //maybe return option(accuracy,None) and add a setter to return accuracy?
         let mut input = input.into_dyn();

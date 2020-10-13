@@ -1,4 +1,4 @@
-use crate::network::nn::NeuralNetwork;
+use rust_rl::network::nn::NeuralNetwork;
 use datasets::cifar10;
 use ndarray::{Array2, Array4, Axis};
 use rand::Rng;
@@ -30,9 +30,11 @@ fn train(nn: &mut NeuralNetwork, num: usize, input: &Array4<f32>, fb: &Array2<f3
     }
 }
 
-pub fn test_cifar10() {
+pub fn main() {
     let (train_size, test_size, depth, rows, cols) = (50_000, 10_000, 3, 32, 32);
 
+    #[cfg(feature = "download")]
+    cifar10::download_and_extract();
     let cifar10::Data {
         trn_img,
         trn_lbl,

@@ -3,6 +3,8 @@ use fnv::FnvHashSet;
 use ndarray::{Array, Array1, Array2};
 use std::collections::HashSet;
 
+
+/// A struct containing all relevant information to store the current position of a single fortress game.
 pub struct Board {
     field: [i8; 36],
     flags: [i8; 36],
@@ -121,6 +123,9 @@ impl Environment for Board {
 }
 
 impl Board {
+    /// A simple constructor which just takes the amount of moves from each player during a single game.
+    ///
+    /// After the given amount of rounds the player which controlls the majority of fields wins a single game.
     pub fn new(total_rounds: u8) -> Self {
         let neighbours_list = [
             vec![1, 6],
@@ -239,6 +244,7 @@ impl Board {
         (fields_one, fields_two)
     }
 
+    /// A getter for the amount of action each player is allowed to take before the game ends.
     pub fn get_total_rounds(&self) -> u8 {
         self.total_rounds
     }

@@ -2,10 +2,12 @@ use crate::rl::agent::agent_trait::Agent;
 use crate::rl::env::Environment;
 use std::io;
 
+/// An agent which just shows the user the current environment and lets the user decide about each action.
 #[derive(Default)]
 pub struct HumanPlayer {}
 
 impl HumanPlayer {
+    /// No arguments required since the user has to take over the agents decisions.
     pub fn new() -> Self {
         HumanPlayer {}
     }

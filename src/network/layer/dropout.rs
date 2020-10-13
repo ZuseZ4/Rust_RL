@@ -3,12 +3,18 @@ use ndarray::{Array, ArrayD};
 use ndarray_rand::rand_distr::Binomial;
 use ndarray_rand::RandomExt;
 
+/// This layer implements a classical dropout layer.
 pub struct DropoutLayer {
     drop_prob: f64,
     dropout_matrix: ArrayD<f32>,
 }
 
 impl DropoutLayer {
+    /// The dropout probability must be in the range [0,1].
+    ///
+    /// A dropout probability of 1 results in setting every input value to 0.
+    /// A dropout probability of 0 results in forwarding the input without changes.
+    /// A dropout probability outside of [0,1] results in an error.
     pub fn new(dropout_prob: f32) -> Self {
         DropoutLayer {
             drop_prob: dropout_prob as f64,

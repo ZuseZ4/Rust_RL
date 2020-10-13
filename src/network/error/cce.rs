@@ -3,10 +3,12 @@ use ndarray::{Array, ArrayD};
 
 use ndarray_stats::QuantileExt;
 
+/// This implements the categorical crossentropy loss.
 #[derive(Default)]
 pub struct CategoricalCrossEntropyError {}
 
 impl CategoricalCrossEntropyError {
+    /// No parameters required.
     pub fn new() -> Self {
         CategoricalCrossEntropyError {}
     }

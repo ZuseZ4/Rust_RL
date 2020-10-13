@@ -1,10 +1,12 @@
 use super::optimizer_trait::Optimizer;
 use ndarray::{Array1, Array2, Array3, ArrayD};
 
+/// The basic sgd weight update procedure.
 #[derive(Default, Clone)]
 pub struct Noop {}
 
-impl Noop {
+impl Noop { 
+    /// The basic sgd weight update procedure.
     pub fn new() -> Self {
         Noop {}
     }

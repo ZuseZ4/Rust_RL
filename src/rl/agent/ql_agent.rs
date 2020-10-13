@@ -3,21 +3,18 @@ use crate::rl::algorithms::Qlearning;
 use crate::rl::agent::Agent;
 use crate::rl::env::Environment;
 
-#[allow(dead_code)]
+/// An agent working on a classical q-table.
 pub struct QLAgent {
     qlearning: Qlearning,
-    rounds: u8,
-    first_player: bool,
 }
 
 // based on Q-learning using a HashMap as table
 //
 impl QLAgent {
-    pub fn new(rounds: u8, first_player: bool, exploration: f32) -> Self {
+    /// A constructor with an initial exploration rate. 
+    pub fn new(exploration: f32) -> Self {
         QLAgent {
             qlearning: Qlearning::new(exploration),
-            rounds,
-            first_player,
         }
     }
 }
@@ -27,11 +24,8 @@ impl Agent for QLAgent {
         "qlearning agent".to_string()
     }
 
-    fn finish_round(&mut self, mut result: i32) {
+    fn finish_round(&mut self, result: i32) {
         // -1 for loss, 0 for draw, 1 for win
-        if !self.first_player {
-            result *= -1;
-        }
         self.qlearning.finish_round(result);
     }
 

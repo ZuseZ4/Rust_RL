@@ -1,10 +1,12 @@
 use crate::network::layer::Layer;
 use ndarray::ArrayD;
 
+/// A relu layer.
 #[derive(Default)]
 pub struct ReLuLayer {}
 
 impl ReLuLayer {
+    /// No parameters are possible.
     pub fn new() -> Self {
         ReLuLayer {}
     }

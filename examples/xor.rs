@@ -1,4 +1,4 @@
-use crate::network::nn::NeuralNetwork;
+use rust_rl::network::nn::NeuralNetwork;
 use ndarray::{array, Array2};
 use rand::Rng;
 
@@ -33,7 +33,7 @@ fn train(nn: &mut NeuralNetwork, num_games: usize, input: &Array2<f32>, feedback
     }
 }
 
-pub fn test_xor() {
+pub fn main() {
     let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.]]; // XOR
     let feedback = array![[0., 1.], [1., 0.], [1., 0.], [0., 1.]]; //First works good with 200k examples
                                                                    //let feedback = array![[0.],[1.],[1.],[0.]]; //First works good with 200k examples

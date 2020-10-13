@@ -1,6 +1,8 @@
 use crate::rl::agent::Agent;
 use crate::rl::env::Environment;
 
+
+/// A trainer works on a given environment and a set of agents.
 pub struct Trainer {
     env: Box<dyn Environment>,
     res: Vec<(u32, u32, u32)>,
@@ -8,6 +10,7 @@ pub struct Trainer {
 }
 
 impl Trainer {
+    /// We construct a Trainer by passing a single environment and one or more (possibly different) agents.
     pub fn new(env: Box<dyn Environment>, agents: Vec<Box<dyn Agent>>) -> Result<Self, String> {
         if agents.is_empty() {
             return Err("At least one agent required!".to_string());
@@ -20,18 +23,34 @@ impl Trainer {
         })
     }
 
+    /// Returns a (#won, #draw, #lost) tripple for each agent.
+    ///
+    /// The numbers are accumulated over all train and bench games, either since the beginning, or the last reset_results() call.
     pub fn get_results(&self) -> Vec<(u32, u32, u32)> {
         self.res.clone()
     }
 
+    /// Resets the (#won, #draw, #lost) values for each agents to (0,0,0).
+    pub fn reset_results(&mut self) {
+        self.res = vec![(0,0,0); self.agents.len()];
+    }
+
+    /// Returns a Vector containing the string identifier of each agent.
     pub fn get_agent_ids(&self) -> Vec<String> {
         self.agents.iter().map(|a| a.get_id()).collect()
     }
 
+    /// Executes the given amount of (independent) training games.
+    ///
+    /// Results are stored and agents are expected to update their internal parameters   
+    /// in order to adjust to the game and performe better on subsequent games.
     pub fn train(&mut self, num_games: u64) {
         self.play_games(num_games, true);
     }
 
+    /// Executes the given amount of (independent) bench games.
+    /// 
+    /// Results are stored and agents are expected to not learn based on bench games.
     pub fn bench(&mut self, num_games: u64) -> Vec<(u32, u32, u32)> {
         self.agents
             .iter_mut()
