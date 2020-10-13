@@ -217,7 +217,7 @@ impl NeuralNetwork {
             _ => self.from_logits = false,
         }
     }
-    
+
     /// This function appends a convolution layer to the neural network.
     ///
     /// Currently filter_shape.0 == filter_shape.1 is requred.  

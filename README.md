@@ -1,5 +1,8 @@
-# Rust_ML
+# Rust_RL
 
+[![Build status](https://travis-ci.org/LukeMathWalker/linfa.svg?branch=master)](https://travis-ci.org/LukeMathWalker/linfa)
+
+Rust
 Small test repository to learn Rust and reinforcement learning.  
 Fortress is used as an arbitrary choosen testgame:  
 https://www.c64-wiki.com/wiki/Fortress_(SSI)

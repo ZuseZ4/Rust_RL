@@ -3,7 +3,6 @@ use fnv::FnvHashSet;
 use ndarray::{Array, Array1, Array2};
 use std::collections::HashSet;
 
-
 /// A struct containing all relevant information to store the current position of a single fortress game.
 pub struct Board {
     field: [i8; 36],

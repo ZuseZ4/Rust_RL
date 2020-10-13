@@ -2,7 +2,6 @@
 //!
 //! An example implementation is given for the game "Fortress".
 
-
 mod env_trait;
 
 /// An implementation of the game Fortress from Gary Allen, 1984.

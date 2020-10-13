@@ -1,6 +1,6 @@
-use rust_rl::network::nn::NeuralNetwork;
 use ndarray::{array, Array2};
 use rand::Rng;
+use rust_rl::network::nn::NeuralNetwork;
 
 fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new1d(2, "none".to_string(), "adam".to_string());

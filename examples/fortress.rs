@@ -1,8 +1,8 @@
-use rust_rl::rl::{agent, env, training};
 use agent::*;
 use env::fortress::Board;
-use training::Trainer;
+use rust_rl::rl::{agent, env, training};
 use std::io;
+use training::Trainer;
 
 pub fn main() {
     /*

@@ -1,7 +1,7 @@
-use rust_rl::network::nn::NeuralNetwork;
 use datasets::cifar10;
 use ndarray::{Array2, Array4, Axis};
 use rand::Rng;
+use rust_rl::network::nn::NeuralNetwork;
 
 fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new3d((3, 32, 32), "cce".to_string(), "none".to_string());

@@ -2,7 +2,6 @@ use crate::rl::env::Environment;
 
 /// A trait including all functions required to train them.
 pub trait Agent {
-
     /// Returns a simple string identifying the specific agent type.
     fn get_id(&self) -> String;
 

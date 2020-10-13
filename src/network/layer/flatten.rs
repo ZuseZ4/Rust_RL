@@ -9,7 +9,6 @@ pub struct FlattenLayer {
     num_elements: usize,
 }
 
-
 impl FlattenLayer {
     /// The input_shape is required for the backward pass.
     pub fn new(input_shape: Vec<usize>) -> Self {

@@ -11,7 +11,7 @@ pub struct QLAgent {
 // based on Q-learning using a HashMap as table
 //
 impl QLAgent {
-    /// A constructor with an initial exploration rate. 
+    /// A constructor with an initial exploration rate.
     pub fn new(exploration: f32) -> Self {
         QLAgent {
             qlearning: Qlearning::new(exploration),

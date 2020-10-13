@@ -5,7 +5,7 @@ use ndarray::{Array1, Array2, Array3, ArrayD};
 #[derive(Default, Clone)]
 pub struct Noop {}
 
-impl Noop { 
+impl Noop {
     /// The basic sgd weight update procedure.
     pub fn new() -> Self {
         Noop {}

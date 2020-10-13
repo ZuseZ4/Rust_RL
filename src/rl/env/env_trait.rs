@@ -4,7 +4,7 @@ use ndarray::{Array1, Array2};
 pub trait Environment {
     /// Indicates that it's time to call env.reset()
     ///
-    /// Done being True indicates that the episode has ended. 
+    /// Done being True indicates that the episode has ended.
     /// This might mean that an agent lost his last life or the maximum number of rounds has been played.
     fn done(&self) -> bool;
     /// This returns an array containing all possible actions.
@@ -17,9 +17,9 @@ pub trait Environment {
     /// The array1 encodes (il)-legal actions as (0) or 1.
     /// The last value returns a reward for the last action of the agent. 0 before the first action of the agent.
     fn step(&self) -> (Array2<f32>, Array1<f32>, f32);
-    /// Update the environment based on the action given. 
+    /// Update the environment based on the action given.
     ///
-    /// If the action is allowed for the currently active agent then update the environment and return true. 
+    /// If the action is allowed for the currently active agent then update the environment and return true.
     /// Otherwise do nothing and return false. The same agent can then try a new move.
     fn take_action(&mut self, action: usize) -> bool;
     /// Shows the current envrionment state in a graphical way.

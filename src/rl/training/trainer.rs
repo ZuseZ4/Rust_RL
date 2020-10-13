@@ -1,7 +1,6 @@
 use crate::rl::agent::Agent;
 use crate::rl::env::Environment;
 
-
 /// A trainer works on a given environment and a set of agents.
 pub struct Trainer {
     env: Box<dyn Environment>,
@@ -32,7 +31,7 @@ impl Trainer {
 
     /// Resets the (#won, #draw, #lost) values for each agents to (0,0,0).
     pub fn reset_results(&mut self) {
-        self.res = vec![(0,0,0); self.agents.len()];
+        self.res = vec![(0, 0, 0); self.agents.len()];
     }
 
     /// Returns a Vector containing the string identifier of each agent.
@@ -49,7 +48,7 @@ impl Trainer {
     }
 
     /// Executes the given amount of (independent) bench games.
-    /// 
+    ///
     /// Results are stored and agents are expected to not learn based on bench games.
     pub fn bench(&mut self, num_games: u64) -> Vec<(u32, u32, u32)> {
         self.agents
