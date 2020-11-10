@@ -1,17 +1,14 @@
 # Rust_RL
 
-[![Build status](https://travis-ci.org/LukeMathWalker/linfa.svg?branch=master)](https://travis-ci.org/LukeMathWalker/linfa)
+[![Build status](https://travis-ci.org/LukeMathWalker/linfa.svg?branch=master)](https://travis-ci.com/github/ZuseZ4/Rust_RL)
 
-Rust
-Small test repository to learn Rust and reinforcement learning.  
+I started this repository to practice Rust and RL, 
+as well as to deepen my knowledge about neural networks.  
 Fortress is used as an arbitrary choosen testgame:  
 https://www.c64-wiki.com/wiki/Fortress_(SSI)
 
-Neural network based code is in src/network.  
-Actual layers are in src/network/concrete_layers.  
-The neural network is build in src/nn.rs  
 
-#EXISTING
+# EXISTING
 1) The following layers have been implemented: Dense, Dropout, Flatten, Reshape  
 2) Convolution_Layer (weight updates work, but don't stack them)  
 3) The following activation functions have been implemented: Softmax, Sigmoid, ReLu, LeakyReLu  
@@ -22,5 +19,5 @@ The neural network is build in src/nn.rs
 8) Q-Learning example (Fortress), Deep-Q-Learning example (Fortress)  
 
 
-#TODO
+# TODO
 1) add backpropagation of error to conv_layers  

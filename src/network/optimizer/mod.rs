@@ -1,7 +1,3 @@
-//! This submodule offers 5 of the most common optimizers.
-//!
-//! noop falls back to the default sgd.
-
 mod adagrad;
 mod adam;
 mod momentum;

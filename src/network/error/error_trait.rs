@@ -1,7 +1,3 @@
-//! # Error Interface
-//!
-//! An error function passed to the neural network must implement this trait.
-
 use ndarray::ArrayD;
 
 /// An interface for all relevant functions which an error function has to implement.

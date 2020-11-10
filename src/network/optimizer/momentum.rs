@@ -9,7 +9,8 @@ pub struct Momentum {
 }
 
 impl Momentum {
-    /// A basic optimization over sgd. A common value might be 0.9.
+    /// A basic optimization over sgd.  
+    /// A common value might be 0.9.
     pub fn new(decay_rate: f32) -> Self {
         Momentum {
             previous_delta: Array::zeros(0).into_dyn(),

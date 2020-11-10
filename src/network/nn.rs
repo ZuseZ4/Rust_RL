@@ -1,12 +1,3 @@
-//! This submodules bundles all neural network related functionalities.
-//!
-//! A new neural network is created with new1d(..), new2d(..), or new3d(..).
-//! For higher-dimensional input a new() function is available which accepts arbitrary sized input.
-//! The input shape, error function and the optimizer are set during network creation.
-//! If an individual error function or optimizer should be used, they can be set (overwriting the former one) by using set_error_function() or set_optimizer().
-//! Default layers can be added using convenience functions like add_dense(..) or add_convolution(..) which allow setting the main parameters.
-//! For a higher level of controll, or to add own layers, the store_layer(Box<dyn Layer>) function can be used to add a layer to the current network.
-
 use crate::network;
 use network::error::{
     BinaryCrossEntropyError, CategoricalCrossEntropyError, Error, MeanSquareError, NoopError,

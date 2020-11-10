@@ -3,7 +3,7 @@
 mod MLP {
     use crate::network::nn::NeuralNetwork;
     use datasets::mnist;
-    use ndarray::{array, Array2, Array3, Axis};
+    use ndarray::{array, Array2};
     use rand::Rng;
 
     fn new(i_dim: usize, bs: usize, lr: f32) -> NeuralNetwork {
@@ -59,9 +59,8 @@ mod MLP {
         let (trn_size, rows, cols) = (60_000, 28, 28);
 
         // Deconstruct the returned Mnist struct.
-        let mnist::Data {
-            trn_img, trn_lbl, ..
-        } = mnist::new_normalized();
+        let mnist::Data { trn_img, .. } = mnist::new_normalized();
+        assert_eq!(trn_img.shape(), &[trn_size, rows, cols]);
     }
 
     #[test]

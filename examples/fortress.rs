@@ -108,8 +108,6 @@ fn get_agent(agent_num: u8, rounds: u8, first_player: bool) -> Result<Box<dyn Ag
     match agent_num {
         1 => Ok(Box::new(DQLAgent::new(1.))),
         2 => Ok(Box::new(QLAgent::new(1.))),
-        //1 => Ok(Box::new(DQLAgent::new(rounds, first_player, 1.))),
-        //2 => Ok(Box::new(QLAgent::new(rounds, first_player, 1.))),
         3 => Ok(Box::new(RandomAgent::new())),
         4 => Ok(Box::new(HumanPlayer::new())),
         _ => Err("Only implemented agents 1-4!".to_string()),

@@ -5,7 +5,7 @@ use ndarray_rand::RandomExt;
 
 /// This layer implements a classical dropout layer.
 pub struct DropoutLayer {
-    drop_prob: f64,
+    drop_prob: f32,
     dropout_matrix: ArrayD<f32>,
 }
 
@@ -15,9 +15,9 @@ impl DropoutLayer {
     /// A dropout probability of 1 results in setting every input value to 0.
     /// A dropout probability of 0 results in forwarding the input without changes.
     /// A dropout probability outside of [0,1] results in an error.
-    pub fn new(dropout_prob: f32) -> Self {
+    pub fn new(drop_prob: f32) -> Self {
         DropoutLayer {
-            drop_prob: dropout_prob as f64,
+            drop_prob,
             dropout_matrix: Array::zeros(0).into_dyn(),
         }
     }
@@ -25,7 +25,7 @@ impl DropoutLayer {
 
 impl Layer for DropoutLayer {
     fn get_type(&self) -> String {
-        let output = format!("Dropout: ~{:.2}%", self.drop_prob * 100.);
+        let output = format!("Dropping: ~{:.2}%", self.drop_prob * 100.);
         output
     }
 
@@ -42,8 +42,12 @@ impl Layer for DropoutLayer {
     }
 
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        let weights = Array::random(x.shape(), Binomial::new(1, 1. - self.drop_prob).unwrap());
-        let weights = weights.mapv(|x| x as f32);
+        let weights = Array::random(
+            x.shape(),
+            Binomial::new(1, 1. - (self.drop_prob as f64)).unwrap(),
+        );
+        // Scale output during training to handle dropped values.
+        let weights = weights.mapv(|x| (x as f32) / (1. - self.drop_prob));
         self.dropout_matrix = weights.clone().into_dyn();
         x * weights
     }
