@@ -394,11 +394,8 @@ impl NeuralNetwork {
         let n = target.len_of(Axis(0));
         let mut loss: Array1<f32> = Array1::zeros(n);
         let mut correct: Array1<f32> = Array1::ones(n);
-        //let mut i = 0;
-        //let v: Vec<_> = (0..n).collect();
-        //for i in v.par_iter() {
         //for (current_input, current_fb) in input.outer_iter().zip(target.outer_iter()) {
-        (0..n).into_iter().for_each(|i| {
+        (0..n).into_par_iter().for_each(|i| {
             let current_input = input.index_axis(Axis(0), i);
             let current_fb = target.index_axis(Axis(0), i);
             let pred = self.predict(current_input.into_owned().into_dyn());
@@ -410,7 +407,6 @@ impl NeuralNetwork {
             if num != 1 {
                 correct[i] = 0.;
             }
-            //i += 1;
         });
         //}
         //let avg_loss = loss.iter().sum::<f32>()/(n as f32);
