@@ -2,6 +2,7 @@ use datasets::cifar10;
 use ndarray::{Array2, Array4, Axis};
 use rand::Rng;
 use rust_rl::network::nn::NeuralNetwork;
+use std::time::Instant;
 
 fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new3d((3, 32, 32), "cce".to_string(), "adam".to_string());
@@ -51,9 +52,17 @@ pub fn main() {
 
     let mut nn = new();
     nn.print_setup();
+    train(&mut nn, train_size, &trn_img, &trn_lbl);
+    let start = Instant::now();
     for i in 0..10 {
         print!("{}: ", i + 1);
-        train(&mut nn, train_size, &trn_img, &trn_lbl);
         test(&mut nn, &tst_img, &tst_lbl);
     }
+    let stop = Instant::now();
+    let duration = stop.duration_since(start);
+    println!(
+        "Trained for {},{} seconds.",
+        duration.as_secs(),
+        duration.subsec_millis()
+    );
 }
