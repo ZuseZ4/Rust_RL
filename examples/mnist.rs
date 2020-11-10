@@ -51,10 +51,10 @@ pub fn main() {
 
     let mut nn = new();
     nn.print_setup();
+    train(&mut nn, 60_000, &trn_img, &trn_lbl); //60_000
     let start = Instant::now();
-    for i in 0..5 {
+    for i in 0..20 {
         print!("{}: ", i + 1);
-        train(&mut nn, 60_000, &trn_img, &trn_lbl); //60_000
         test(&mut nn, &tst_img, &tst_lbl);
     }
     println!("Trained for {} seconds.", start.elapsed().as_secs());

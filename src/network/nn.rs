@@ -1,5 +1,6 @@
 use crate::network;
 use ndarray::parallel::prelude::*;
+use ndarray::{azip, par_azip};
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
 use network::functional::activation_layer::{
     LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer,
@@ -394,23 +395,19 @@ impl NeuralNetwork {
         let n = target.len_of(Axis(0));
         let mut loss: Array1<f32> = Array1::zeros(n);
         let mut correct: Array1<f32> = Array1::ones(n);
-        //for (current_input, current_fb) in input.outer_iter().zip(target.outer_iter()) {
-        (0..n).into_par_iter().for_each(|i| {
+        azip!((index i, l in &mut loss, c in &mut correct) {
             let current_input = input.index_axis(Axis(0), i);
             let current_fb = target.index_axis(Axis(0), i);
             let pred = self.predict(current_input.into_owned().into_dyn());
-            loss[i] = self.loss_from_prediction(pred.clone(), current_fb.into_owned());
+            *l = self.loss_from_prediction(pred.clone(), current_fb.into_owned());
 
             let best_guess: f32 = (pred.clone() * current_fb).sum();
 
             let num: usize = pred.iter().filter(|&x| *x >= best_guess).count();
             if num != 1 {
-                correct[i] = 0.;
+                *c = 0.;
             }
         });
-        //}
-        //let avg_loss = loss.iter().sum::<f32>()/(n as f32);
-        //let acc  = correct.iter().sum::<f32>()/(n as f32);
         let avg_loss = loss.par_iter().sum::<f32>() / (n as f32);
         let acc = correct.par_iter().sum::<f32>() / (n as f32);
         println!("avg loss: {}, percentage correct: {}", avg_loss, acc);
