@@ -5,9 +5,6 @@ mod flatten;
 //pub mod conv_test;
 mod layer_trait;
 
-/// This module contains the most common activation functions like sigmoid, relu, or softmax.
-pub mod activation_layer;
-
 /// This trait defines all functions which a layer has to implement to be used as a part of the neural network.
 pub use layer_trait::Layer;
 

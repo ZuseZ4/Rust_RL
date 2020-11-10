@@ -1,14 +1,20 @@
 use crate::network;
-use network::error::{
+use ndarray::parallel::prelude::*;
+use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
+use network::functional::activation_layer::{
+    LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer,
+};
+use network::functional::error::{
     BinaryCrossEntropyError, CategoricalCrossEntropyError, Error, MeanSquareError, NoopError,
     RootMeanSquareError,
 };
-use network::layer::activation_layer::{LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer};
 use network::layer::{ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer, Layer};
 use network::optimizer::*;
 
-use ndarray::parallel::prelude::*;
-use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
+enum Mode {
+    Eval,
+    Train,
+}
 
 #[derive(Default)]
 struct HyperParameter {
@@ -59,6 +65,7 @@ pub struct NeuralNetwork {
     error_function: Box<dyn Error>,
     optimizer_function: Box<dyn Optimizer>,
     from_logits: bool,
+    mode: Mode,
 }
 
 impl NeuralNetwork {
@@ -120,7 +127,18 @@ impl NeuralNetwork {
             layers: vec![],
             h_p: HyperParameter::new(),
             from_logits: false,
+            mode: Mode::Train,
         }
+    }
+
+    /// Sets network to inference mode, dropout and backpropagation/training are disabled.
+    pub fn eval_mode(&mut self) {
+        self.mode = Mode::Eval;
+    }
+
+    /// Sets network to train mode, additional calculations for weight updates might occur.
+    pub fn train_mode(&mut self) {
+        self.mode = Mode::Train;
     }
 
     /// A constructor for a neural network which takes 1d input.
@@ -376,8 +394,13 @@ impl NeuralNetwork {
         let n = target.len_of(Axis(0));
         let mut loss: Array1<f32> = Array1::zeros(n);
         let mut correct: Array1<f32> = Array1::ones(n);
-        let mut i = 0;
-        for (current_input, current_fb) in input.outer_iter().zip(target.outer_iter()) {
+        //let mut i = 0;
+        //let v: Vec<_> = (0..n).collect();
+        //for i in v.par_iter() {
+        //for (current_input, current_fb) in input.outer_iter().zip(target.outer_iter()) {
+        (0..n).into_iter().for_each(|i| {
+            let current_input = input.index_axis(Axis(0), i);
+            let current_fb = target.index_axis(Axis(0), i);
             let pred = self.predict(current_input.into_owned().into_dyn());
             loss[i] = self.loss_from_prediction(pred.clone(), current_fb.into_owned());
 
@@ -387,8 +410,9 @@ impl NeuralNetwork {
             if num != 1 {
                 correct[i] = 0.;
             }
-            i += 1;
-        }
+            //i += 1;
+        });
+        //}
         //let avg_loss = loss.iter().sum::<f32>()/(n as f32);
         //let acc  = correct.iter().sum::<f32>()/(n as f32);
         let avg_loss = loss.par_iter().sum::<f32>() / (n as f32);

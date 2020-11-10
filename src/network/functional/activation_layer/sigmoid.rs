@@ -1,3 +1,4 @@
+use crate::network::functional::Functional;
 use crate::network::layer::Layer;
 use ndarray::{Array1, ArrayD};
 
@@ -15,6 +16,8 @@ impl SigmoidLayer {
         }
     }
 }
+
+impl Functional for SigmoidLayer {}
 
 impl Layer for SigmoidLayer {
     fn get_type(&self) -> String {

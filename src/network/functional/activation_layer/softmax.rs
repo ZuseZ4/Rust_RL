@@ -1,3 +1,4 @@
+use crate::network::functional::Functional;
 use crate::network::layer::Layer;
 use ndarray::{Array, ArrayD};
 use ndarray_stats::QuantileExt;
@@ -16,6 +17,8 @@ impl SoftmaxLayer {
         }
     }
 }
+
+impl Functional for SoftmaxLayer {}
 
 impl Layer for SoftmaxLayer {
     fn get_type(&self) -> String {

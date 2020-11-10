@@ -1,4 +1,4 @@
-use crate::network::error::error_trait::Error;
+use super::Error;
 use ndarray::{Array, ArrayD};
 
 use ndarray_stats::QuantileExt;

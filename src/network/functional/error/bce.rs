@@ -1,5 +1,5 @@
-use crate::network::error::Error;
-use crate::network::layer::activation_layer::SigmoidLayer;
+use super::Error;
+use crate::network::functional::activation_layer::SigmoidLayer;
 use crate::network::layer::Layer;
 use ndarray::{Array, ArrayD};
 
@@ -22,6 +22,9 @@ impl BinaryCrossEntropyError {
         }
     }
 }
+
+unsafe impl Sync for BinaryCrossEntropyError {}
+unsafe impl Send for BinaryCrossEntropyError {}
 
 impl Error for BinaryCrossEntropyError {
     fn get_type(&self) -> String {

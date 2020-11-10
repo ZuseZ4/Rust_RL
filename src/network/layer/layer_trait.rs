@@ -3,7 +3,7 @@ use ndarray::ArrayD;
 /// Layer Interface:  
 /// All layers passed to the neural network must implement this trait
 ///
-pub trait Layer {
+pub trait Layer: Send {
     /// A unique String to identify the layer type, e.g. "Dense" or "Flatten"
     ///
     fn get_type(&self) -> String;

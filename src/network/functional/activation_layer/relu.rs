@@ -1,20 +1,23 @@
+use crate::network::functional::Functional;
 use crate::network::layer::Layer;
 use ndarray::ArrayD;
 
-/// A leaky-relu layer.
+/// A relu layer.
 #[derive(Default)]
-pub struct LeakyReLuLayer {}
+pub struct ReLuLayer {}
 
-impl LeakyReLuLayer {
+impl ReLuLayer {
     /// No parameters are possible.
     pub fn new() -> Self {
-        LeakyReLuLayer {}
+        ReLuLayer {}
     }
 }
 
-impl Layer for LeakyReLuLayer {
+impl Functional for ReLuLayer {}
+
+impl Layer for ReLuLayer {
     fn get_type(&self) -> String {
-        "LeakyReLu Layer".to_string()
+        "ReLu Layer".to_string()
     }
 
     fn get_output_shape(&self, input_dim: Vec<usize>) -> Vec<usize> {
@@ -30,12 +33,12 @@ impl Layer for LeakyReLuLayer {
     }
 
     fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
-        x.mapv_inplace(|x| if x > 0. { x } else { 0.01 * x });
+        x.mapv_inplace(|x| if x > 0. { x } else { 0. });
         x
     }
 
     fn backward(&mut self, mut feedback: ArrayD<f32>) -> ArrayD<f32> {
-        feedback.mapv_inplace(|x| if x >= 0. { 1. } else { 0.01 });
+        feedback.mapv_inplace(|x| if x >= 0. { 1. } else { 0. });
         feedback
     }
 }

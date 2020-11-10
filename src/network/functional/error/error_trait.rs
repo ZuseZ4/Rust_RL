@@ -7,7 +7,7 @@ use ndarray::ArrayD;
 /// They exist in order to allow a (numerically/performancewise/...) optimized implementation in combination  
 /// with a specific activation function as the last layer of the neural network.
 /// Examples are sigmoid+bce or softmax+cce.
-pub trait Error {
+pub trait Error: Send + Sync {
     /// This function returns a unique string identifying the type of the error function.
     fn get_type(&self) -> String;
 

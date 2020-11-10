@@ -1,11 +1,3 @@
-/// This submodule provides various error function.
-///
-/// Beside of the normal forward() and backward() functions some Error functions implement both functions in a *_from_logits() variant.  
-/// They merge their own implementation with the previous activation function in a numerically more stable way.  
-/// Better known examples are Softmax+CategoricalCrossEntropy or Sigmoid+BinaryCrossEntropy.  
-/// When used as part of nn, the appropriate functions are automatically picked.  
-pub mod error;
-
 /// This submodule offers multiple layer implementation.
 ///
 /// The forward and backward functions have to accept and return data in the form ArrayD\<f32>.  
@@ -26,5 +18,8 @@ pub mod nn;
 ///
 /// noop falls back to the default sgd.
 pub mod optimizer;
+
+/// This submodule offers stateless layers and functions.
+pub mod functional;
 
 mod tests;
