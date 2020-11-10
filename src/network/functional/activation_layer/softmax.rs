@@ -33,7 +33,7 @@ impl Layer for SoftmaxLayer {
         0
     }
 
-    fn predict(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
+    fn predict(&self, mut x: ArrayD<f32>) -> ArrayD<f32> {
         let max: f32 = *x.max_skipnan();
         x.mapv_inplace(|x| (x - max).exp());
         let sum: f32 = x.iter().filter(|x| !x.is_nan()).sum::<f32>();

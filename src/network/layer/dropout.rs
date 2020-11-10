@@ -37,7 +37,7 @@ impl Layer for DropoutLayer {
         input_dim
     }
 
-    fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
         x
     }
 

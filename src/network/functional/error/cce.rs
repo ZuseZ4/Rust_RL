@@ -24,17 +24,17 @@ impl Error for CategoricalCrossEntropyError {
         format!("Categorical Crossentropy")
     }
 
-    fn forward(&mut self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    fn forward(&self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         output = self.clip_values(output);
         let loss = -(target * output.mapv(f32::ln)).sum();
         Array::from_elem(1, loss).into_dyn()
     }
 
-    fn backward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    fn backward(&self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         -(target / self.clip_values(output))
     }
 
-    fn deriv_from_logits(&mut self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    fn deriv_from_logits(&self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         let max: f32 = *output.clone().max_skipnan();
         output.mapv_inplace(|x| (x - max).exp());
         let sum: f32 = output.iter().filter(|x| !x.is_nan()).sum::<f32>();
@@ -42,7 +42,7 @@ impl Error for CategoricalCrossEntropyError {
         output - target
     }
 
-    fn loss_from_logits(&mut self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    fn loss_from_logits(&self, mut output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         // ignore nans on sum and max
         let max: f32 = *output.max_skipnan();
         output.mapv_inplace(|x| (x - max).exp());

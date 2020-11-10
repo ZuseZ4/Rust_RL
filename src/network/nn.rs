@@ -6,8 +6,8 @@ use network::functional::activation_layer::{
 };
 use network::functional::error::{
     BinaryCrossEntropyError, CategoricalCrossEntropyError, Error, MeanSquareError, NoopError,
-    RootMeanSquareError,
 };
+//RootMeanSquareError,
 use network::layer::{ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer, Layer};
 use network::optimizer::*;
 
@@ -82,7 +82,7 @@ impl NeuralNetwork {
     fn get_error(error_type: String) -> Result<Box<dyn Error>, String> {
         match error_type.as_str() {
             "mse" => Ok(Box::new(MeanSquareError::new())),
-            "rmse" => Ok(Box::new(RootMeanSquareError::new())),
+            //"rmse" => Ok(Box::new(RootMeanSquareError::new())),
             "bce" => Ok(Box::new(BinaryCrossEntropyError::new())),
             "cce" => Ok(Box::new(CategoricalCrossEntropyError::new())),
             "noop" => Ok(Box::new(NoopError::new())),
@@ -369,20 +369,20 @@ impl NeuralNetwork {
     }
 
     /// This function handles the inference on 1d input.
-    pub fn predict1d(&mut self, input: Array1<f32>) -> Array1<f32> {
+    pub fn predict1d(&self, input: Array1<f32>) -> Array1<f32> {
         self.predict(input.into_dyn())
     }
     /// This function handles the inference on 2d input.
-    pub fn predict2d(&mut self, input: Array2<f32>) -> Array1<f32> {
+    pub fn predict2d(&self, input: Array2<f32>) -> Array1<f32> {
         self.predict(input.into_dyn())
     }
     /// This function handles the inference on 3d input.
-    pub fn predict3d(&mut self, input: Array3<f32>) -> Array1<f32> {
+    pub fn predict3d(&self, input: Array3<f32>) -> Array1<f32> {
         self.predict(input.into_dyn())
     }
 
     /// This function handles the inference on dynamic-dimensional input.
-    pub fn predict(&mut self, mut input: ArrayD<f32>) -> Array1<f32> {
+    pub fn predict(&self, mut input: ArrayD<f32>) -> Array1<f32> {
         for i in 0..self.layers.len() {
             input = self.layers[i].predict(input);
         }
@@ -390,7 +390,7 @@ impl NeuralNetwork {
     }
 
     /// This function calculates the inference accuracy on a testset with given labels.
-    pub fn test(&mut self, input: ArrayD<f32>, target: Array2<f32>) {
+    pub fn test(&self, input: ArrayD<f32>, target: Array2<f32>) {
         let n = target.len_of(Axis(0));
         let mut loss: Array1<f32> = Array1::zeros(n);
         let mut correct: Array1<f32> = Array1::ones(n);
@@ -417,7 +417,7 @@ impl NeuralNetwork {
     }
 
     /// This function calculates the loss based on the neural network inference and a target label.
-    pub fn loss_from_prediction(&mut self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
+    pub fn loss_from_prediction(&self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
         let y = prediction.into_dyn();
         let t = target.into_dyn();
         let loss = self.error_function.forward(y, t);

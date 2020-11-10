@@ -2,7 +2,7 @@ mod bce;
 mod cce;
 mod mse;
 mod noop;
-mod rmse;
+//mod rmse;
 
 mod error_trait;
 
@@ -16,4 +16,5 @@ pub use mse::MeanSquareError;
 
 pub use noop::NoopError;
 
-pub use rmse::RootMeanSquareError;
+//probably not correct impl
+//pub use rmse::RootMeanSquareError;

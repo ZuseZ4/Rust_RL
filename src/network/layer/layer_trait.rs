@@ -20,7 +20,7 @@ pub trait Layer: Send + Sync {
     /// This method is used for the inference part, when no training is required.  
     /// It comes with a smaller memory footprint than the forward() method, which stores information for a following backward() call.
     ///
-    fn predict(&mut self, input: ArrayD<f32>) -> ArrayD<f32>; // similar to forward(..), but no training is expected on this data. Interim results are therefore not stored
+    fn predict(&self, input: ArrayD<f32>) -> ArrayD<f32>; // similar to forward(..), but no training is expected on this data. Interim results are therefore not stored
 
     /// This method is used for the forward pass during training time.
     ///

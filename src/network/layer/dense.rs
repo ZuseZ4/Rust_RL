@@ -72,7 +72,7 @@ impl Layer for DenseLayer {
         vec![self.output_dim]
     }
 
-    fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+    fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
         let input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
         let res: Array1<f32> = self.weights.dot(&input) + &self.bias;
         res.into_dyn()

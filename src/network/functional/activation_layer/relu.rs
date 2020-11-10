@@ -28,13 +28,12 @@ impl Layer for ReLuLayer {
         0
     }
 
-    fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        self.forward(x)
+    fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
+        x.mapv(|x| if x > 0. { x } else { 0. })
     }
 
-    fn forward(&mut self, mut x: ArrayD<f32>) -> ArrayD<f32> {
-        x.mapv_inplace(|x| if x > 0. { x } else { 0. });
-        x
+    fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
+        self.predict(x)
     }
 
     fn backward(&mut self, mut feedback: ArrayD<f32>) -> ArrayD<f32> {

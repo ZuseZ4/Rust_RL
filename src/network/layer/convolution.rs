@@ -331,7 +331,7 @@ impl Layer for ConvolutionLayer {
         res
     }
 
-    fn predict(&mut self, input: ArrayD<f32>) -> ArrayD<f32> {
+    fn predict(&self, input: ArrayD<f32>) -> ArrayD<f32> {
         let tmp = self.get_output_shape(input.shape().to_vec());
         let (output_shape_x, output_shape_y) = (tmp[1], tmp[2]);
         let input = ConvolutionLayer::add_padding(self.padding, input);

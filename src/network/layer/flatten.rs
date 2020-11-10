@@ -33,12 +33,12 @@ impl Layer for FlattenLayer {
         vec![input_dim.iter().product()]
     }
 
-    fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        self.forward(x)
+    fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
+        x.into_shape(self.num_elements).unwrap().into_dyn()
     }
 
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        x.into_shape(self.num_elements).unwrap().into_dyn()
+        self.predict(x)
     }
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {

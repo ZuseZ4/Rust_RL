@@ -12,17 +12,17 @@ pub trait Error: Send + Sync {
     fn get_type(&self) -> String;
 
     /// This function is used to calculate the error based on the last layer output and the expected output.
-    fn forward(&mut self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
+    fn forward(&self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
 
     /// This function is used to calculate the error to update previous layers.
-    fn backward(&mut self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
+    fn backward(&self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
 
     /// This function takes the output of the neural network *before* the last activation function.   
     /// It merges the functionality of the last activation function with the forward() function in an improved implementation.   
     /// Only works for a given activation function.
-    fn loss_from_logits(&mut self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
+    fn loss_from_logits(&self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
 
     /// Similare to the loss_from_logits() function it takes the output *before* the last activation function.   
     /// It merges the functionality of the backward() function with the backward() function of a specific activation function.
-    fn deriv_from_logits(&mut self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
+    fn deriv_from_logits(&self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
 }

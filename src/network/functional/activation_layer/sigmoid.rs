@@ -32,12 +32,12 @@ impl Layer for SigmoidLayer {
         0
     }
 
-    fn predict(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        self.forward(x)
+    fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
+        x.mapv(|x| 1.0 / (1.0 + (-x).exp()))
     }
 
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        self.output = x.mapv(|x| 1.0 / (1.0 + (-x).exp()));
+        self.output = self.predict(x);
         self.output.clone()
     }
 
