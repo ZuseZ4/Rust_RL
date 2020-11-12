@@ -1,6 +1,6 @@
 use crate::network;
 use ndarray::parallel::prelude::*;
-use ndarray::{azip, par_azip};
+use ndarray::par_azip;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
 use network::functional::activation_layer::{
     LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer,
@@ -395,7 +395,7 @@ impl NeuralNetwork {
         let n = target.len_of(Axis(0));
         let mut loss: Array1<f32> = Array1::zeros(n);
         let mut correct: Array1<f32> = Array1::ones(n);
-        azip!((index i, l in &mut loss, c in &mut correct) {
+        par_azip!((index i, l in &mut loss, c in &mut correct) {
             let current_input = input.index_axis(Axis(0), i);
             let current_fb = target.index_axis(Axis(0), i);
             let pred = self.predict(current_input.into_owned().into_dyn());
@@ -422,10 +422,10 @@ impl NeuralNetwork {
     }
 
     /// This function calculates the loss based on the original data and the target label.
-    pub fn loss_from_input(&mut self, mut input: ArrayD<f32>, target: Array1<f32>) -> f32 {
+    pub fn loss_from_input(&self, mut input: ArrayD<f32>, target: Array1<f32>) -> f32 {
         let n = self.layers.len();
         for i in 0..(n - 1) {
-            input = self.layers[i].forward(input);
+            input = self.layers[i].predict(input);
         }
 
         let loss;
@@ -455,6 +455,7 @@ impl NeuralNetwork {
     }
     /// This function handles training on a single dynamic-dimensional example.
     pub fn train(&mut self, input: ArrayD<f32>, target: Array1<f32>) -> ArrayD<f32> {
+        //assert_eq!(input.len_of(Axis(0)), target.len()); //later when training on batches
         //maybe return option(accuracy,None) and add a setter to return accuracy?
         let mut input = input.into_dyn();
         let n = self.layers.len();
