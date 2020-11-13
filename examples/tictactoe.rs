@@ -1,4 +1,4 @@
-use env::Fortress;
+use env::TicTacToe;
 use rust_rl::rl::{env, training};
 use std::io;
 use training::{utils, Trainer};
@@ -11,17 +11,13 @@ pub fn main() {
         .expect("Failed to read y or no!");
     let auto_fill: String = auto_fill.trim().parse().expect("Please type y or no!");
 
-    let ((train_games, bench_games), rounds, agents) = match auto_fill.as_str() {
-        "y" => ((5000, 1000), 25, utils::get_agents(vec![1, 2]).unwrap()),
-        "n" => (
-            utils::read_game_numbers(),
-            utils::read_rounds_per_game(),
-            utils::read_agents(2).unwrap(),
-        ),
+    let ((train_games, bench_games), agents) = match auto_fill.as_str() {
+        "y" => ((5000, 1000), utils::get_agents(vec![1, 2]).unwrap()),
+        "n" => (utils::read_game_numbers(), utils::read_agents(2).unwrap()),
         _ => panic!("please only answer y or n!"),
     };
 
-    let game = Fortress::new(rounds as usize);
+    let game = TicTacToe::new();
 
     let mut trainer = Trainer::new(Box::new(game), agents).unwrap();
     trainer.train(train_games);

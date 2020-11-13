@@ -1,5 +1,5 @@
-use crate::rl::env::Environment;
-use ndarray::Array1;
+use crate::rl::algorithms::utils;
+use ndarray::{Array1, Array2};
 use rand::Rng;
 use rand::ThreadRng;
 use std::collections::HashMap;
@@ -52,12 +52,15 @@ impl Qlearning {
         self.update_map(50. * (result as f32), 0.); // 50*res, since the final result is what matters most
     }
 
-    pub fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
+    pub fn get_move(
+        &mut self,
+        board_arr: Array2<f32>,
+        action_arr: Array1<bool>,
+        reward: f32,
+    ) -> usize {
         //get reward for previous move
 
-        let (board_arr, _actions, reward) = board.step();
-        let legal_actions = board.get_legal_actions();
-        let (best_move, max_future_q) = self.get_best_move(legal_actions.clone());
+        let (best_move, max_future_q) = self.get_best_move(action_arr.clone());
 
         // update HashMap-entry for last (state,action) based on the received reward
         self.update_map(reward, max_future_q);
@@ -66,23 +69,25 @@ impl Qlearning {
         self.last_state = board_arr.fold("".to_string(), |acc, x| acc + &x.to_string());
 
         if self.exploration > rand::thread_rng().gen() {
-            self.last_action = self.get_random_move(legal_actions);
+            self.last_action = self.get_random_move(action_arr);
         }
 
         self.last_action
     }
 
-    fn get_random_move(&mut self, actions: Array1<usize>) -> usize {
-        let position = self.rng.gen_range(0, actions.len()) as usize;
-        actions[position]
+    fn get_random_move(&mut self, actions: Array1<bool>) -> usize {
+        utils::get_random_true_entry(actions)
     }
 
-    fn get_best_move(&mut self, actions: Array1<usize>) -> (usize, f32) {
+    fn get_best_move(&mut self, actions: Array1<bool>) -> (usize, f32) {
         //42 is illegal board position, would result in error
         let mut best_pair: (usize, f32) = (42, f32::MIN);
 
         //println!("#possible actions: {}", actions.len());
-        for &move_candidate in actions.iter() {
+        for move_candidate in 0..actions.len() {
+            if !actions[move_candidate] {
+                continue;
+            }
             let score = self
                 .scores
                 .entry((self.last_state.clone(), move_candidate))

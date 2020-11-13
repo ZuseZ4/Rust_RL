@@ -102,16 +102,17 @@ impl Trainer {
                 self.adjust_learning_rate(sub_epoch_nr, orig_exploration_rates.clone());
             }
 
-            let mut done = false;
+            let mut env_done = false;
             loop {
                 for agent in self.agents.iter_mut() {
-                    if self.env.done() {
-                        done = true;
+                    let (env, actions, reward, done) = self.env.step();
+                    if done {
+                        env_done = true;
                         break;
                     }
-                    self.env.take_action(agent.get_move(&self.env));
+                    self.env.take_action(agent.get_move(env, actions, reward));
                 }
-                if done {
+                if env_done {
                     break;
                 }
             }

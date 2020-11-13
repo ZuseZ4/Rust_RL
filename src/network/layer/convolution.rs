@@ -281,7 +281,7 @@ impl ConvolutionLayer {
     /// Afterwards we copy the original image over to the center of the new image.
     /// TODO change to full/normal/...
     fn add_padding(padding: usize, input: ArrayD<f32>) -> ArrayD<f32> {
-        let shape: &[usize] = input.shape().clone();
+        let shape: &[usize] = input.shape();
         let n = input.ndim(); // 2d or 3d input?
         let x = shape[n - 2] + 2 * padding; // calculate the new dim with padding
         let y = shape[n - 1] + 2 * padding; // calculate the new dim with padding

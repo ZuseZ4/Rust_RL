@@ -1,7 +1,7 @@
 use crate::rl::algorithms::Qlearning;
+use ndarray::{Array1, Array2};
 
 use crate::rl::agent::Agent;
-use crate::rl::env::Environment;
 
 /// An agent working on a classical q-table.
 pub struct QLAgent {
@@ -29,8 +29,8 @@ impl Agent for QLAgent {
         self.qlearning.finish_round(result);
     }
 
-    fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
-        self.qlearning.get_move(board)
+    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
+        self.qlearning.get_move(board, actions, reward)
     }
 
     fn get_exploration_rate(&self) -> f32 {

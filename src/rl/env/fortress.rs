@@ -1,71 +1,43 @@
 use crate::rl::env::env_trait::Environment;
-use fnv::FnvHashSet;
 use ndarray::{Array, Array1, Array2};
-use std::collections::HashSet;
+use std::cmp::Ordering;
 
 /// A struct containing all relevant information to store the current position of a single fortress game.
-pub struct Board {
+pub struct Fortress {
     field: [i8; 36],
     flags: [i8; 36],
     neighbours: [Vec<usize>; 36],
     first_player_turn: bool,
-    rounds: u32,
-    total_rounds: u8,
-    //first_player_moves: Vec<usize>, //TODO HashSet is slower than recalculating possible moves each time. remove it?
-    //second_player_moves: Vec<usize>,
-    first_player_moves: HashSet<usize, std::hash::BuildHasherDefault<fnv::FnvHasher>>,
-    second_player_moves: HashSet<usize, std::hash::BuildHasherDefault<fnv::FnvHasher>>,
+    rounds: usize,
+    total_rounds: usize,
+    first_player_moves: Array1<bool>,
+    second_player_moves: Array1<bool>,
+    active: bool,
 }
 
-impl Environment for Board {
-    // return values:
-    // 6x6 field with current board
-    // 6x6 field with 1's for possible moves, 0's for impossible moves
-    fn step(&self) -> (Array2<f32>, Array1<f32>, f32) {
+impl Environment for Fortress {
+    fn step(&self) -> (Array2<f32>, Array1<bool>, f32, bool) {
+        if !self.active {
+            eprintln!("Warning, calling step() after done = true!");
+        }
+
         // storing current position into ndarray
         let position = Array2::from_shape_vec((6, 6), self.field.to_vec()).unwrap();
         let position = position.mapv(|x| x as f32);
         let position = position.mapv(|x| (x + 3.) / 6.); // scale to [0,1]
 
         // collecting allowed moves
-        let mut moves = Array::zeros(36); // start as a ndarray of length 36
-        let possible_actions = self.get_possible_moves();
-        for action in possible_actions {
-            moves[action] = 1.;
-        }
-        //let moves = moves.into_shape((6,6)).unwrap(); // transform into 6x6
-        let moves: Array1<f32> = moves.mapv(|x| x as f32); // transform from usize to f32
+        let moves = self.get_legal_actions();
 
         // get rewards
         let reward = self.get_reward();
 
-        (position, moves, reward as f32)
-    }
-
-    fn get_legal_actions(&self) -> Array1<usize> {
-        if self.first_player_turn {
-            self.first_player_moves.iter().copied().collect()
-        } else {
-            self.second_player_moves.iter().copied().collect()
-        }
+        let done = self.done();
+        (position, moves, reward as f32, done)
     }
 
     fn reset(&mut self) {
-        *self = Board::new(self.total_rounds);
-    }
-
-    fn done(&self) -> bool {
-        // just played sufficient moves
-        if self.rounds == self.total_rounds as u32 * 2u32 {
-            return true;
-        }
-        // no moves possible so finish game
-        if (self.first_player_moves.is_empty() && self.first_player_turn)
-            || (self.second_player_moves.is_empty() && !self.first_player_turn)
-        {
-            return true;
-        }
-        false
+        *self = Fortress::new(self.total_rounds);
     }
 
     fn render(&self) {
@@ -91,8 +63,8 @@ impl Environment for Board {
         let player_val = if self.first_player_turn { 1 } else { -1 };
 
         // check that field is not controlled by enemy, no enemy building on field, no own building on max lv (3) already exists
-        if (self.first_player_turn && self.first_player_moves.contains(&pos))
-            || (!self.first_player_turn && self.second_player_moves.contains(&pos))
+        if (self.first_player_turn && self.first_player_moves[pos])
+            || (!self.first_player_turn && self.second_player_moves[pos])
         {
             self.store_update(pos, player_val);
             self.update_neighbours(pos, player_val);
@@ -106,26 +78,24 @@ impl Environment for Board {
         false // move wasn't allowed, do nothing
     }
 
-    fn eval(&self) -> Vec<i8> {
-        let controlled_fields = self.controlled_fields();
-        let mut diff = controlled_fields.0 as i8 - controlled_fields.1 as i8; // diff \in [-36,36]
-        if diff != 0 {
-            diff = diff / diff.abs();
+    fn eval(&mut self) -> Vec<i8> {
+        if !self.done() {
+            panic!("Error, calling eval() before game ended!");
         }
-        match diff {
-            -1 => vec![-1, 1],
-            0 => vec![0, 0], //draw
-            1 => vec![1, -1],
-            _ => panic!("false implementation of eval in fortress.rs!"),
+        let (p1, p2) = self.controlled_fields();
+        match p1.cmp(&p2) {
+            Ordering::Equal => vec![0, 0],
+            Ordering::Greater => vec![1, -1],
+            Ordering::Less => vec![-1, 1],
         }
     }
 }
 
-impl Board {
+impl Fortress {
     /// A simple constructor which just takes the amount of moves from each player during a single game.
     ///
     /// After the given amount of rounds the player which controlls the majority of fields wins a single game.
-    pub fn new(total_rounds: u8) -> Self {
+    pub fn new(total_rounds: usize) -> Self {
         let neighbours_list = [
             vec![1, 6],
             vec![0, 2, 7],
@@ -164,21 +134,24 @@ impl Board {
             vec![33, 35, 28],
             vec![34, 29],
         ];
-        let mut first_player_hashset = FnvHashSet::default();
-        let mut second_player_hashset = FnvHashSet::default();
-        for i in 0..36 {
-            first_player_hashset.insert(i);
-            second_player_hashset.insert(i);
-        }
-        Board {
+        Fortress {
             field: [0; 36],
             flags: [0; 36],
             neighbours: neighbours_list,
             first_player_turn: true,
             rounds: 0,
             total_rounds,
-            first_player_moves: first_player_hashset,
-            second_player_moves: second_player_hashset,
+            first_player_moves: Array::from_elem(36, true),
+            second_player_moves: Array::from_elem(36, true),
+            active: true,
+        }
+    }
+
+    fn get_legal_actions(&self) -> Array1<bool> {
+        if self.first_player_turn {
+            self.first_player_moves.clone()
+        } else {
+            self.second_player_moves.clone()
         }
     }
 
@@ -201,21 +174,14 @@ impl Board {
         self.flags[pos] += player_val;
         if self.field[pos].abs() == 3 {
             // buildings on lv. 3 can't be upgraded
-            self.second_player_moves.remove(&pos);
-            self.first_player_moves.remove(&pos);
+            self.second_player_moves[pos] = false;
+            self.first_player_moves[pos] = false;
             return;
         }
         if player_val == 1 {
-            self.second_player_moves.remove(&pos);
+            self.second_player_moves[pos] = false;
         } else {
-            self.first_player_moves.remove(&pos);
-        }
-    }
-    fn get_possible_moves(&self) -> Vec<usize> {
-        if self.first_player_turn {
-            self.first_player_moves.iter().copied().collect()
-        } else {
-            self.second_player_moves.iter().copied().collect()
+            self.first_player_moves[pos] = false;
         }
     }
 
@@ -226,6 +192,10 @@ impl Board {
             reward *= -1;
         }
         reward
+    }
+
+    fn done(&self) -> bool {
+        self.rounds == self.total_rounds
     }
 
     fn controlled_fields(&self) -> (u8, u8) {
@@ -244,7 +214,7 @@ impl Board {
     }
 
     /// A getter for the amount of action each player is allowed to take before the game ends.
-    pub fn get_total_rounds(&self) -> u8 {
+    pub fn get_total_rounds(&self) -> usize {
         self.total_rounds
     }
 }

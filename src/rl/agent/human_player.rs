@@ -1,5 +1,5 @@
 use crate::rl::agent::agent_trait::Agent;
-use crate::rl::env::Environment;
+use ndarray::{Array1, Array2};
 use std::io;
 
 /// An agent which just shows the user the current environment and lets the user decide about each action.
@@ -18,10 +18,8 @@ impl Agent for HumanPlayer {
         "human player".to_string()
     }
 
-    fn get_move(&mut self, board: &Box<dyn Environment>) -> usize {
-        board.render();
-        //let (_, actions, _) = board.step();
-        let actions = board.get_legal_actions();
+    fn get_move(&mut self, _: Array2<f32>, actions: Array1<bool>, _: f32) -> usize {
+        //board.render(); // can be added again when replacing Array2<f32> by a real state space
         let mut next_action = String::new();
 
         loop {
@@ -31,9 +29,10 @@ impl Agent for HumanPlayer {
                 .read_line(&mut next_action)
                 .expect("Failed to read number of rounds");
             let next_action: usize = next_action.trim().parse().expect("please type a number");
-            if next_action >= 1 && next_action <= actions.len() {
+            // assert choosen move exists and is legal
+            if next_action >= 1 && next_action <= actions.len() && actions[next_action - 1] {
                 // human(non cs) friendly counting
-                return actions[next_action - 1];
+                return next_action - 1;
             }
         }
     }

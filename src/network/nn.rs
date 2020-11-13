@@ -1,6 +1,6 @@
 use crate::network;
-use ndarray::parallel::prelude::*;
 use ndarray::par_azip;
+use ndarray::parallel::prelude::*;
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
 use network::functional::activation_layer::{
     LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer,
