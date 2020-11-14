@@ -20,19 +20,23 @@ impl Agent for HumanPlayer {
 
     fn get_move(&mut self, _: Array2<f32>, actions: Array1<bool>, _: f32) -> usize {
         //board.render(); // can be added again when replacing Array2<f32> by a real state space
-        let mut next_action = String::new();
 
         loop {
+            let mut next_action = String::new();
             println!("please insert the number of your next action.\n It should be a number between 1 and {}", actions.len());
             println!("{}", actions);
             io::stdin()
                 .read_line(&mut next_action)
                 .expect("Failed to read number of rounds");
-            let next_action: usize = next_action.trim().parse().expect("please type a number");
+            let mut next_action: usize = next_action.trim().parse().expect("please type a number");
+            next_action -= 1; //from human to cs indexing.
+
             // assert choosen move exists and is legal
-            if next_action >= 1 && next_action <= actions.len() && actions[next_action - 1] {
+            if next_action < actions.len() && actions[next_action] {
                 // human(non cs) friendly counting
-                return next_action - 1;
+                return next_action;
+            } else {
+                eprintln!("The selected move was illegal. Please try again.\n");
             }
         }
     }

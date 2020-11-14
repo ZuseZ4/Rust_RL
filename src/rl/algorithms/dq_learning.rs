@@ -4,21 +4,6 @@ use ndarray::{Array, Array1, Array2};
 use ndarray_stats::QuantileExt;
 use rand::{Rng, ThreadRng};
 
-fn new(learning_rate: f32) -> NeuralNetwork {
-    let mut nn = NeuralNetwork::new2d((6, 6), "bce".to_string(), "adam".to_string());
-    nn.set_batch_size(4);
-    nn.set_learning_rate(learning_rate);
-    nn.add_convolution((3, 3), 32, 0);
-    nn.add_activation("sigmoid");
-    nn.add_flatten();
-    nn.add_dense(100);
-    nn.add_activation("sigmoid");
-    nn.add_dense(36);
-    nn.add_activation("sigmoid");
-    nn.print_setup();
-    nn
-}
-
 #[allow(dead_code)]
 pub struct DQlearning {
     nn: NeuralNetwork,
@@ -33,13 +18,13 @@ pub struct DQlearning {
 }
 
 impl DQlearning {
-    pub fn new(exploration: f32) -> Self {
+    pub fn new(exploration: f32, nn: NeuralNetwork) -> Self {
         let learning_rate = 1e-3;
         let discount_factor = 0.95;
         DQlearning {
             sum: 0,
             counter: 0,
-            nn: new(learning_rate),
+            nn,
             exploration,
             learning_rate,
             last_turn: (

@@ -1,9 +1,8 @@
-use crate::rl::agent::*;
 use std::io;
 
 /// A helper function to create agents based on terminal input.
-pub fn read_agents(n: usize) -> Result<Vec<Box<dyn Agent>>, String> {
-    let mut agents: Vec<Box<dyn Agent>> = vec![];
+pub fn read_agents(n: usize) -> Vec<usize> {
+    let mut agents: Vec<usize> = vec![];
 
     for _ in 0..n {
         let mut agent = String::new();
@@ -15,20 +14,9 @@ pub fn read_agents(n: usize) -> Result<Vec<Box<dyn Agent>>, String> {
             .trim()
             .parse()
             .expect("please type a number (1 for dql, 2 for ql, 3 for random, 4 for human");
-        let new_agent = get_agent(agent)?;
-        agents.push(new_agent);
+        agents.push(agent);
     }
-    Ok(agents)
-}
-
-/// A helper function to create agents based on their numbers.
-pub fn get_agents(vec: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {
-    let mut agents: Vec<Box<dyn Agent>> = vec![];
-    for v in vec {
-        let new_agent = get_agent(v)?;
-        agents.push(new_agent);
-    }
-    Ok(agents)
+    agents
 }
 
 /// Reads the amount of training- and test-games from terminal.
@@ -62,14 +50,4 @@ pub fn read_rounds_per_game() -> usize {
 
     let rounds: usize = rounds.trim().parse().expect("please type a number");
     rounds
-}
-
-fn get_agent(agent_num: usize) -> Result<Box<dyn Agent>, String> {
-    match agent_num {
-        1 => Ok(Box::new(DQLAgent::new(1.))),
-        2 => Ok(Box::new(QLAgent::new(1.))),
-        3 => Ok(Box::new(RandomAgent::new())),
-        4 => Ok(Box::new(HumanPlayer::new())),
-        _ => Err("Only implemented agents 1-4!".to_string()),
-    }
 }

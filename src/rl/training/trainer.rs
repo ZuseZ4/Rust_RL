@@ -87,14 +87,18 @@ impl Trainer {
 
     fn play_games(&mut self, num_games: u64, train: bool) -> Vec<(u32, u32, u32)> {
         self.res = vec![(0, 0, 0); self.agents.len()];
-        let sub_epoch: u64 = (num_games / 10) as u64;
+        let mut sub_epoch: u64 = (num_games / 10) as u64;
+        if sub_epoch == 0 {
+            sub_epoch = 1;
+        }
         let orig_exploration_rates: Vec<f32> = self
             .agents
             .iter()
             .map(|a| a.get_exploration_rate())
             .collect();
 
-        // parallelize
+        // TODO parallelize
+        println!("num games: {}", num_games);
         for game in 0..num_games {
             self.env.reset();
             if (game % sub_epoch) == 0 && train {

@@ -49,7 +49,7 @@ impl Environment for TicTacToe {
     fn eval(&mut self) -> Vec<i8> {
         match self.state {
             GameState::Player2won => vec![-1, 1],
-            GameState::Player1won => vec![1, 1],
+            GameState::Player1won => vec![1, -1],
             GameState::Draw => vec![0, 0],
             GameState::Running => panic!("Hey, wait till the game is finished!"),
         }
@@ -134,7 +134,7 @@ impl TicTacToe {
         let bit_res = 0b111111111 & (!(self.player1 | self.player2));
         let mut res = Array::from_elem(9, true);
         for i in 0..9 {
-            res[i] = (bit_res & 2 << i) != 0;
+            res[i] = (bit_res & 1 << i) != 0;
         }
         res
     }
@@ -167,11 +167,12 @@ impl TicTacToe {
     }
 
     fn get_reward(&self) -> f32 {
+        let x = if self.first_player_turn { 1. } else { -1. };
         match self.state {
-            GameState::Draw => 0.5,
-            GameState::Player1won => 1.,
-            GameState::Player2won => -1.,
-            GameState::Running => 0.,
+            GameState::Draw => 0.3 * x,
+            GameState::Player1won => 1. * x,
+            GameState::Player2won => -1. * x,
+            GameState::Running => 0. * x,
         }
     }
 

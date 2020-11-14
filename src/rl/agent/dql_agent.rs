@@ -1,7 +1,7 @@
+use crate::network::nn::NeuralNetwork;
+use crate::rl::agent::Agent;
 use crate::rl::algorithms::DQlearning;
 use ndarray::{Array1, Array2};
-
-use crate::rl::agent::Agent;
 
 /// An agent using Deep-Q-Learning, based on a small neural network.
 pub struct DQLAgent {
@@ -12,9 +12,9 @@ pub struct DQLAgent {
 //
 impl DQLAgent {
     /// A constructor including an initial exploration rate.
-    pub fn new(exploration: f32) -> Self {
+    pub fn new(exploration: f32, nn: NeuralNetwork) -> Self {
         DQLAgent {
-            dqlearning: DQlearning::new(exploration),
+            dqlearning: DQlearning::new(exploration, nn),
         }
     }
 }

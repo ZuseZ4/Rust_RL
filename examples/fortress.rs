@@ -1,7 +1,24 @@
+use agent::*;
 use env::Fortress;
-use rust_rl::rl::{env, training};
+use rust_rl::network::nn::NeuralNetwork;
+use rust_rl::rl::{agent, env, training};
 use std::io;
 use training::{utils, Trainer};
+
+fn new(learning_rate: f32) -> NeuralNetwork {
+    let mut nn = NeuralNetwork::new2d((6, 6), "bce".to_string(), "adam".to_string());
+    nn.set_batch_size(4);
+    nn.set_learning_rate(learning_rate);
+    nn.add_convolution((3, 3), 32, 0);
+    nn.add_activation("sigmoid");
+    nn.add_flatten();
+    nn.add_dense(100);
+    nn.add_activation("sigmoid");
+    nn.add_dense(36);
+    nn.add_activation("sigmoid");
+    nn.print_setup();
+    nn
+}
 
 pub fn main() {
     let mut auto_fill = String::new();
@@ -11,15 +28,16 @@ pub fn main() {
         .expect("Failed to read y or no!");
     let auto_fill: String = auto_fill.trim().parse().expect("Please type y or no!");
 
-    let ((train_games, bench_games), rounds, agents) = match auto_fill.as_str() {
-        "y" => ((5000, 1000), 25, utils::get_agents(vec![1, 2]).unwrap()),
+    let ((train_games, bench_games), rounds, agent_numbers) = match auto_fill.as_str() {
+        "y" => ((5000, 1000), 25, vec![1, 3]),
         "n" => (
             utils::read_game_numbers(),
             utils::read_rounds_per_game(),
-            utils::read_agents(2).unwrap(),
+            utils::read_agents(2),
         ),
         _ => panic!("please only answer y or n!"),
     };
+    let agents = get_agents(agent_numbers).unwrap();
 
     let game = Fortress::new(rounds as usize);
 
@@ -42,4 +60,19 @@ pub fn main() {
         res[1].1,
         res[1].2
     );
+}
+
+fn get_agents(agent_nums: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {
+    let mut res: Vec<Box<dyn Agent>> = vec![];
+    for agent_num in agent_nums {
+        let new_agent: Result<Box<dyn Agent>, String> = match agent_num {
+            1 => Ok(Box::new(DQLAgent::new(1., new(0.001)))),
+            2 => Ok(Box::new(QLAgent::new(1.))),
+            3 => Ok(Box::new(RandomAgent::new())),
+            4 => Ok(Box::new(HumanPlayer::new())),
+            _ => Err("Only implemented agents 1-4!".to_string()),
+        };
+        res.push(new_agent?);
+    }
+    Ok(res)
 }

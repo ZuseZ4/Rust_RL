@@ -49,7 +49,8 @@ impl Qlearning {
     // update "table" based on last action and their result
     pub fn finish_round(&mut self, result: i32) {
         // -1 for loss, 0 for draw, 1 for win
-        self.update_map(50. * (result as f32), 0.); // 50*res, since the final result is what matters most
+        let final_reward = 5. * result as f32;
+        self.update_map(final_reward, final_reward); // 5*res, since the final result is what matters most
     }
 
     pub fn get_move(
@@ -69,21 +70,16 @@ impl Qlearning {
         self.last_state = board_arr.fold("".to_string(), |acc, x| acc + &x.to_string());
 
         if self.exploration > rand::thread_rng().gen() {
-            self.last_action = self.get_random_move(action_arr);
+            self.last_action = utils::get_random_true_entry(action_arr);
         }
 
         self.last_action
-    }
-
-    fn get_random_move(&mut self, actions: Array1<bool>) -> usize {
-        utils::get_random_true_entry(actions)
     }
 
     fn get_best_move(&mut self, actions: Array1<bool>) -> (usize, f32) {
         //42 is illegal board position, would result in error
         let mut best_pair: (usize, f32) = (42, f32::MIN);
 
-        //println!("#possible actions: {}", actions.len());
         for move_candidate in 0..actions.len() {
             if !actions[move_candidate] {
                 continue;
@@ -96,7 +92,6 @@ impl Qlearning {
                 best_pair = (move_candidate, *score);
             }
         }
-        //println!("{:?}", best_pair);
         best_pair
     }
 
