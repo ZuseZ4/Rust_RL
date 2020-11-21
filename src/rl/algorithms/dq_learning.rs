@@ -3,6 +3,7 @@ use crate::rl::algorithms::utils;
 use ndarray::{Array, Array1, Array2};
 use ndarray_stats::QuantileExt;
 use rand::{Rng, ThreadRng};
+use super::{Observation, ReplayBuffer};
 
 #[allow(dead_code)]
 pub struct DQlearning {
@@ -12,7 +13,8 @@ pub struct DQlearning {
     exploration: f32,
     learning_rate: f32,
     discount_factor: f32,
-    last_turn: (Array2<f32>, Array1<f32>, Array1<f32>, usize, bool), // (board before last own move, allowed moves, NN output, move choosen from NN, was choosen move allowed?)
+    last_turn: (Array2<f32>, Array1<f32>, Array1<f32>, usize), // (board before last own move, allowed moves, NN output, move choosen from NN)
+    replay_buffer: ReplayBuffer,
     rng: ThreadRng,
     epsilon: f32,
 }
@@ -32,8 +34,8 @@ impl DQlearning {
                 Array::zeros(0),
                 Array::zeros(0),
                 42,
-                false,
             ),
+            replay_buffer: ReplayBuffer::new(1, 100_000),
             discount_factor,
             rng: rand::thread_rng(),
             epsilon: 1e-8,
@@ -57,18 +59,12 @@ impl DQlearning {
     // update "table" based on last action and their result
     pub fn finish_round(&mut self, result: i32) {
         // -1 for loss, 0 for draw, 1 for win
-        if self.last_move_valid() {
-            self.learn_from_reward(result as f32 * 7.);
-        }
+        self.learn_from_reward(result as f32 * 7.);
     }
 
     fn select_move(&mut self, prediction: Array1<f32>) -> usize {
         // TODO verify using argmax
         prediction.argmax().unwrap()
-    }
-
-    fn last_move_valid(&self) -> bool {
-        self.last_turn.4
     }
 
     fn learn_from_reward(&mut self, reward: f32) {
@@ -93,38 +89,22 @@ impl DQlearning {
         reward: f32,
     ) -> usize {
         let actions = action_arr.mapv(|x| (x as i32) as f32);
-
-        if self.last_move_valid() {
-            self.learn_from_reward(reward);
-        }
+        
+        self.replay_buffer.add_memory(Observation::new(self.last_turn.0.clone(), self.last_turn.3, board_arr.clone(), reward)); //
+        self.learn_from_reward(reward);
 
         let predicted_moves = self.nn.predict2d(board_arr.clone());
         self.count_illegal_moves(predicted_moves.clone(), actions.clone());
-        let mut next_move = self.select_move(predicted_moves.clone());
-        let mut valid_move = true;
-
-        // assert that move predicted by nn is legal
-        // otherwise pick a legal move randomly
-        if !action_arr[next_move] {
-            // illegal move
-            let target = predicted_moves.clone() * actions.clone(); // filter out all illegal moves (=give target value 0)
-            self.nn.train(board_arr.clone().into_dyn(), target); // penalize nn for illegal move
-
-            // ignore NN prediction, choose an allowed move randomly
-            next_move = utils::get_random_true_entry(action_arr);
-            valid_move = false; // since we didn't use NN prediction
-            self.last_turn = (board_arr, actions, predicted_moves, next_move, valid_move);
-            return next_move;
-        }
+        let legal_predicted_moves = predicted_moves.clone() * actions.clone();
+        let mut next_move = self.select_move(legal_predicted_moves.clone());
 
         // shall we explore a random move and ignore prediction?
-        if self.exploration > rand::thread_rng().gen() {
+        if self.exploration > self.rng.gen() {
             next_move = utils::get_random_true_entry(action_arr);
-            valid_move = false;
         }
 
         // bookkeeping
-        self.last_turn = (board_arr, actions, predicted_moves, next_move, valid_move);
+        self.last_turn = (board_arr, actions, predicted_moves, next_move);
 
         self.last_turn.3
     }
