@@ -18,9 +18,14 @@ impl Agent for HumanPlayer {
         "human player".to_string()
     }
 
-    fn get_move(&mut self, _: Array2<f32>, actions: Array1<bool>, _: f32) -> usize {
-        //board.render(); // can be added again when replacing Array2<f32> by a real state space
-
+    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, _: f32) -> usize {
+        let (n, m) = (board.shape()[0], board.shape()[1]);
+        for i in 0..n {
+            for j in 0..m {
+                print!("{} ", board[[i, j]]);
+            }
+            println!();
+        }
         loop {
             let mut next_action = String::new();
             println!("please insert the number of your next action.\n It should be a number between 1 and {}", actions.len());
@@ -41,7 +46,15 @@ impl Agent for HumanPlayer {
         }
     }
 
-    fn finish_round(&mut self, _single_res: i32) {}
+    fn finish_round(&mut self, _single_res: i32, _final_state: Array2<f32>) {}
+
+    fn get_learning_rate(&self) -> f32 {
+        42.
+    }
+
+    fn set_learning_rate(&mut self, _e: f32) -> Result<(), String> {
+        Ok(())
+    }
 
     fn get_exploration_rate(&self) -> f32 {
         42.

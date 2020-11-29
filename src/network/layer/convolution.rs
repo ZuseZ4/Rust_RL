@@ -304,7 +304,18 @@ impl ConvolutionLayer {
 
     /// For efficiency reasons we handle kernels and images in 2d, here we revert that in order to receive the expected output.
     pub fn fold_output(x: Array2<f32>, (num_kernels, n, m): (usize, usize, usize)) -> Array3<f32> {
-        x.into_shape((num_kernels, n, m)).unwrap() // add self.batch_size as additional dim later > for batch processing?
+        // add self.batch_size as additional dim later > for batch processing?
+        let (shape_x, shape_y) = (x.shape()[0], x.shape()[1]);
+        let output = x.into_shape((num_kernels, n, m));
+        match output {
+            Ok(v) => v,
+            Err(_) => panic!(
+                "Got array with shape [{},{}], but expected {} elements.",
+                shape_x,
+                shape_y,
+                num_kernels * n * m
+            ),
+        }
     }
 
     /// We shape the input into a 2d array, so we can apply our vector of (kernel)vectors with a matrix-matrix multiplication.

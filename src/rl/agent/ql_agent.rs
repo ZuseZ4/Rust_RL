@@ -12,9 +12,9 @@ pub struct QLAgent {
 //
 impl QLAgent {
     /// A constructor with an initial exploration rate.
-    pub fn new(exploration: f32) -> Self {
+    pub fn new(exploration: f32, action_space_length: usize) -> Self {
         QLAgent {
-            qlearning: Qlearning::new(exploration),
+            qlearning: Qlearning::new(exploration, action_space_length),
         }
     }
 }
@@ -24,13 +24,25 @@ impl Agent for QLAgent {
         "qlearning agent".to_string()
     }
 
-    fn finish_round(&mut self, result: i32) {
+    fn finish_round(&mut self, result: i32, final_state: Array2<f32>) {
         // -1 for loss, 0 for draw, 1 for win
-        self.qlearning.finish_round(result);
+        self.qlearning.finish_round(result, final_state);
     }
 
     fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
         self.qlearning.get_move(board, actions, reward)
+    }
+
+    fn set_learning_rate(&mut self, lr: f32) -> Result<(), String> {
+        if lr < 0. || lr > 1. {
+            return Err("learning rate must be in [0,1]!".to_string());
+        }
+        self.qlearning.set_learning_rate(lr)?;
+        Ok(())
+    }
+
+    fn get_learning_rate(&self) -> f32 {
+        self.qlearning.get_learning_rate()
     }
 
     fn get_exploration_rate(&self) -> f32 {

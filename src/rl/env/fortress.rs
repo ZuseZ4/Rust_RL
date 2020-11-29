@@ -33,7 +33,7 @@ impl Environment for Fortress {
         let reward = self.get_reward();
 
         let done = self.done();
-        (position, moves, reward as f32, done)
+        (position, moves, reward, done)
     }
 
     fn reset(&mut self) {
@@ -185,13 +185,19 @@ impl Fortress {
         }
     }
 
-    fn get_reward(&self) -> i32 {
+    fn get_reward(&self) -> f32 {
         let controlled_fields = self.controlled_fields();
         let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
         if !self.first_player_turn {
             reward *= -1;
         }
-        reward
+        if reward == 0 {
+            0.5
+        }
+        // small bonus for achieving at least a draw
+        else {
+            reward as f32
+        }
     }
 
     fn done(&self) -> bool {

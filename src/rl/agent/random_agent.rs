@@ -25,7 +25,15 @@ impl Agent for RandomAgent {
         utils::get_random_true_entry(actions)
     }
 
-    fn finish_round(&mut self, _single_res: i32) {}
+    fn finish_round(&mut self, _single_res: i32, _final_state: Array2<f32>) {}
+
+    fn get_learning_rate(&self) -> f32 {
+        42.
+    }
+
+    fn set_learning_rate(&mut self, _e: f32) -> Result<(), String> {
+        Ok(())
+    }
 
     fn get_exploration_rate(&self) -> f32 {
         42.
