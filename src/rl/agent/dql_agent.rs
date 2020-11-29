@@ -24,13 +24,21 @@ impl Agent for DQLAgent {
         "dqlearning agent".to_string()
     }
 
-    fn finish_round(&mut self, result: i32) {
+    fn finish_round(&mut self, result: i32, final_state: Array2<f32>) {
         // -1 for loss, 0 for draw, 1 for win
-        self.dqlearning.finish_round(result);
+        self.dqlearning.finish_round(result, final_state);
     }
 
     fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
         self.dqlearning.get_move(board, actions, reward)
+    }
+
+    fn get_learning_rate(&self) -> f32 {
+        self.dqlearning.get_learning_rate()
+    }
+
+    fn set_learning_rate(&mut self, lr: f32) -> Result<(), String> {
+        self.dqlearning.set_learning_rate(lr)
     }
 
     fn get_exploration_rate(&self) -> f32 {

@@ -1,9 +1,9 @@
+use super::{Observation, ReplayBuffer};
 use crate::network::nn::NeuralNetwork;
 use crate::rl::algorithms::utils;
-use ndarray::{Array, Array1, Array2};
+use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
 use rand::{Rng, ThreadRng};
-use super::{Observation, ReplayBuffer};
 
 #[allow(dead_code)]
 pub struct DQlearning {
@@ -11,35 +11,46 @@ pub struct DQlearning {
     counter: usize,
     sum: usize,
     exploration: f32,
-    learning_rate: f32,
     discount_factor: f32,
     last_turn: (Array2<f32>, Array1<f32>, Array1<f32>, usize), // (board before last own move, allowed moves, NN output, move choosen from NN)
-    replay_buffer: ReplayBuffer,
+    replay_buffer: ReplayBuffer<Array2<f32>>,
     rng: ThreadRng,
     epsilon: f32,
 }
 
 impl DQlearning {
-    pub fn new(exploration: f32, nn: NeuralNetwork) -> Self {
-        let learning_rate = 1e-3;
+    pub fn new(exploration: f32, mut nn: NeuralNetwork) -> Self {
+        let bs = 16;
+        nn.set_batch_size(bs);
         let discount_factor = 0.95;
         DQlearning {
             sum: 0,
             counter: 0,
             nn,
             exploration,
-            learning_rate,
             last_turn: (
-                Array::zeros((0, 0)),
-                Array::zeros(0),
-                Array::zeros(0),
+                Default::default(),
+                Default::default(),
+                Default::default(),
                 42,
             ),
-            replay_buffer: ReplayBuffer::new(1, 100_000),
+            replay_buffer: ReplayBuffer::new(bs, 100),
             discount_factor,
             rng: rand::thread_rng(),
             epsilon: 1e-8,
         }
+    }
+
+    pub fn get_learning_rate(&self) -> f32 {
+        self.nn.get_learning_rate()
+    }
+
+    pub fn set_learning_rate(&mut self, lr: f32) -> Result<(), String> {
+        if lr < 0. || lr > 1. {
+            return Err("learning rate must be in [0,1]!".to_string());
+        }
+        self.nn.set_learning_rate(lr);
+        Ok(())
     }
 
     pub fn get_exploration_rate(&self) -> f32 {
@@ -57,29 +68,51 @@ impl DQlearning {
 
 impl DQlearning {
     // update "table" based on last action and their result
-    pub fn finish_round(&mut self, result: i32) {
-        // -1 for loss, 0 for draw, 1 for win
-        self.learn_from_reward(result as f32 * 7.);
+    pub fn finish_round(&mut self, result: i32, s1: Array2<f32>) {
+        // result is -1 for loss, 0 for draw, 1 for win
+        let reward = result as f32 * 7.;
+        self.replay_buffer.add_memory(Observation::new(
+            self.last_turn.0.clone(),
+            self.last_turn.3,
+            s1,
+            reward,
+        )); //
+        self.learn();
     }
 
     fn select_move(&mut self, prediction: Array1<f32>) -> usize {
-        // TODO verify using argmax
-        prediction.argmax().unwrap()
+        let bestmove = prediction.argmax().unwrap();
+        if prediction[bestmove] < 0.001 {
+            eprintln!("warning, nn predictions close to zero!");
+        }
+        bestmove
     }
 
-    fn learn_from_reward(&mut self, reward: f32) {
-        let input = self.last_turn.0.clone();
-        let mut target = self.last_turn.2.clone() * self.last_turn.1.clone(); // last_turn.1 (allowed moves) works as a filter to penalize illegal moves simultaneously
-        let mut new_target_val = target[self.last_turn.3] + reward;
-        target[self.last_turn.3] += reward; // adjust target vector to adapt to outcome of last move
+    fn clamp(&self, mut new_target_val: f32) -> f32 {
         if new_target_val > 1. {
             new_target_val = 1.;
         }
         if new_target_val < 0. {
             new_target_val = 0.1;
         }
-        target[self.last_turn.3] = new_target_val;
-        self.nn.train2d(input, target);
+        new_target_val
+    }
+
+    fn learn(&mut self) {
+        if !self.replay_buffer.is_full() {
+            return;
+        }
+        let memories = self.replay_buffer.get_memories();
+        for observation in memories {
+            let Observation { s0, a, s1, r } = *observation;
+            let mut target = self.nn.predict(s0.clone().into_dyn());
+            //assert_eq!(len(a), len(target), "error, nn output not equal to amount of possible actions!");
+            let future_move_rewards = self.nn.predict(s1.into_dyn());
+            let max_future_reward = future_move_rewards.max().unwrap();
+            let new_reward = r + self.discount_factor * max_future_reward;
+            target[a] = self.clamp(new_reward);
+            self.nn.train(s0.into_dyn(), target);
+        }
     }
 
     pub fn get_move(
@@ -88,18 +121,24 @@ impl DQlearning {
         action_arr: Array1<bool>,
         reward: f32,
     ) -> usize {
-        let actions = action_arr.mapv(|x| (x as i32) as f32);
-        
-        self.replay_buffer.add_memory(Observation::new(self.last_turn.0.clone(), self.last_turn.3, board_arr.clone(), reward)); //
-        self.learn_from_reward(reward);
+        let actions = action_arr.mapv(|x| if x { 1. } else { 0. });
+
+        self.replay_buffer.add_memory(Observation::new(
+            self.last_turn.0.clone(),
+            self.last_turn.3,
+            board_arr.clone(),
+            reward,
+        )); //
+        self.learn();
 
         let predicted_moves = self.nn.predict2d(board_arr.clone());
         self.count_illegal_moves(predicted_moves.clone(), actions.clone());
         let legal_predicted_moves = predicted_moves.clone() * actions.clone();
         let mut next_move = self.select_move(legal_predicted_moves.clone());
 
-        // shall we explore a random move and ignore prediction?
-        if self.exploration > self.rng.gen() {
+        // shall we explore a random move?
+        // also select random move if predicted move not allowed (e.g. legal_predicted_moves contains only 0's).
+        if (self.exploration > self.rng.gen()) || (!action_arr[next_move]) {
             next_move = utils::get_random_true_entry(action_arr);
         }
 

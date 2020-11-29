@@ -1,6 +1,6 @@
 use crate::rl::agent::Agent;
 use crate::rl::env::Environment;
-
+use ndarray::Array2;
 /// A trainer works on a given environment and a set of agents.
 pub struct Trainer {
     env: Box<dyn Environment>,
@@ -51,22 +51,29 @@ impl Trainer {
     ///
     /// Results are stored and agents are expected to not learn based on bench games.
     pub fn bench(&mut self, num_games: u64) -> Vec<(u32, u32, u32)> {
-        self.agents
-            .iter_mut()
-            .for_each(|a| a.set_exploration_rate(0.).unwrap());
+        let (orig_exploration_rates, orig_learning_rates) = self.get_rates();
+        self.adjust_rates(1., &orig_exploration_rates, &orig_learning_rates);
         self.play_games(num_games, false)
     }
 
-    fn adjust_learning_rate(&mut self, sub_epoch_nr: u64, orig_learning_rate: Vec<f32>) {
-        let exploration_rates: Vec<f32> = orig_learning_rate
-            .iter()
-            .map(|e| e * (10. - sub_epoch_nr as f32) / 10.)
-            .collect();
-        self.agents
-            .iter_mut()
-            .zip(exploration_rates.iter())
-            .for_each(|(a, &e)| a.set_exploration_rate(e).unwrap());
-        println!("New exploration rates: {:?}", exploration_rates);
+    fn adjust_rates(
+        &mut self,
+        fraction_done: f32,
+        orig_exploration_rate: &Vec<f32>,
+        orig_learning_rate: &Vec<f32>,
+    ) {
+        for i in 0..self.agents.len() {
+            self.agents[i]
+                .set_exploration_rate(orig_exploration_rate[i] * (1. - fraction_done))
+                .unwrap();
+            self.agents[i]
+                .set_learning_rate(orig_learning_rate[i] * (1. - fraction_done))
+                .unwrap();
+        }
+        println!(
+            "Updated learning and exploration after finishing {}%",
+            (fraction_done * 100.) as i32
+        );
     }
 
     fn update_results(&mut self, new_res: &[i8]) {
@@ -85,47 +92,54 @@ impl Trainer {
         }
     }
 
+    fn get_rates(&self) -> (Vec<f32>, Vec<f32>) {
+        let exploration_rates: Vec<f32> = self
+            .agents
+            .iter()
+            .map(|a| a.get_exploration_rate())
+            .collect();
+        let learning_rates: Vec<f32> = self.agents.iter().map(|a| a.get_learning_rate()).collect();
+        (exploration_rates, learning_rates)
+    }
+
     fn play_games(&mut self, num_games: u64, train: bool) -> Vec<(u32, u32, u32)> {
         self.res = vec![(0, 0, 0); self.agents.len()];
         let mut sub_epoch: u64 = (num_games / 10) as u64;
         if sub_epoch == 0 {
             sub_epoch = 1;
         }
-        let orig_exploration_rates: Vec<f32> = self
-            .agents
-            .iter()
-            .map(|a| a.get_exploration_rate())
-            .collect();
+        let (orig_exploration_rates, orig_learning_rates) = self.get_rates();
 
         // TODO parallelize
         println!("num games: {}", num_games);
         for game in 0..num_games {
             self.env.reset();
             if (game % sub_epoch) == 0 && train {
-                let sub_epoch_nr = game / sub_epoch;
-                self.adjust_learning_rate(sub_epoch_nr, orig_exploration_rates.clone());
+                self.adjust_rates(
+                    game as f32 / num_games as f32,
+                    &orig_exploration_rates,
+                    &orig_learning_rates,
+                );
             }
 
-            let mut env_done = false;
-            loop {
+            let final_state: Array2<f32> = 'outer: loop {
                 for agent in self.agents.iter_mut() {
                     let (env, actions, reward, done) = self.env.step();
                     if done {
-                        env_done = true;
-                        break;
+                        break 'outer env;
                     }
-                    self.env.take_action(agent.get_move(env, actions, reward));
+                    let res = self.env.take_action(agent.get_move(env, actions, reward));
+                    if !res {
+                        println!("illegal move!");
+                    }
                 }
-                if env_done {
-                    break;
-                }
-            }
+            };
 
             let game_res = self.env.eval();
             self.update_results(&game_res);
             if train {
                 for (i, agent) in self.agents.iter_mut().enumerate() {
-                    agent.finish_round(game_res[i].into());
+                    agent.finish_round(game_res[i].into(), final_state.clone());
                 }
             }
         }

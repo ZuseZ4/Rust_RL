@@ -45,12 +45,15 @@ impl HyperParameter {
         }
         self.batch_size = batch_size;
     }
-    pub fn learning_rate(&mut self, learning_rate: f32) {
-        if learning_rate <= 0. {
-            eprintln!("learning rate should be > 0! Doing nothing!");
+    pub fn set_learning_rate(&mut self, learning_rate: f32) {
+        if learning_rate < 0. {
+            eprintln!("learning rate should be >= 0! Doing nothing!");
             return;
         }
         self.learning_rate = learning_rate;
+    }
+    pub fn get_learning_rate(&self) -> f32 {
+        self.learning_rate
     }
 }
 
@@ -197,7 +200,12 @@ impl NeuralNetwork {
     ///
     /// By default a learning rate of 0.002 is used.
     pub fn set_learning_rate(&mut self, learning_rate: f32) {
-        self.h_p.learning_rate(learning_rate);
+        self.h_p.set_learning_rate(learning_rate);
+    }
+
+    /// A getter for the learning rate.
+    pub fn get_learning_rate(&self) -> f32 {
+        self.h_p.get_learning_rate()
     }
 
     /// This function appends a custom layer to the neural network.

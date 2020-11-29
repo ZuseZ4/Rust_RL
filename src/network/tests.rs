@@ -17,7 +17,7 @@ mod MLP {
         nn
     }
 
-    fn test(mut nn: NeuralNetwork, input: Array2<f32>, feedback: Array2<f32>, testname: String) {
+    fn test(nn: NeuralNetwork, input: Array2<f32>, feedback: Array2<f32>, testname: String) {
         let mut current_input;
         let mut current_feedback;
         for i in 0..input.nrows() {

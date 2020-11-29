@@ -61,7 +61,7 @@ fn get_agents(agent_nums: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {
     for agent_num in agent_nums {
         let new_agent: Result<Box<dyn Agent>, String> = match agent_num {
             1 => Ok(Box::new(DQLAgent::new(1., new(0.001)))),
-            2 => Ok(Box::new(QLAgent::new(1.))),
+            2 => Ok(Box::new(QLAgent::new(1., 3 * 3))),
             3 => Ok(Box::new(RandomAgent::new())),
             4 => Ok(Box::new(HumanPlayer::new())),
             _ => Err("Only implemented agents 1-4!".to_string()),
