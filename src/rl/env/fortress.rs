@@ -2,11 +2,49 @@ use crate::rl::env::env_trait::Environment;
 use ndarray::{Array, Array1, Array2};
 use std::cmp::Ordering;
 
+static NEIGHBOURS_LIST: [&[usize]; 6 * 6] = [
+    &[1, 6],
+    &[0, 2, 7],
+    &[1, 3, 8],
+    &[2, 4, 9],
+    &[3, 5, 10],
+    &[4, 11],
+    &[7, 0, 12],
+    &[6, 8, 1, 13],
+    &[7, 9, 2, 14],
+    &[8, 10, 3, 15],
+    &[9, 11, 4, 16],
+    &[10, 5, 17],
+    &[13, 6, 18],
+    &[12, 14, 7, 19],
+    &[13, 15, 8, 20],
+    &[14, 16, 9, 21],
+    &[15, 17, 10, 22],
+    &[16, 11, 23],
+    &[19, 12, 24],
+    &[18, 20, 13, 25],
+    &[19, 21, 14, 26],
+    &[20, 22, 15, 27],
+    &[21, 23, 16, 28],
+    &[22, 17, 29],
+    &[25, 18, 30],
+    &[24, 26, 19, 31],
+    &[25, 27, 20, 32],
+    &[26, 28, 21, 33],
+    &[27, 29, 22, 34],
+    &[28, 23, 35],
+    &[31, 24],
+    &[30, 32, 25],
+    &[31, 33, 26],
+    &[32, 34, 27],
+    &[33, 35, 28],
+    &[34, 29],
+];
+
 /// A struct containing all relevant information to store the current position of a single fortress game.
 pub struct Fortress {
     field: [i8; 36],
     flags: [i8; 36],
-    neighbours: [Vec<usize>; 36],
     first_player_turn: bool,
     rounds: usize,
     total_rounds: usize,
@@ -30,7 +68,7 @@ impl Environment for Fortress {
         let moves = self.get_legal_actions();
 
         // get rewards
-        let reward = self.get_reward();
+        let reward = get_reward(self.first_player_turn, self.field, self.flags);
 
         let done = self.done();
         (position, moves, reward, done)
@@ -80,9 +118,9 @@ impl Environment for Fortress {
 
     fn eval(&mut self) -> Vec<i8> {
         if !self.done() {
-            panic!("Error, calling eval() before game ended!");
+            panic!("Hey, wait till the game is finished!");
         }
-        let (p1, p2) = self.controlled_fields();
+        let (p1, p2) = controlled_fields(self.field, self.flags);
         match p1.cmp(&p2) {
             Ordering::Equal => vec![0, 0],
             Ordering::Greater => vec![1, -1],
@@ -96,48 +134,9 @@ impl Fortress {
     ///
     /// After the given amount of rounds the player which controlls the majority of fields wins a single game.
     pub fn new(total_rounds: usize) -> Self {
-        let neighbours_list = [
-            vec![1, 6],
-            vec![0, 2, 7],
-            vec![1, 3, 8],
-            vec![2, 4, 9],
-            vec![3, 5, 10],
-            vec![4, 11],
-            vec![7, 0, 12],
-            vec![6, 8, 1, 13],
-            vec![7, 9, 2, 14],
-            vec![8, 10, 3, 15],
-            vec![9, 11, 4, 16],
-            vec![10, 5, 17],
-            vec![13, 6, 18],
-            vec![12, 14, 7, 19],
-            vec![13, 15, 8, 20],
-            vec![14, 16, 9, 21],
-            vec![15, 17, 10, 22],
-            vec![16, 11, 23],
-            vec![19, 12, 24],
-            vec![18, 20, 13, 25],
-            vec![19, 21, 14, 26],
-            vec![20, 22, 15, 27],
-            vec![21, 23, 16, 28],
-            vec![22, 17, 29],
-            vec![25, 18, 30],
-            vec![24, 26, 19, 31],
-            vec![25, 27, 20, 32],
-            vec![26, 28, 21, 33],
-            vec![27, 29, 22, 34],
-            vec![28, 23, 35],
-            vec![31, 24],
-            vec![30, 32, 25],
-            vec![31, 33, 26],
-            vec![32, 34, 27],
-            vec![33, 35, 28],
-            vec![34, 29],
-        ];
         Fortress {
             field: [0; 36],
             flags: [0; 36],
-            neighbours: neighbours_list,
             first_player_turn: true,
             rounds: 0,
             total_rounds,
@@ -145,6 +144,15 @@ impl Fortress {
             second_player_moves: Array::from_elem(36, true),
             active: true,
         }
+    }
+
+    /// A getter for the amount of action each player is allowed to take before the game ends.
+    pub fn get_total_rounds(&self) -> usize {
+        self.total_rounds
+    }
+
+    fn done(&self) -> bool {
+        self.rounds == self.total_rounds
     }
 
     fn get_legal_actions(&self) -> Array1<bool> {
@@ -156,7 +164,7 @@ impl Fortress {
     }
 
     fn update_neighbours(&mut self, pos: usize, update_val: i8) {
-        let neighbours: Vec<usize> = self.neighbours[pos].clone().into_iter().collect();
+        let neighbours: Vec<usize> = NEIGHBOURS_LIST[pos].to_vec();
         for neighbour_pos in neighbours {
             self.flags[neighbour_pos] += update_val;
             if self.field[neighbour_pos] * self.flags[neighbour_pos] < 0 {
@@ -184,43 +192,33 @@ impl Fortress {
             self.first_player_moves[pos] = false;
         }
     }
+}
 
-    fn get_reward(&self) -> f32 {
-        let controlled_fields = self.controlled_fields();
-        let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
-        if !self.first_player_turn {
-            reward *= -1;
-        }
-        if reward == 0 {
-            0.5
-        }
-        // small bonus for achieving at least a draw
-        else {
-            reward as f32
+fn get_reward(first_player_turn: bool, field: [i8; 36], flags: [i8; 36]) -> f32 {
+    let controlled_fields = controlled_fields(field, flags);
+    let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
+    if !first_player_turn {
+        reward *= -1;
+    }
+    if reward == 0 {
+        // add small bonus for achieving at least a draw
+        0.5
+    } else {
+        reward as f32
+    }
+}
+
+fn controlled_fields(field: [i8; 36], flags: [i8; 36]) -> (u8, u8) {
+    let mut fields_one = 0;
+    let mut fields_two = 0;
+    for (&building_lv, &flags) in field.iter().zip(flags.iter()) {
+        if building_lv > 0 || (building_lv == 0 && flags > 0) {
+            fields_one += 1;
+        } else if building_lv == 0 && flags == 0 {
+            continue;
+        } else {
+            fields_two += 1;
         }
     }
-
-    fn done(&self) -> bool {
-        self.rounds == self.total_rounds
-    }
-
-    fn controlled_fields(&self) -> (u8, u8) {
-        let mut fields_one = 0;
-        let mut fields_two = 0;
-        for (&building_lv, &flags) in self.field.iter().zip(self.flags.iter()) {
-            if building_lv > 0 || (building_lv == 0 && flags > 0) {
-                fields_one += 1;
-            } else if building_lv == 0 && flags == 0 {
-                continue;
-            } else {
-                fields_two += 1;
-            }
-        }
-        (fields_one, fields_two)
-    }
-
-    /// A getter for the amount of action each player is allowed to take before the game ends.
-    pub fn get_total_rounds(&self) -> usize {
-        self.total_rounds
-    }
+    (fields_one, fields_two)
 }

@@ -59,8 +59,8 @@ impl Trainer {
     fn adjust_rates(
         &mut self,
         fraction_done: f32,
-        orig_exploration_rate: &Vec<f32>,
-        orig_learning_rate: &Vec<f32>,
+        orig_exploration_rate: &[f32],
+        orig_learning_rate: &[f32],
     ) {
         for i in 0..self.agents.len() {
             self.agents[i]

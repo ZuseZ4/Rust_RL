@@ -1,7 +1,7 @@
 use crate::rl::env::env_trait::Environment;
 use ndarray::{Array, Array1, Array2};
 
-static BITMASKS: [&'static [u16]; 9] = [
+static BITMASKS: [&[u16]; 9] = [
     //TODO FIX: BROKEN
     &[0b_111, 0b_100_100_100, 0b_100_010_001],
     &[0b_111, 0b_010_010_010],
@@ -30,6 +30,12 @@ enum GameState {
     Draw,
     Player1won,
     Player2won,
+}
+
+impl Default for TicTacToe {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Environment for TicTacToe {
@@ -93,7 +99,7 @@ impl Environment for TicTacToe {
 
         self.first_player_turn ^= true; // next player
 
-        return true;
+        true
     }
 }
 

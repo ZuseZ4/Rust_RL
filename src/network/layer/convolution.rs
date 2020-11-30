@@ -310,10 +310,8 @@ impl ConvolutionLayer {
         match output {
             Ok(v) => v,
             Err(_) => panic!(
-                "Got array with shape [{},{}], but expected {} elements.",
-                shape_x,
-                shape_y,
-                num_kernels * n * m
+                "Got array with shape [{},{}], but expected {}*{}*{} elements.",
+                shape_x, shape_y, num_kernels, n, m
             ),
         }
     }

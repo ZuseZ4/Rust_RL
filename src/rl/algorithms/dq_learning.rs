@@ -3,7 +3,8 @@ use crate::network::nn::NeuralNetwork;
 use crate::rl::algorithms::utils;
 use ndarray::{Array1, Array2};
 use ndarray_stats::QuantileExt;
-use rand::{Rng, ThreadRng};
+use rand::rngs::ThreadRng;
+use rand::Rng;
 
 #[allow(dead_code)]
 pub struct DQlearning {
@@ -134,7 +135,7 @@ impl DQlearning {
         let predicted_moves = self.nn.predict2d(board_arr.clone());
         self.count_illegal_moves(predicted_moves.clone(), actions.clone());
         let legal_predicted_moves = predicted_moves.clone() * actions.clone();
-        let mut next_move = self.select_move(legal_predicted_moves.clone());
+        let mut next_move = self.select_move(legal_predicted_moves);
 
         // shall we explore a random move?
         // also select random move if predicted move not allowed (e.g. legal_predicted_moves contains only 0's).

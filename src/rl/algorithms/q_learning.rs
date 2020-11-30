@@ -1,8 +1,8 @@
 use super::{Observation, ReplayBuffer};
 use crate::rl::algorithms::utils;
 use ndarray::{Array1, Array2};
+use rand::rngs::ThreadRng;
 use rand::Rng;
-use rand::ThreadRng;
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -148,17 +148,15 @@ impl Qlearning {
 
     fn get_best_move(&mut self, actions: Array1<bool>) -> Option<usize> {
         // get all legal actions
-        let mut existing_entries: Vec<(usize, f32)> = Vec::new();
+        let mut existing_entries: Vec<(usize, f32)> = Vec::new(); // Vec<(action, val)>
         for move_candidate in 0..actions.len() {
             if !actions[move_candidate] {
                 continue;
             }
 
             let score = self.scores.get(&(self.last_state.clone(), move_candidate));
-
-            match score {
-                Some(&val) => existing_entries.push((move_candidate, val)),
-                None => (),
+            if let Some(&val) = score {
+                existing_entries.push((move_candidate, val))
             }
         }
 
@@ -168,11 +166,10 @@ impl Qlearning {
         }
 
         let (mut pos, mut max_val): (usize, f32) = (0, f32::MIN);
-        for i in 0..existing_entries.len() {
-            let new_val = existing_entries[i].1;
-            if new_val > max_val {
+        for (i, (_action, new_val)) in existing_entries.iter().enumerate() {
+            if *new_val > max_val {
                 pos = i;
-                max_val = new_val;
+                max_val = *new_val;
             }
         }
 
