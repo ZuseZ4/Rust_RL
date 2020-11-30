@@ -39,23 +39,45 @@ impl DenseLayer {
             Normal::new(0.0, 2.0 / ((output_dim + input_dim) as f32).sqrt()).unwrap(),
         );
         let bias: Array1<f32> = Array::zeros(output_dim); //https://cs231n.github.io/neural-networks-2/#init
-        let mut weight_optimizer = optimizer.clone();
+        let mut weight_optimizer = optimizer.clone_box();
         let mut bias_optimizer = optimizer;
         weight_optimizer.set_input_shape(vec![output_dim, input_dim]);
         bias_optimizer.set_input_shape(vec![output_dim]);
-        DenseLayer {
-            input_dim,
-            output_dim,
-            learning_rate,
+        new_from_matrices(
             weights,
             bias,
-            net: Array::zeros((input_dim, batch_size)),
-            feedback: Array::zeros((output_dim, batch_size)),
+            input_dim,
+            output_dim,
             batch_size,
-            predictions: 0,
+            learning_rate,
             weight_optimizer,
             bias_optimizer,
-        }
+        )
+    }
+}
+
+fn new_from_matrices(
+    weights: Array2<f32>,
+    bias: Array1<f32>,
+    input_dim: usize,
+    output_dim: usize,
+    batch_size: usize,
+    learning_rate: f32,
+    weight_optimizer: Box<dyn Optimizer>,
+    bias_optimizer: Box<dyn Optimizer>,
+) -> DenseLayer {
+    DenseLayer {
+        input_dim,
+        output_dim,
+        learning_rate,
+        weights,
+        bias,
+        net: Array::zeros((input_dim, batch_size)),
+        feedback: Array::zeros((output_dim, batch_size)),
+        batch_size,
+        predictions: 0,
+        weight_optimizer,
+        bias_optimizer,
     }
 }
 
@@ -70,6 +92,20 @@ impl Layer for DenseLayer {
 
     fn get_output_shape(&self, _input_dim: Vec<usize>) -> Vec<usize> {
         vec![self.output_dim]
+    }
+
+    fn clone_box(&self) -> Box<dyn Layer> {
+        let new_layer = new_from_matrices(
+            self.weights.clone(),
+            self.bias.clone(),
+            self.input_dim,
+            self.output_dim,
+            self.batch_size,
+            self.learning_rate,
+            self.weight_optimizer.clone_box(),
+            self.bias_optimizer.clone_box(),
+        );
+        Box::new(new_layer)
     }
 
     fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {

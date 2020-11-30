@@ -12,12 +12,13 @@ use network::functional::error::{
 use network::layer::{ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer, Layer};
 use network::optimizer::*;
 
+#[derive(Clone)]
 enum Mode {
     Eval,
     Train,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct HyperParameter {
     batch_size: usize,
     learning_rate: f32,
@@ -272,7 +273,7 @@ impl NeuralNetwork {
             padding,
             self.h_p.batch_size,
             self.h_p.learning_rate,
-            self.optimizer_function.clone(),
+            self.optimizer_function.clone_box(),
         );
         self.store_layer(Box::new(conv_layer));
         self.from_logits = false;
@@ -294,7 +295,7 @@ impl NeuralNetwork {
             output_dim,
             self.h_p.batch_size,
             self.h_p.learning_rate,
-            self.optimizer_function.clone(),
+            self.optimizer_function.clone_box(),
         );
         self.store_layer(Box::new(dense_layer));
         self.from_logits = false;

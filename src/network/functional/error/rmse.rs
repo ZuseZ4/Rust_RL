@@ -2,7 +2,7 @@ use super::Error;
 use ndarray::{Array1, ArrayD, Ix1};
 
 /// This error function works on the square-root of the mse.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct RootMeanSquareError {
     err: f32,
 }
@@ -43,5 +43,9 @@ impl Error for RootMeanSquareError {
 
     fn deriv_from_logits(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         self.backward(output, target)
+    }
+    
+    fn clone_box(&self) -> Box<dyn Error> {
+      Box::new(self.clone())
     }
 }

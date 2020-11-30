@@ -36,8 +36,11 @@ impl Layer for LeakyReLuLayer {
         self.predict(x)
     }
 
-    fn backward(&mut self, mut feedback: ArrayD<f32>) -> ArrayD<f32> {
-        feedback.mapv_inplace(|x| if x >= 0. { 1. } else { 0.01 });
-        feedback
+    fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
+        feedback.mapv(|x| if x >= 0. { 1. } else { 0.01 })
+    }
+
+    fn clone_box(&self) -> Box<dyn Layer> {
+        Box::new(LeakyReLuLayer::new())
     }
 }

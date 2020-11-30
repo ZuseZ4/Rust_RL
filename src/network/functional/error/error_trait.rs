@@ -25,4 +25,7 @@ pub trait Error: Send + Sync {
     /// Similare to the loss_from_logits() function it takes the output *before* the last activation function.   
     /// It merges the functionality of the backward() function with the backward() function of a specific activation function.
     fn deriv_from_logits(&self, input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32>;
+
+    /// A function to create a boxed clone of the used Error object.
+    fn clone_box(&self) -> Box<dyn Error>;
 }

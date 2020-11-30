@@ -4,7 +4,7 @@ use ndarray::{Array, ArrayD};
 use ndarray_stats::QuantileExt;
 
 /// This implements the categorical crossentropy loss.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct CategoricalCrossEntropyError {}
 
 impl CategoricalCrossEntropyError {
@@ -50,6 +50,10 @@ impl Error for CategoricalCrossEntropyError {
         output.mapv_inplace(|x| x / sum);
         let loss = -(target * output).iter().sum::<f32>();
         Array::from_elem(1, loss).into_dyn()
+    }
+
+    fn clone_box(&self) -> Box<dyn Error> {
+        Box::new(self.clone())
     }
 }
 

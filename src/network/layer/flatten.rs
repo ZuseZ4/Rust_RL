@@ -33,6 +33,10 @@ impl Layer for FlattenLayer {
         vec![input_dim.iter().product()]
     }
 
+    fn clone_box(&self) -> Box<dyn Layer> {
+        Box::new(FlattenLayer::new(self.input_shape.clone()))
+    }
+
     fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
         x.into_shape(self.num_elements).unwrap().into_dyn()
     }

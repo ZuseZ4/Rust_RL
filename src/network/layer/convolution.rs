@@ -138,6 +138,40 @@ mod tests {
     }
 }
 
+fn new_from_kernels(
+  kernels: Array2<f32>,
+  bias: Array1<f32>,
+  weight_optimizer: Box<dyn Optimizer>,
+  bias_optimizer: Box<dyn Optimizer>,
+  filter_shape: (usize, usize),
+  filter_depth: usize,
+  number_of_filters: usize,
+  padding: usize,
+  batch_size: usize,
+  learning_rate: f32,
+  ) -> ConvolutionLayer {
+        let elements_per_kernel = filter_shape.0 * filter_shape.1 * filter_depth;
+        ConvolutionLayer {
+            filter_shape,
+            learning_rate,
+            kernels,
+            filter_depth,
+            padding,
+            bias,
+            last_input: Array::zeros(0).into_dyn(),
+            kernel_updates: Array::zeros((number_of_filters, elements_per_kernel)),
+            bias_updates: Array::zeros(number_of_filters),
+            batch_size,
+            num_in_batch: 0,
+            weight_optimizer,
+            bias_optimizer,
+        }
+}
+
+
+
+
+
 impl ConvolutionLayer {
     /// This function prints the kernel values.
     ///
@@ -196,25 +230,23 @@ impl ConvolutionLayer {
             number_of_filters,
             "filter implementation wrong"
         );
-        let mut weight_optimizer = optimizer.clone();
+        let bias = Array::zeros(number_of_filters); //http://cs231n.github.io/neural-networks-2/
+        let mut weight_optimizer = optimizer.clone_box();
         let mut bias_optimizer = optimizer;
         weight_optimizer.set_input_shape(vec![number_of_filters, elements_per_kernel]);
         bias_optimizer.set_input_shape(vec![number_of_filters]);
-        ConvolutionLayer {
-            filter_shape,
-            learning_rate,
+        new_from_kernels(
             kernels,
-            filter_depth,
-            padding,
-            bias: Array::zeros(number_of_filters), //http://cs231n.github.io/neural-networks-2/
-            last_input: Array::zeros(0).into_dyn(),
-            kernel_updates: Array::zeros((number_of_filters, elements_per_kernel)),
-            bias_updates: Array::zeros(number_of_filters),
-            batch_size,
-            num_in_batch: 0,
+            bias,
             weight_optimizer,
             bias_optimizer,
-        }
+            filter_shape,
+            filter_depth,
+            number_of_filters,
+            padding,
+            batch_size,
+            learning_rate,
+        )
     }
 
     /// checked with Rust Playground. Works for quadratic filter and arbitrary 2d/3d images
@@ -330,6 +362,13 @@ impl Layer for ConvolutionLayer {
 
     fn get_num_parameter(&self) -> usize {
         self.kernels.nrows() * self.kernels.ncols() + self.kernels.nrows() // num_kernels * size_kernels + bias
+    }
+
+    fn clone_box(&self) -> Box<dyn Layer> {
+        let number_of_filters = self.kernels.nrows();
+        let new_layer = new_from_kernels(self.kernels.clone(), self.bias.clone(), self.weight_optimizer.clone_box(), self.bias_optimizer.clone_box(),
+        self.filter_shape, self.filter_depth, number_of_filters, self.padding, self.batch_size, self.learning_rate);
+        Box::new(new_layer)
     }
 
     fn get_output_shape(&self, input_shape: Vec<usize>) -> Vec<usize> {

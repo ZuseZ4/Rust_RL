@@ -2,7 +2,7 @@ use super::Error;
 use ndarray::{Array1, ArrayD, Ix1};
 
 /// This function calculates the mean of squares of errors between the neural network output and the ground truth.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct MeanSquareError {}
 
 impl MeanSquareError {
@@ -40,5 +40,9 @@ impl Error for MeanSquareError {
 
     fn deriv_from_logits(&self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         self.backward(output, target)
+    }
+
+    fn clone_box(&self) -> Box<dyn Error> {
+        Box::new(self.clone())
     }
 }
