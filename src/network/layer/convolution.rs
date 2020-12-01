@@ -139,38 +139,34 @@ mod tests {
 }
 
 fn new_from_kernels(
-  kernels: Array2<f32>,
-  bias: Array1<f32>,
-  weight_optimizer: Box<dyn Optimizer>,
-  bias_optimizer: Box<dyn Optimizer>,
-  filter_shape: (usize, usize),
-  filter_depth: usize,
-  number_of_filters: usize,
-  padding: usize,
-  batch_size: usize,
-  learning_rate: f32,
-  ) -> ConvolutionLayer {
-        let elements_per_kernel = filter_shape.0 * filter_shape.1 * filter_depth;
-        ConvolutionLayer {
-            filter_shape,
-            learning_rate,
-            kernels,
-            filter_depth,
-            padding,
-            bias,
-            last_input: Array::zeros(0).into_dyn(),
-            kernel_updates: Array::zeros((number_of_filters, elements_per_kernel)),
-            bias_updates: Array::zeros(number_of_filters),
-            batch_size,
-            num_in_batch: 0,
-            weight_optimizer,
-            bias_optimizer,
-        }
+    kernels: Array2<f32>,
+    bias: Array1<f32>,
+    weight_optimizer: Box<dyn Optimizer>,
+    bias_optimizer: Box<dyn Optimizer>,
+    filter_shape: (usize, usize),
+    filter_depth: usize,
+    number_of_filters: usize,
+    padding: usize,
+    batch_size: usize,
+    learning_rate: f32,
+) -> ConvolutionLayer {
+    let elements_per_kernel = filter_shape.0 * filter_shape.1 * filter_depth;
+    ConvolutionLayer {
+        filter_shape,
+        learning_rate,
+        kernels,
+        filter_depth,
+        padding,
+        bias,
+        last_input: Array::zeros(0).into_dyn(),
+        kernel_updates: Array::zeros((number_of_filters, elements_per_kernel)),
+        bias_updates: Array::zeros(number_of_filters),
+        batch_size,
+        num_in_batch: 0,
+        weight_optimizer,
+        bias_optimizer,
+    }
 }
-
-
-
-
 
 impl ConvolutionLayer {
     /// This function prints the kernel values.
@@ -366,8 +362,18 @@ impl Layer for ConvolutionLayer {
 
     fn clone_box(&self) -> Box<dyn Layer> {
         let number_of_filters = self.kernels.nrows();
-        let new_layer = new_from_kernels(self.kernels.clone(), self.bias.clone(), self.weight_optimizer.clone_box(), self.bias_optimizer.clone_box(),
-        self.filter_shape, self.filter_depth, number_of_filters, self.padding, self.batch_size, self.learning_rate);
+        let new_layer = new_from_kernels(
+            self.kernels.clone(),
+            self.bias.clone(),
+            self.weight_optimizer.clone_box(),
+            self.bias_optimizer.clone_box(),
+            self.filter_shape,
+            self.filter_depth,
+            number_of_filters,
+            self.padding,
+            self.batch_size,
+            self.learning_rate,
+        );
         Box::new(new_layer)
     }
 
