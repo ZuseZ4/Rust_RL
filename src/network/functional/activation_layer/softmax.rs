@@ -37,8 +37,7 @@ impl Layer for SoftmaxLayer {
         let max: f32 = *x.max_skipnan();
         x.mapv_inplace(|x| (x - max).exp());
         let sum: f32 = x.iter().filter(|x| !x.is_nan()).sum::<f32>();
-        x.mapv_inplace(|x| x / sum);
-        x
+        x.mapv(|x| x / sum)
     }
 
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
@@ -48,5 +47,9 @@ impl Layer for SoftmaxLayer {
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
         &self.output - &feedback
+    }
+
+    fn clone_box(&self) -> Box<dyn Layer> {
+        Box::new(SoftmaxLayer::new())
     }
 }

@@ -45,7 +45,7 @@ impl Optimizer for RMSProp {
             .into_dimensionality::<Ix3>()
             .unwrap()
     }
-    fn clone(&self) -> Box<dyn Optimizer> {
+    fn clone_box(&self) -> Box<dyn Optimizer> {
         Box::new(Clone::clone(self))
     }
 }

@@ -29,7 +29,7 @@ impl Optimizer for Noop {
     fn optimize3d(&mut self, delta_w: Array3<f32>) -> Array3<f32> {
         delta_w
     }
-    fn clone(&self) -> Box<dyn Optimizer> {
+    fn clone_box(&self) -> Box<dyn Optimizer> {
         Box::new(Clone::clone(self))
     }
 }

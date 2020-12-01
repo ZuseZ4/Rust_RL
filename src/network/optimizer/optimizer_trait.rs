@@ -17,8 +17,9 @@ pub trait Optimizer: Send + Sync {
     fn optimize2d(&mut self, weight_update: Array2<f32>) -> Array2<f32>;
     /// A wrapper around optimize()
     fn optimize3d(&mut self, weight_update: Array3<f32>) -> Array3<f32>;
+
     /// Allows each layer to create a copy of the given optimizer in case that he has more than one array to update.
     ///
     /// Should be called before calling any of the optimizeX functions.
-    fn clone(&self) -> Box<dyn Optimizer>;
+    fn clone_box(&self) -> Box<dyn Optimizer>;
 }

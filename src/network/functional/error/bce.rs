@@ -14,6 +14,12 @@ impl Default for BinaryCrossEntropyError {
     }
 }
 
+impl Clone for BinaryCrossEntropyError {
+    fn clone(&self) -> Self {
+        BinaryCrossEntropyError::new()
+    }
+}
+
 impl BinaryCrossEntropyError {
     /// No parameters required.
     pub fn new() -> Self {
@@ -53,6 +59,10 @@ impl Error for BinaryCrossEntropyError {
     // takes input from last dense/conv/.. layer directly, without activation function in between
     fn deriv_from_logits(&self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         self.activation_function.predict(input) - target
+    }
+
+    fn clone_box(&self) -> Box<dyn Error> {
+        Box::new(BinaryCrossEntropyError::new())
     }
 }
 

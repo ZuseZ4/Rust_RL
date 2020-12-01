@@ -4,7 +4,7 @@ use ndarray::{Array1, ArrayD};
 /// This function returns 42 during the forward call and forwards the ground trouth unchanged to the previous layer.
 ///
 /// It is intended for debug purpose only.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct NoopError {}
 
 impl NoopError {
@@ -35,5 +35,9 @@ impl Error for NoopError {
 
     fn deriv_from_logits(&self, _input: ArrayD<f32>, feedback: ArrayD<f32>) -> ArrayD<f32> {
         feedback
+    }
+
+    fn clone_box(&self) -> Box<dyn Error> {
+        Box::new(self.clone())
     }
 }

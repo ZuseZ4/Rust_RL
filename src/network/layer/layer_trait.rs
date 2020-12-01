@@ -30,4 +30,7 @@ pub trait Layer: Send + Sync {
     /// It is expected to update the weights, if any, accordingly and return the error for the previous layer.
     ///
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32>;
+
+    /// A function to create a boxed clone of the used Layer.
+    fn clone_box(&self) -> Box<dyn Layer>;
 }

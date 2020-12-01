@@ -37,6 +37,10 @@ impl Layer for DropoutLayer {
         input_dim
     }
 
+    fn clone_box(&self) -> Box<dyn Layer> {
+        Box::new(DropoutLayer::new(self.drop_prob))
+    }
+
     fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
         x
     }
