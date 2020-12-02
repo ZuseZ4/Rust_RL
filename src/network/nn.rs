@@ -73,6 +73,22 @@ pub struct NeuralNetwork {
     mode: Mode,
 }
 
+impl Clone for NeuralNetwork {
+    fn clone(&self) -> NeuralNetwork {
+      let new_layers: Vec<_> = self.layers.iter().map(|x| x.clone_box()).collect();
+      NeuralNetwork {
+        input_dims: self.input_dims.clone(),
+        h_p: self.h_p.clone(),
+        layers: new_layers,
+        error: self.error.clone(),
+        error_function: self.error_function.clone_box(),
+        optimizer_function: self.optimizer_function.clone_box(),
+        from_logits: self.from_logits,
+        mode: self.mode.clone(),
+      }
+    }
+}
+
 impl NeuralNetwork {
     fn get_activation(activation_type: String) -> Result<Box<dyn Layer>, String> {
         match activation_type.as_str() {

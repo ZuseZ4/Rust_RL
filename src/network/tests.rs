@@ -73,6 +73,18 @@ mod MLP {
     }
 
     #[test]
+    fn clone_nn() {
+        let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.], [1., 1.], [1., 1.]]; // AND
+        let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
+        let mut nn = new(2, 6, 0.1);
+        train(&mut nn, 1_000, &input, &feedback);
+        test(nn.clone(), input.clone(), feedback.clone(), "copy_init_failed".to_string());
+        let nn_clone = nn.clone();
+        test(nn_clone, input, feedback, "clone_failed".to_string());
+
+    }
+
+    #[test]
     fn or() {
         let input = array![[0., 0.], [0., 0.], [0., 0.], [0., 1.], [1., 0.], [1., 1.]]; // OR
         let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //OR works great with 200k examples
