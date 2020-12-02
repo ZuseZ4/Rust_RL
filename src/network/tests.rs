@@ -78,10 +78,14 @@ mod MLP {
         let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
         let mut nn = new(2, 6, 0.1);
         train(&mut nn, 1_000, &input, &feedback);
-        test(nn.clone(), input.clone(), feedback.clone(), "copy_init_failed".to_string());
+        test(
+            nn.clone(),
+            input.clone(),
+            feedback.clone(),
+            "copy_init_failed".to_string(),
+        );
         let nn_clone = nn.clone();
         test(nn_clone, input, feedback, "clone_failed".to_string());
-
     }
 
     #[test]
