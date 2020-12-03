@@ -1,6 +1,6 @@
 use crate::network::layer::Layer;
 use crate::network::optimizer::Optimizer;
-use ndarray::{Array, Array1, Array2, ArrayD, Axis, Ix1};
+use ndarray::{Array, Array1, Array2, ArrayD, Axis, Ix1, Ix2};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be better & faster
 use ndarray_rand::RandomExt;
 
@@ -14,7 +14,8 @@ pub struct DenseLayer {
     net: Array2<f32>,
     feedback: Array2<f32>,
     batch_size: usize,
-    predictions: usize,
+    forward_passes: usize,
+    backward_passes: usize,
     weight_optimizer: Box<dyn Optimizer>,
     bias_optimizer: Box<dyn Optimizer>,
 }
@@ -54,6 +55,17 @@ impl DenseLayer {
             bias_optimizer,
         )
     }
+    
+    fn update_weights(&mut self) {
+        let d_w: Array2<f32> = &self.feedback.dot(&self.net.t()) / (self.batch_size as f32);
+        let d_b: Array1<f32> = &self.feedback.sum_axis(Axis(1)) / (self.batch_size as f32);
+
+        assert_eq!(d_w.shape(), self.weights.shape());
+        assert_eq!(d_b.shape(), self.bias.shape());
+
+        self.weights -= &(self.weight_optimizer.optimize2d(d_w) * self.learning_rate);
+        self.bias -= &(self.bias_optimizer.optimize1d(d_b) * self.learning_rate);
+    }
 }
 
 fn new_from_matrices(
@@ -75,11 +87,13 @@ fn new_from_matrices(
         net: Array::zeros((input_dim, batch_size)),
         feedback: Array::zeros((output_dim, batch_size)),
         batch_size,
-        predictions: 0,
+        forward_passes: 0,
+        backward_passes: 0,
         weight_optimizer,
         bias_optimizer,
     }
 }
+    
 
 impl Layer for DenseLayer {
     fn get_type(&self) -> String {
@@ -109,43 +123,85 @@ impl Layer for DenseLayer {
     }
 
     fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
-        let input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
-        let res: Array1<f32> = self.weights.dot(&input) + &self.bias;
+        // Handle 1D input
+        if x.ndim() == 1 {
+          let single_input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
+          let res: Array1<f32> = self.weights.dot(&single_input) + &self.bias;
+          return res.into_dyn();
+        } 
+
+        // Handle 2D input (input-batch)
+        assert_eq!(x.ndim(), 2);
+        let batch_input: Array2<f32> = x.into_dimensionality::<Ix2>().unwrap();
+        let mut res = Array2::zeros((batch_input.shape()[0], self.output_dim)); 
+        for (i, single_input) in batch_input.outer_iter().enumerate() {
+          let single_res = &self.weights.dot(&single_input) + &self.bias;
+          res.column_mut(i).assign(&single_res);
+        }
         res.into_dyn()
     }
 
+
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        let input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
-        let pos_in_batch = self.predictions % self.batch_size;
-        self.net.column_mut(pos_in_batch).assign(&input);
-        let res: Array1<f32> = self.weights.dot(&input) + &self.bias;
-        res.into_dyn()
+        store_input(x.clone(), &mut self.net, self.batch_size, &mut self.forward_passes);
+        self.predict(x)
     }
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
-        let feedback: Array1<f32> = feedback.into_dimensionality::<Ix1>().unwrap();
-        let pos_in_batch = self.predictions % self.batch_size;
-        self.feedback.column_mut(pos_in_batch).assign(&feedback);
+
+        // store feedback gradients for batch-weightupdates
+        store_input(feedback.clone(), &mut self.feedback, self.batch_size, &mut self.backward_passes);
+      
 
         //calc derivate to backprop through layers
-        let output = self.weights.t().dot(&feedback.t());
-
-        //store feedback
-        self.predictions += 1;
-        if self.predictions % self.batch_size == 0 {
-            let d_w: Array2<f32> = &self.feedback.dot(&self.net.t()) / (self.batch_size as f32);
-            let d_b: Array1<f32> = &self.feedback.sum_axis(Axis(1)) / (self.batch_size as f32);
-
-            assert_eq!(d_w.shape(), self.weights.shape());
-            assert_eq!(d_b.shape(), self.bias.shape());
-
-            self.weights -= &(self.weight_optimizer.optimize2d(d_w) * self.learning_rate);
-            self.bias -= &(self.bias_optimizer.optimize1d(d_b) * self.learning_rate);
-
-            self.net = Array::zeros((self.input_dim, self.batch_size)); //can be skipped, just ignore/overwrite old vals
-            self.feedback = Array::zeros((self.output_dim, self.batch_size)); //can be skipped, just ignore/overwrite old vals
+        let output: ArrayD<f32>;
+        if feedback.ndim() == 1 {
+          let single_feedback: Array1<f32> = feedback.into_dimensionality::<Ix1>().unwrap();
+          output = self.weights.t().dot(&single_feedback.t()).into_dyn();
+        } else {
+          assert_eq!(feedback.ndim(),2);
+          let batch_feedback: Array2<f32> = feedback.into_dimensionality::<Ix2>().unwrap();
+          let mut tmp_res = Array2::zeros((batch_feedback.shape()[0], self.input_dim));
+          for (i, single_feedback) in batch_feedback.outer_iter().enumerate() {
+            let single_grad = &self.weights.dot(&single_feedback.t());
+            tmp_res.column_mut(i).assign(single_grad);
+          }
+          output = tmp_res.into_dyn();
         }
 
-        output.into_dyn()
+
+        //update weights
+        if self.backward_passes % self.batch_size == 0 {
+            self.update_weights();
+        }
+
+
+        output
     }
+
+
+}
+
+
+fn store_input(input: ArrayD<f32>, buffer: &mut Array2<f32>, batch_size: usize, start_pos: &mut usize) {
+
+    // 1D case
+    if input.ndim() == 1 {
+      let single_input = input.into_dimensionality::<Ix1>().unwrap();
+      buffer.column_mut(*start_pos).assign(&single_input);
+      *start_pos = (*start_pos + 1) % batch_size;
+      return;
+    }
+
+
+    // 2D case
+    assert_eq!(input.ndim(), 2);
+    assert!(input.shape()[0] <= batch_size); // otherwise buffer overrun
+    let batch_input = input.into_dimensionality::<Ix2>().unwrap();
+    let mut pos_in_buffer = *start_pos % batch_size;
+    for single_input in batch_input.outer_iter() {
+      buffer.column_mut(pos_in_buffer).assign(&single_input);
+      pos_in_buffer = (pos_in_buffer + 1) % batch_size;
+    }
+    *start_pos = (*start_pos + batch_input.shape()[0]) % batch_size;
 }
