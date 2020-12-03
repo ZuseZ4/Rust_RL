@@ -34,10 +34,16 @@ impl Layer for SoftmaxLayer {
     }
 
     fn predict(&self, mut x: ArrayD<f32>) -> ArrayD<f32> {
-        let max: f32 = *x.max_skipnan();
-        x.mapv_inplace(|x| (x - max).exp());
-        let sum: f32 = x.iter().filter(|x| !x.is_nan()).sum::<f32>();
-        x.mapv(|x| x / sum)
+        if x.ndim() == 1 {
+          predict_single(&mut x);
+          return x;
+        }
+        assert_eq!(x.ndim(),2);
+        for single_x in x.outer_iter_mut() { 
+          predict_single(&mut single_x.into_owned());
+        }
+        x
+
     }
 
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
@@ -52,4 +58,11 @@ impl Layer for SoftmaxLayer {
     fn clone_box(&self) -> Box<dyn Layer> {
         Box::new(SoftmaxLayer::new())
     }
+}
+
+fn predict_single(single_x: &mut ArrayD<f32>) {
+    let max: f32 = *single_x.max_skipnan();
+    single_x.mapv_inplace(|x| (x - max).exp());
+    let sum: f32 = single_x.iter().filter(|x| !x.is_nan()).sum::<f32>();
+    single_x.mapv_inplace(|x| x / sum)
 }
