@@ -1,5 +1,5 @@
 use datasets::mnist;
-use ndarray::{Array2, Array3, Axis};
+use ndarray::{Array2, Array4, Axis};
 use rand::Rng;
 use rust_rl::network::nn::NeuralNetwork;
 use std::time::Instant;
@@ -17,16 +17,16 @@ fn new() -> NeuralNetwork {
     nn
 }
 
-fn test(nn: &mut NeuralNetwork, input: &Array3<f32>, feedback: &Array2<f32>) {
+fn test(nn: &mut NeuralNetwork, input: &Array4<f32>, feedback: &Array2<f32>) {
     nn.test(input.clone().into_dyn(), feedback.clone());
 }
 
-fn train(nn: &mut NeuralNetwork, num: usize, input: &Array3<f32>, fb: &Array2<f32>) {
+fn train(nn: &mut NeuralNetwork, num: usize, input: &Array4<f32>, fb: &Array2<f32>) {
     for _ in 0..num {
         let pos = rand::thread_rng().gen_range(0, input.shape()[0]) as usize;
         let current_input = input.index_axis(Axis(0), pos).into_owned();
         let current_fb = fb.index_axis(Axis(0), pos).into_owned();
-        nn.train2d(current_input, current_fb);
+        nn.train3d(current_input, current_fb);
     }
 }
 
@@ -42,12 +42,15 @@ pub fn main() {
         tst_lbl,
         ..
     } = mnist::new_normalized();
-    assert_eq!(trn_img.shape(), &[train_size, rows, cols]);
-    assert_eq!(tst_img.shape(), &[test_size, rows, cols]);
+    let trn_img = trn_img.into_shape((train_size, 1, rows, cols)).unwrap();
+    let tst_img = tst_img.into_shape((test_size, 1, rows, cols)).unwrap();
+
+    assert_eq!(trn_img.shape(), &[train_size, 1, rows, cols]);
+    assert_eq!(tst_img.shape(), &[test_size, 1, rows, cols]);
 
     // Get the image of the first digit.
     let first_image = trn_img.index_axis(Axis(0), 0);
-    assert_eq!(first_image.shape(), &[28, 28]);
+    assert_eq!(first_image.shape(), &[1, 28, 28]);
 
     let mut nn = new();
     nn.print_setup();

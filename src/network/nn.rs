@@ -9,7 +9,7 @@ use network::functional::error::{
     BinaryCrossEntropyError, CategoricalCrossEntropyError, Error, MeanSquareError, NoopError,
 };
 //RootMeanSquareError,
-use network::layer::{ConvolutionLayer, DenseLayer, DropoutLayer, FlattenLayer, Layer};
+use network::layer::{ConvolutionLayer2D, DenseLayer, DropoutLayer, FlattenLayer, Layer};
 use network::optimizer::*;
 
 #[derive(Clone)]
@@ -282,7 +282,7 @@ impl NeuralNetwork {
         } else {
             filter_depth = input_dim[0];
         }
-        let conv_layer = ConvolutionLayer::new(
+        let conv_layer = ConvolutionLayer2D::new(
             filter_shape,
             filter_depth,
             filter_number,

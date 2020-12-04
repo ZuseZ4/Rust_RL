@@ -1,21 +1,23 @@
+use super::conv_utils;
 use crate::network::layer::Layer;
 use crate::network::optimizer::Optimizer;
-use ndarray::{s, Array, Array1, Array2, Array3, ArrayD, Axis, Ix2, Ix3};
+use conv_utils::*;
+use ndarray::{Array, Array1, Array2, Array3, ArrayD, Axis, Ix3};
 use ndarray_rand::rand_distr::Normal; //{StandardNormal,Normal}; //not getting Standardnormal to work. should be cleaner & faster
 use ndarray_rand::RandomExt;
 
 /// This layer implements a convolution on 2d or 3d input.
-pub struct ConvolutionLayer {
-    learning_rate: f32,
+pub struct ConvolutionLayer2D {
+    batch_size: usize,
     kernels: Array2<f32>,
-    filter_shape: (usize, usize),
-    filter_depth: usize,
-    padding: usize,
+    in_channels: usize,
     bias: Array1<f32>, // one bias value per kernel
+    padding: usize,
     last_input: ArrayD<f32>,
+    filter_shape: (usize, usize),
     kernel_updates: Array2<f32>,
     bias_updates: Array1<f32>,
-    batch_size: usize,
+    learning_rate: f32,
     num_in_batch: usize,
     // Rust requires knowledge about obj size during compile time. Optimizers can be set/changed dynamically during runtime, so we just store a reference to the heap
     weight_optimizer: Box<dyn Optimizer>,
@@ -36,7 +38,7 @@ mod tests {
             [13., 14., 15., 16.],
         ])
         .into_dyn();
-        let output = ConvolutionLayer::unfold_matrix(1, input, 3, true);
+        let output = unfold_3d_matrix(1, input, 3, true);
         assert_eq!(
             output,
             arr2(&[
@@ -56,7 +58,7 @@ mod tests {
             [13., 14., 15., 16.],
         ])
         .into_dyn();
-        let output = ConvolutionLayer::unfold_matrix(1, input, 2, true);
+        let output = unfold_3d_matrix(1, input, 2, true);
         assert_eq!(
             output,
             arr2(&[
@@ -82,7 +84,7 @@ mod tests {
             [13., 14., 15., 16.],
         ])
         .into_dyn();
-        let output = ConvolutionLayer::add_padding(1, input);
+        let output = conv_utils::add_padding(1, input);
         assert_eq!(
             output,
             arr2(&[
@@ -103,7 +105,7 @@ mod tests {
             [[9., 10., 11.], [13., 14., 15.]],
         ])
         .into_dyn();
-        let output = ConvolutionLayer::add_padding(1, input);
+        let output = conv_utils::add_padding(1, input);
         assert_eq!(
             output,
             arr3(&[
@@ -130,7 +132,7 @@ mod tests {
             [[1., 2., 3.], [5., 6., 7.]],
             [[9., 10., 11.], [13., 14., 15.]],
         ]);
-        let output = ConvolutionLayer::shape_into_kernel(input);
+        let output = shape_into_kernel(input);
         assert_eq!(
             output,
             arr2(&[[1., 2., 3., 5., 6., 7.], [9., 10., 11., 13., 14., 15.]])
@@ -144,23 +146,23 @@ fn new_from_kernels(
     weight_optimizer: Box<dyn Optimizer>,
     bias_optimizer: Box<dyn Optimizer>,
     filter_shape: (usize, usize),
-    filter_depth: usize,
-    number_of_filters: usize,
+    in_channels: usize,
+    out_channels: usize,
     padding: usize,
     batch_size: usize,
     learning_rate: f32,
-) -> ConvolutionLayer {
-    let elements_per_kernel = filter_shape.0 * filter_shape.1 * filter_depth;
-    ConvolutionLayer {
+) -> ConvolutionLayer2D {
+    let elements_per_kernel = filter_shape.0 * filter_shape.1 * in_channels;
+    ConvolutionLayer2D {
         filter_shape,
         learning_rate,
         kernels,
-        filter_depth,
+        in_channels,
         padding,
         bias,
-        last_input: Array::zeros(0).into_dyn(),
-        kernel_updates: Array::zeros((number_of_filters, elements_per_kernel)),
-        bias_updates: Array::zeros(number_of_filters),
+        last_input: Default::default(),
+        kernel_updates: Array::zeros((out_channels, elements_per_kernel)),
+        bias_updates: Array::zeros(out_channels),
         batch_size,
         num_in_batch: 0,
         weight_optimizer,
@@ -168,7 +170,7 @@ fn new_from_kernels(
     }
 }
 
-impl ConvolutionLayer {
+impl ConvolutionLayer2D {
     /// This function prints the kernel values.
     ///
     /// It's main purpose is to analyze the learning success of the first convolution layer.
@@ -180,7 +182,7 @@ impl ConvolutionLayer {
             let arr = self.kernels.index_axis(Axis(0), i);
             println!(
                 "{}\n",
-                arr.into_shape((self.filter_depth, self.filter_shape.0, self.filter_shape.1))
+                arr.into_shape((self.in_channels, self.filter_shape.0, self.filter_shape.1))
                     .unwrap()
             );
         }
@@ -195,13 +197,13 @@ impl ConvolutionLayer {
     /// Create a new convolution layer.
     ///
     /// Currently we only accept quadratic filter_shapes. Common dimensions are (3,3) or (5,5).
-    /// The filter_depth has to be set equal to the last dimension of the input images.
-    /// The number_of_filters can be set to any positive value, 16 or 32 might be enough for simple cases or to get started.
+    /// The in_channels has to be set equal to the last dimension of the input images.
+    /// The out_channels can be set to any positive value, 16 or 32 might be enough for simple cases or to get started.
     /// The padding will be applied to all sites of the input. Using padding: 1 on a 28x28 image will therefore result in a 30x30 input.
     pub fn new(
         filter_shape: (usize, usize),
-        filter_depth: usize,
-        number_of_filters: usize,
+        in_channels: usize,
+        out_channels: usize,
         padding: usize,
         batch_size: usize,
         learning_rate: f32,
@@ -213,145 +215,36 @@ impl ConvolutionLayer {
         );
         assert!(filter_shape.0 >= 1, "filter_shape has to be one or greater");
         assert!(
-            filter_depth >= 1,
+            in_channels >= 1,
             "filter depth has to be at least one (and equal to img_channels)"
         );
-        let elements_per_kernel = filter_shape.0 * filter_shape.1 * filter_depth;
+        let elements_per_kernel = filter_shape.0 * filter_shape.1 * in_channels;
         let kernels: Array2<f32> = Array::random(
-            (number_of_filters, elements_per_kernel),
+            (out_channels, elements_per_kernel),
             Normal::new(0.0, 1.0 as f32).unwrap(),
         );
-        assert_eq!(
-            kernels.nrows(),
-            number_of_filters,
-            "filter implementation wrong"
-        );
-        let bias = Array::zeros(number_of_filters); //http://cs231n.github.io/neural-networks-2/
+        assert_eq!(kernels.nrows(), out_channels, "filter implementation wrong");
+        let bias = Array::zeros(out_channels); //http://cs231n.github.io/neural-networks-2/
         let mut weight_optimizer = optimizer.clone_box();
         let mut bias_optimizer = optimizer;
-        weight_optimizer.set_input_shape(vec![number_of_filters, elements_per_kernel]);
-        bias_optimizer.set_input_shape(vec![number_of_filters]);
+        weight_optimizer.set_input_shape(vec![out_channels, elements_per_kernel]);
+        bias_optimizer.set_input_shape(vec![out_channels]);
         new_from_kernels(
             kernels,
             bias,
             weight_optimizer,
             bias_optimizer,
             filter_shape,
-            filter_depth,
-            number_of_filters,
+            in_channels,
+            out_channels,
             padding,
             batch_size,
             learning_rate,
         )
     }
-
-    /// checked with Rust Playground. Works for quadratic filter and arbitrary 2d/3d images
-    /// We receive either 2d or 3d input. In order to have one function handling both cases we use ArrayD.
-    /// We unfold each input image once into a vector of vector (say 2d Array).
-    /// Each inner vector corresponds to a 2d or 3d subsection of the input image of the same size as a single kernel.
-    fn unfold_matrix(
-        filter_depth: usize,
-        input: ArrayD<f32>,
-        k: usize,
-        forward: bool,
-    ) -> Array2<f32> {
-        let n_dim = input.ndim();
-        let (len_y, len_x) = (input.shape()[n_dim - 2], input.shape()[n_dim - 1]);
-
-        let mut xx = if input.ndim() == 3 && !forward {
-            Array::zeros(((len_y - k + 1) * (len_x - k + 1) * filter_depth, k * k))
-        } else {
-            Array::zeros(((len_y - k + 1) * (len_x - k + 1), k * k * filter_depth))
-        };
-
-        let mut row_num = 0;
-
-        if input.ndim() == 2 {
-            // windows is not implemented on ArrayD. Here we already know the input dimension, so we just declare it as 3d. No reshaping occurs!.
-            let x_2d: Array2<f32> = input.into_dimensionality::<Ix2>().unwrap();
-            let windows = x_2d.windows([k, k]);
-            for window in windows {
-                let unrolled: Array1<f32> = window
-                    .into_owned()
-                    .into_shape(k * k * filter_depth)
-                    .unwrap();
-                xx.row_mut(row_num).assign(&unrolled);
-                row_num += 1;
-            }
-        } else {
-            // windows is not implemented on ArrayD. Here we already know the input dimension, so we just declare it as 3d. No reshaping occurs!
-            let x_3d: Array3<f32> = input.into_dimensionality::<Ix3>().unwrap();
-            if forward {
-                let windows = x_3d.windows([filter_depth, k, k]);
-                for window in windows {
-                    let unrolled: Array1<f32> = window
-                        .into_owned()
-                        .into_shape(k * k * filter_depth)
-                        .unwrap();
-                    xx.row_mut(row_num).assign(&unrolled);
-                    row_num += 1;
-                }
-            } else {
-                // During the backprop part we have to do some reshaping, since we store our kernels as 2d matrix but receive 3d feedback from the next layer.
-                // In the 2d case the dimensions match, so we skipped it.
-                let windows = x_3d.windows([1, k, k]);
-                for window in windows {
-                    let unrolled: Array1<f32> = window.into_owned().into_shape(k * k).unwrap();
-                    xx.row_mut(row_num).assign(&unrolled);
-                    row_num += 1;
-                }
-            }
-        }
-        xx
-    }
-
-    /// We create a new Array of zeros with the size of the original input+padding.
-    /// Afterwards we copy the original image over to the center of the new image.
-    /// TODO change to full/normal/...
-    fn add_padding(padding: usize, input: ArrayD<f32>) -> ArrayD<f32> {
-        let shape: &[usize] = input.shape();
-        let n = input.ndim(); // 2d or 3d input?
-        let x = shape[n - 2] + 2 * padding; // calculate the new dim with padding
-        let y = shape[n - 1] + 2 * padding; // calculate the new dim with padding
-        let start: isize = padding as isize;
-        let x_stop: isize = padding as isize + shape[n - 2] as isize;
-        let y_stop: isize = padding as isize + shape[n - 1] as isize;
-        let mut out: ArrayD<f32>;
-        if n == 2 {
-            out = Array::zeros((x, y)).into_dyn();
-            out.slice_mut(s![start..x_stop, start..y_stop])
-                .assign(&input);
-        } else {
-            let z = shape[n - 3];
-            out = Array::zeros((z, x, y)).into_dyn();
-            out.slice_mut(s![.., start..x_stop, start..y_stop])
-                .assign(&input);
-        }
-        out
-    }
-
-    /// For efficiency reasons we handle kernels and images in 2d, here we revert that in order to receive the expected output.
-    pub fn fold_output(x: Array2<f32>, (num_kernels, n, m): (usize, usize, usize)) -> Array3<f32> {
-        // add self.batch_size as additional dim later > for batch processing?
-        let (shape_x, shape_y) = (x.shape()[0], x.shape()[1]);
-        let output = x.into_shape((num_kernels, n, m));
-        match output {
-            Ok(v) => v,
-            Err(_) => panic!(
-                "Got array with shape [{},{}], but expected {}*{}*{} elements.",
-                shape_x, shape_y, num_kernels, n, m
-            ),
-        }
-    }
-
-    /// We shape the input into a 2d array, so we can apply our vector of (kernel)vectors with a matrix-matrix multiplication.
-    fn shape_into_kernel(x: Array3<f32>) -> Array2<f32> {
-        let (shape_0, shape_1, shape_2) = (x.shape()[0], x.shape()[1], x.shape()[2]);
-        x.into_shape((shape_0, shape_1 * shape_2)).unwrap()
-    }
 }
 
-impl Layer for ConvolutionLayer {
+impl Layer for ConvolutionLayer2D {
     fn get_type(&self) -> String {
         format!("Conv")
     }
@@ -361,15 +254,15 @@ impl Layer for ConvolutionLayer {
     }
 
     fn clone_box(&self) -> Box<dyn Layer> {
-        let number_of_filters = self.kernels.nrows();
+        let out_channels = self.kernels.nrows();
         let new_layer = new_from_kernels(
             self.kernels.clone(),
             self.bias.clone(),
             self.weight_optimizer.clone_box(),
             self.bias_optimizer.clone_box(),
             self.filter_shape,
-            self.filter_depth,
-            number_of_filters,
+            self.in_channels,
+            out_channels,
             self.padding,
             self.batch_size,
             self.learning_rate,
@@ -388,25 +281,21 @@ impl Layer for ConvolutionLayer {
     fn predict(&self, input: ArrayD<f32>) -> ArrayD<f32> {
         let tmp = self.get_output_shape(input.shape().to_vec());
         let (output_shape_x, output_shape_y) = (tmp[1], tmp[2]);
-        let input = ConvolutionLayer::add_padding(self.padding, input);
+        let input = conv_utils::add_padding(self.padding, input);
 
         // prepare input matrix
-        let x_unfolded =
-            ConvolutionLayer::unfold_matrix(self.filter_depth, input, self.filter_shape.0, true);
+        let x_unfolded = unfold_3d_matrix(self.in_channels, input, self.filter_shape.0, true);
 
         // calculate convolution (=output for next layer)
         let prod = x_unfolded.dot(&self.kernels.t()) + &self.bias;
 
         // reshape product for next layer: (num_kernels, new_x, new_y)
-        let res = ConvolutionLayer::fold_output(
-            prod,
-            (self.kernels.nrows(), output_shape_x, output_shape_y),
-        );
+        let res = fold_output(prod, (self.kernels.nrows(), output_shape_x, output_shape_y));
         res.into_dyn()
     }
 
     fn forward(&mut self, input: ArrayD<f32>) -> ArrayD<f32> {
-        self.last_input = ConvolutionLayer::add_padding(self.padding, input.clone());
+        self.last_input = conv_utils::add_padding(self.padding, input.clone());
         self.predict(input)
     }
 
@@ -416,12 +305,11 @@ impl Layer for ConvolutionLayer {
         // prepare feedback matrix
         // we always return a 3d output in our forward/predict function, so we will always receive a 3d feedback:
         let x: Array3<f32> = feedback.into_dimensionality::<Ix3>().unwrap();
-        let feedback_as_kernel = ConvolutionLayer::shape_into_kernel(x.clone());
+        let feedback_as_kernel = conv_utils::shape_into_kernel(x.clone());
 
         //prepare feedback
         let k: usize = (feedback_as_kernel.shape()[1] as f64).sqrt() as usize;
-        let input_unfolded =
-            ConvolutionLayer::unfold_matrix(self.filter_depth, self.last_input.clone(), k, false);
+        let input_unfolded = unfold_3d_matrix(self.in_channels, self.last_input.clone(), k, false);
 
         //calculate kernel updates
         let prod = input_unfolded.dot(&feedback_as_kernel.t()).t().into_owned();
