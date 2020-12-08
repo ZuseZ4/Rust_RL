@@ -199,7 +199,8 @@ impl Layer for ConvolutionLayer2D {
         }
         assert_eq!(input.ndim(), 4);
         let batch_input = input.into_dimensionality::<Ix4>().unwrap();
-        let tmp_dims = self.get_output_shape(batch_input.shape().to_vec());
+        let single_input_shape = batch_input.index_axis(Axis(0), 0).shape().to_vec();
+        let tmp_dims = self.get_output_shape(single_input_shape);
         let dims = vec![
             batch_input.shape()[0],
             tmp_dims[0],
@@ -315,8 +316,8 @@ fn get_single_output_shape(
 ) -> Vec<usize> {
     let num_dim = input_shape.len();
     assert!(
-        num_dim == 2 || num_dim == 3,
-        "expected input dim 2 or 3 (batch), was: {}",
+        num_dim == 3,
+        "expected input dim 3: (in_channels, x, y), was: {}",
         num_dim
     );
     let mut res = vec![out_channels, 0, 0];

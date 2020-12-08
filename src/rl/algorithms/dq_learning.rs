@@ -1,7 +1,7 @@
 use super::{Observation, ReplayBuffer};
 use crate::network::nn::NeuralNetwork;
 use crate::rl::algorithms::utils;
-use ndarray::{par_azip, Array1, Array2, Array3};
+use ndarray::{par_azip, Array1, Array2, Array4};
 use ndarray_stats::QuantileExt;
 use rand::rngs::ThreadRng;
 use rand::Rng;
@@ -20,15 +20,14 @@ pub struct DQlearning {
 }
 
 impl DQlearning {
-    pub fn new(exploration: f32, mut nn: NeuralNetwork) -> Self {
-        let bs = 16;
-        if nn.get_batch_size() % bs != 0 {
+    pub fn new(exploration: f32, batch_size: usize, mut nn: NeuralNetwork) -> Self {
+        if nn.get_batch_size() % batch_size != 0 {
             eprintln!(
                 "not implemented yet, unsure how to store intermediate vals before weight updates"
             );
             unimplemented!();
         }
-        nn.set_batch_size(bs);
+        nn.set_batch_size(batch_size); // TODO not working yet, see nn.rs
         let discount_factor = 0.95;
         DQlearning {
             sum: 0,
@@ -41,7 +40,7 @@ impl DQlearning {
                 Default::default(),
                 42,
             ),
-            replay_buffer: ReplayBuffer::new(bs, 100),
+            replay_buffer: ReplayBuffer::new(batch_size, 100),
             discount_factor,
             rng: rand::thread_rng(),
             epsilon: 1e-8,
@@ -127,7 +126,11 @@ impl DQlearning {
         )); //
         self.learn();
 
-        let predicted_moves = self.nn.predict2d(board_arr.clone());
+        let board_with_channels = board_arr
+            .clone()
+            .into_shape((1, board_arr.shape()[0], board_arr.shape()[1]))
+            .unwrap();
+        let predicted_moves = self.nn.predict3d(board_with_channels);
         self.count_illegal_moves(predicted_moves.clone(), actions.clone());
         let legal_predicted_moves = predicted_moves.clone() * actions.clone();
         let mut next_move = self.select_move(legal_predicted_moves);
@@ -188,12 +191,13 @@ fn clamp(new_target_val: Array1<f32>) -> Array1<f32> {
     })
 }
 
-fn vec_to_arr(input: Vec<Array2<f32>>) -> Array3<f32> {
-    let mut res = Array3::zeros((input.len(), input[0].nrows(), input[0].ncols()));
+fn vec_to_arr(input: Vec<Array2<f32>>) -> Array4<f32> {
+    let (bs, nrows, ncols) = (input.len(), input[0].nrows(), input[0].ncols());
+    let mut res = Array4::zeros((bs, 1, nrows, ncols));
     par_azip!((mut out_entry in res.outer_iter_mut(), in_entry in &input) {
       out_entry.assign(in_entry);
     });
-    res
+    res.into_shape((bs, 1, nrows, ncols)).unwrap()
 }
 
 fn get_max_rewards(input: Array2<f32>) -> Array1<f32> {

@@ -125,7 +125,7 @@ impl NeuralNetwork {
         }
     }
 
-    fn new(error: String, optimizer: String) -> Self {
+    fn new(input_shape: Vec<usize>, error: String, optimizer: String) -> Self {
         let error_function;
         match NeuralNetwork::get_error(error.clone()) {
             Ok(error_fun) => error_function = error_fun,
@@ -147,7 +147,7 @@ impl NeuralNetwork {
             error,
             error_function,
             optimizer_function,
-            input_dims: vec![vec![]],
+            input_dims: vec![input_shape],
             layers: vec![],
             h_p: HyperParameter::new(),
             from_logits: false,
@@ -167,10 +167,7 @@ impl NeuralNetwork {
 
     /// A constructor for a neural network which takes 1d input.
     pub fn new1d(input_dim: usize, error: String, optimizer: String) -> Self {
-        NeuralNetwork {
-            input_dims: vec![vec![input_dim]],
-            ..NeuralNetwork::new(error, optimizer)
-        }
+        NeuralNetwork::new(vec![input_dim], error, optimizer)
     }
     /// A constructor for a neural network which takes 2d input.
     pub fn new2d(
@@ -178,21 +175,16 @@ impl NeuralNetwork {
         error: String,
         optimizer: String,
     ) -> Self {
-        NeuralNetwork {
-            input_dims: vec![vec![input_dim1, input_dim2]],
-            ..NeuralNetwork::new(error, optimizer)
-        }
+        NeuralNetwork::new(vec![input_dim1, input_dim2], error, optimizer)
     }
+
     /// A constructor for a neural network which takes 3d input.
     pub fn new3d(
         (input_dim1, input_dim2, input_dim3): (usize, usize, usize),
         error: String,
         optimizer: String,
     ) -> Self {
-        NeuralNetwork {
-            input_dims: vec![vec![input_dim1, input_dim2, input_dim3]],
-            ..NeuralNetwork::new(error, optimizer)
-        }
+        NeuralNetwork::new(vec![input_dim1, input_dim2, input_dim3], error, optimizer)
     }
 
     /// A setter to adjust the optimizer.
