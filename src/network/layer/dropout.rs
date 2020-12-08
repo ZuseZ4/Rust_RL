@@ -18,7 +18,7 @@ impl DropoutLayer {
     pub fn new(drop_prob: f32) -> Self {
         DropoutLayer {
             drop_prob,
-            dropout_matrix: Array::zeros(0).into_dyn(),
+            dropout_matrix: Default::default(),
         }
     }
 }
@@ -52,11 +52,11 @@ impl Layer for DropoutLayer {
         );
         // Scale output during training to handle dropped values.
         let weights = weights.mapv(|x| (x as f32) / (1. - self.drop_prob));
-        self.dropout_matrix = weights.clone().into_dyn();
-        x * weights
+        self.dropout_matrix = weights.into_dyn();
+        x * &self.dropout_matrix
     }
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
-        feedback * self.dropout_matrix.clone()
+        feedback * &self.dropout_matrix
     }
 }

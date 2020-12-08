@@ -3,7 +3,7 @@
 mod MLP {
     use crate::network::nn::NeuralNetwork;
     use datasets::mnist;
-    use ndarray::{array, Array2};
+    use ndarray::{array, Array, Array2, Axis};
     use rand::Rng;
 
     fn new(i_dim: usize, bs: usize, lr: f32) -> NeuralNetwork {
@@ -70,6 +70,56 @@ mod MLP {
         let mut nn = new(2, 6, 0.1);
         train(&mut nn, 1_000, &input, &feedback);
         test(nn, input, feedback, "and".to_string());
+    }
+
+    #[test]
+    fn test_and_batch2_input() {
+        let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.], [1., 1.], [1., 1.]]; // AND
+        let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
+        let mut nn = new(2, 6, 0.1);
+        train(&mut nn, 2_000, &input, &feedback);
+        let diff = (nn.predict_batch(input.into_dyn()) - feedback)
+            .mapv(|x| x.abs())
+            .sum();
+        assert!(diff < 0.2, "error, diff was {}", diff);
+    }
+
+    #[test]
+    fn train_batch2_input() {
+        //nn: &mut NeuralNetwork, num: usize, input: &Array4<f32>, fb: &Array2<f32>) {
+        let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.], [1., 1.], [1., 1.]]; // AND
+        let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
+        let mut nn = new(2, 6, 0.1);
+
+        for _ in 0..10 {
+            let pos1 = rand::thread_rng().gen_range(0, input.shape()[0]) as usize;
+            let pos2 = rand::thread_rng().gen_range(0, input.shape()[0]) as usize;
+            let current_input1 = input.index_axis(Axis(0), pos1).into_owned();
+            let current_input2 = input.index_axis(Axis(0), pos2).into_owned();
+            let current_fb1 = feedback.index_axis(Axis(0), pos1).into_owned();
+            let current_fb2 = feedback.index_axis(Axis(0), pos2).into_owned();
+            println!("cfb1: {}", current_fb1);
+            let mut current_fb = Array::zeros((6, 1));
+            current_fb.index_axis_mut(Axis(0), 0).assign(&current_fb1);
+            current_fb.index_axis_mut(Axis(0), 1).assign(&current_fb2);
+            let mut current_input = Array::zeros((6, 2));
+            current_input
+                .index_axis_mut(Axis(0), 0)
+                .assign(&current_input1);
+            current_input
+                .index_axis_mut(Axis(0), 1)
+                .assign(&current_input2);
+            nn.train(current_input.into_dyn(), current_fb.into_dyn());
+        }
+    }
+
+    #[test]
+    fn test_entire_batch_input() {
+        //nn: &mut NeuralNetwork, num: usize, input: &Array4<f32>, fb: &Array2<f32>) {
+        let input = array![[0., 0.], [0., 1.], [1., 0.], [1., 1.], [1., 1.], [1., 1.]]; // AND
+        let feedback = array![[0.], [0.], [0.], [1.], [1.], [1.]]; //AND work ok with 200k examples (10 and 01 are classified correctly, but close to 0.5)
+        let mut nn = new(2, 6, 0.1);
+        nn.train(input.into_dyn(), feedback.into_dyn());
     }
 
     #[test]

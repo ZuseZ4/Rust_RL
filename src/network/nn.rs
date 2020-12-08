@@ -1,7 +1,7 @@
 use crate::network;
 use ndarray::par_azip;
 use ndarray::parallel::prelude::*;
-use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1};
+use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1, Ix2};
 use network::functional::activation_layer::{
     LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer,
 };
@@ -45,6 +45,9 @@ impl HyperParameter {
             return;
         }
         self.batch_size = batch_size;
+    }
+    pub fn get_batch_size(&self) -> usize {
+        self.batch_size
     }
     pub fn set_learning_rate(&mut self, learning_rate: f32) {
         if learning_rate < 0. {
@@ -211,6 +214,11 @@ impl NeuralNetwork {
     /// By default a batch size of 1 is used, which is equal to no batch-processing.
     pub fn set_batch_size(&mut self, batch_size: usize) {
         self.h_p.batch_size(batch_size);
+    }
+
+    /// A getter for the batch size.
+    pub fn get_batch_size(&self) -> usize {
+        self.h_p.get_batch_size()
     }
 
     /// A setter to adjust the learning rate.
@@ -415,6 +423,14 @@ impl NeuralNetwork {
         input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
     }
 
+    /// This function handles the inference on a batch of dynamic-dimensional input.
+    pub fn predict_batch(&self, mut input: ArrayD<f32>) -> Array2<f32> {
+        for i in 0..self.layers.len() {
+            input = self.layers[i].predict(input);
+        }
+        input.into_dimensionality::<Ix2>().unwrap()
+    }
+
     /// This function calculates the inference accuracy on a testset with given labels.
     pub fn test(&self, input: ArrayD<f32>, target: Array2<f32>) {
         let n = target.len_of(Axis(0));
@@ -466,20 +482,20 @@ impl NeuralNetwork {
 
     /// This function handles training on a single 1d example.
     pub fn train1d(&mut self, input: Array1<f32>, target: Array1<f32>) {
-        self.train(input.into_dyn(), target);
+        self.train(input.into_dyn(), target.into_dyn());
     }
     /// This function handles training on a single 2d example.
     pub fn train2d(&mut self, input: Array2<f32>, target: Array1<f32>) {
-        self.train(input.into_dyn(), target);
+        self.train(input.into_dyn(), target.into_dyn());
     }
     /// This function handles training on a single 3d example.
     pub fn train3d(&mut self, input: Array3<f32>, target: Array1<f32>) -> Array1<f32> {
-        self.train(input.into_dyn(), target)
+        self.train(input.into_dyn(), target.into_dyn())
             .into_dimensionality::<Ix1>()
             .unwrap()
     }
     /// This function handles training on a single dynamic-dimensional example.
-    pub fn train(&mut self, input: ArrayD<f32>, target: Array1<f32>) -> ArrayD<f32> {
+    pub fn train(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         //assert_eq!(input.len_of(Axis(0)), target.len()); //later when training on batches
         //maybe return option(accuracy,None) and add a setter to return accuracy?
         let mut input = input.into_dyn();
