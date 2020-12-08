@@ -46,6 +46,9 @@ impl HyperParameter {
         }
         self.batch_size = batch_size;
     }
+    pub fn get_batch_size(&self) -> usize {
+        self.batch_size
+    }
     pub fn set_learning_rate(&mut self, learning_rate: f32) {
         if learning_rate < 0. {
             eprintln!("learning rate should be >= 0! Doing nothing!");
@@ -211,6 +214,11 @@ impl NeuralNetwork {
     /// By default a batch size of 1 is used, which is equal to no batch-processing.
     pub fn set_batch_size(&mut self, batch_size: usize) {
         self.h_p.batch_size(batch_size);
+    }
+
+    /// A getter for the batch size.
+    pub fn get_batch_size(&self) -> usize {
+        self.h_p.get_batch_size()
     }
 
     /// A setter to adjust the learning rate.

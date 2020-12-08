@@ -7,7 +7,7 @@ use training::{utils, Trainer};
 
 fn new(learning_rate: f32) -> NeuralNetwork {
     let mut nn = NeuralNetwork::new2d((3, 3), "bce".to_string(), "adam".to_string());
-    nn.set_batch_size(4);
+    nn.set_batch_size(16);
     nn.set_learning_rate(learning_rate);
     nn.add_flatten();
     nn.add_dense(100);

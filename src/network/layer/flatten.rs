@@ -45,10 +45,12 @@ impl Layer for FlattenLayer {
 
     fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
         if x.ndim() == self.input_ndim {
-          return x.into_shape(self.num_elements).unwrap().into_dyn();
+            return x.into_shape(self.num_elements).unwrap().into_dyn();
         }
         let batch_size = x.shape()[0];
-        x.into_shape((batch_size, self.num_elements)).unwrap().into_dyn()
+        x.into_shape((batch_size, self.num_elements))
+            .unwrap()
+            .into_dyn()
     }
 
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
@@ -57,12 +59,15 @@ impl Layer for FlattenLayer {
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
         if feedback.ndim() == 1 {
-          return feedback
-            .into_shape(self.input_shape.clone())
-            .unwrap()
-            .into_dyn()
+            return feedback
+                .into_shape(self.input_shape.clone())
+                .unwrap()
+                .into_dyn();
         }
         self.batch_input_shape[0] = feedback.shape()[0];
-        feedback.into_shape(self.batch_input_shape.clone()).unwrap().into_dyn()
+        feedback
+            .into_shape(self.batch_input_shape.clone())
+            .unwrap()
+            .into_dyn()
     }
 }

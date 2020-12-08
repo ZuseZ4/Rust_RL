@@ -55,7 +55,7 @@ impl DenseLayer {
             bias_optimizer,
         )
     }
-    
+
     fn update_weights(&mut self) {
         let d_w: Array2<f32> = &self.feedback.dot(&self.net.t()) / (self.batch_size as f32);
         let d_b: Array1<f32> = &self.feedback.sum_axis(Axis(1)) / (self.batch_size as f32);
@@ -93,7 +93,6 @@ fn new_from_matrices(
         bias_optimizer,
     }
 }
-    
 
 impl Layer for DenseLayer {
     fn get_type(&self) -> String {
@@ -125,83 +124,102 @@ impl Layer for DenseLayer {
     fn predict(&self, x: ArrayD<f32>) -> ArrayD<f32> {
         // Handle 1D input
         if x.ndim() == 1 {
-          let single_input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
-          let res: Array1<f32> = self.weights.dot(&single_input) + &self.bias;
-          return res.into_dyn();
-        } 
+            let single_input: Array1<f32> = x.into_dimensionality::<Ix1>().unwrap();
+            let res: Array1<f32> = self.weights.dot(&single_input) + &self.bias;
+            return res.into_dyn();
+        }
 
         // Handle 2D input (input-batch)
-        assert_eq!(x.ndim(), 2);
+        assert_eq!(x.ndim(), 2, "expected a 1d or 2d input!");
         let batch_input: Array2<f32> = x.into_dimensionality::<Ix2>().unwrap();
-        let mut res = Array2::zeros((batch_input.shape()[0], self.output_dim)); 
+        let batch_size = batch_input.nrows();
+        let mut res = Array2::zeros((batch_size, self.output_dim));
+        assert_eq!(res.nrows(), batch_size);
         for (i, single_input) in batch_input.outer_iter().enumerate() {
-          let single_res = &self.weights.dot(&single_input) + &self.bias;
-          res.column_mut(i).assign(&single_res);
+            let single_res = &self.weights.dot(&single_input) + &self.bias;
+            res.row_mut(i).assign(&single_res);
         }
         res.into_dyn()
     }
 
-
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
-        store_input(x.clone(), &mut self.net, self.batch_size, &mut self.forward_passes);
+        store_input(
+            x.clone(),
+            &mut self.net,
+            self.batch_size,
+            &mut self.forward_passes,
+        );
         self.predict(x)
     }
 
     fn backward(&mut self, feedback: ArrayD<f32>) -> ArrayD<f32> {
-
         // store feedback gradients for batch-weightupdates
-        store_input(feedback.clone(), &mut self.feedback, self.batch_size, &mut self.backward_passes);
-      
+        store_input(
+            feedback.clone(),
+            &mut self.feedback,
+            self.batch_size,
+            &mut self.backward_passes,
+        );
 
         //calc derivate to backprop through layers
+        // TODO assure which way the a.dot(b) should be calculated!
         let output: ArrayD<f32>;
         if feedback.ndim() == 1 {
-          let single_feedback: Array1<f32> = feedback.into_dimensionality::<Ix1>().unwrap();
-          output = self.weights.t().dot(&single_feedback.t()).into_dyn();
+            let single_feedback: Array1<f32> = feedback.into_dimensionality::<Ix1>().unwrap();
+            output = single_feedback.dot(&self.weights).into_owned().into_dyn();
+            assert_eq!(output.shape()[0], self.input_dim);
+        //output = self.weights.t().dot(&single_feedback).into_dyn();
         } else {
-          assert_eq!(feedback.ndim(),2);
-          let batch_feedback: Array2<f32> = feedback.into_dimensionality::<Ix2>().unwrap();
-          let mut tmp_res = Array2::zeros((batch_feedback.shape()[0], self.input_dim));
-          for (i, single_feedback) in batch_feedback.outer_iter().enumerate() {
-            let single_grad = &self.weights.dot(&single_feedback.t());
-            tmp_res.column_mut(i).assign(single_grad);
-          }
-          output = tmp_res.into_dyn();
+            assert_eq!(feedback.ndim(), 2);
+            let batch_feedback: Array2<f32> = feedback.into_dimensionality::<Ix2>().unwrap();
+            let batch_size = batch_feedback.nrows();
+            let mut tmp_res = Array2::zeros((batch_size, self.input_dim));
+            for (i, single_feedback) in batch_feedback.outer_iter().enumerate() {
+                //let single_grad = single_feedback.dot(&self.weights.t());
+                let single_grad = &self.weights.t().dot(&single_feedback);
+                tmp_res.row_mut(i).assign(single_grad);
+            }
+            output = tmp_res.into_dyn();
         }
-
 
         //update weights
         if self.backward_passes % self.batch_size == 0 {
             self.update_weights();
         }
 
-
         output
     }
-
-
 }
 
-
-fn store_input(input: ArrayD<f32>, buffer: &mut Array2<f32>, batch_size: usize, start_pos: &mut usize) {
-
+fn store_input(
+    input: ArrayD<f32>,
+    buffer: &mut Array2<f32>,
+    batch_size: usize,
+    start_pos: &mut usize,
+) {
     // 1D case
     if input.ndim() == 1 {
-      let single_input = input.into_dimensionality::<Ix1>().unwrap();
-      buffer.column_mut(*start_pos).assign(&single_input);
-      *start_pos = (*start_pos + 1) % batch_size;
-      return;
+        let single_input = input.into_dimensionality::<Ix1>().unwrap();
+        buffer.column_mut(*start_pos).assign(&single_input);
+        *start_pos = (*start_pos + 1) % batch_size;
+        return;
     }
-
 
     // 2D case
     assert_eq!(input.ndim(), 2);
-    assert!(input.shape()[0] <= batch_size); // otherwise buffer overrun
+    assert!(
+        input.shape()[0] <= batch_size,
+        format!(
+            "error, failed assertion {} <= {}",
+            input.shape()[0],
+            batch_size
+        )
+    ); // otherwise buffer overrun
     let batch_input = input.into_dimensionality::<Ix2>().unwrap();
     let mut pos_in_buffer = *start_pos % batch_size;
     for single_input in batch_input.outer_iter() {
-      buffer.column_mut(pos_in_buffer).assign(&single_input);
-      pos_in_buffer = (pos_in_buffer + 1) % batch_size;
+        buffer.column_mut(pos_in_buffer).assign(&single_input);
+        pos_in_buffer = (pos_in_buffer + 1) % batch_size;
     }
     *start_pos = (*start_pos + batch_input.shape()[0]) % batch_size;
 }

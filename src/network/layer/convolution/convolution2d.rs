@@ -315,8 +315,8 @@ fn get_single_output_shape(
 ) -> Vec<usize> {
     let num_dim = input_shape.len();
     assert!(
-        num_dim == 3 || num_dim == 4,
-        "expected input dim 3 or 4, was: {}",
+        num_dim == 2 || num_dim == 3,
+        "expected input dim 2 or 3 (batch), was: {}",
         num_dim
     );
     let mut res = vec![out_channels, 0, 0];

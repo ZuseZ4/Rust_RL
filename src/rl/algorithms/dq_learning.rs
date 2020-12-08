@@ -22,6 +22,12 @@ pub struct DQlearning {
 impl DQlearning {
     pub fn new(exploration: f32, mut nn: NeuralNetwork) -> Self {
         let bs = 16;
+        if nn.get_batch_size() % bs != 0 {
+            eprintln!(
+                "not implemented yet, unsure how to store intermediate vals before weight updates"
+            );
+            unimplemented!();
+        }
         nn.set_batch_size(bs);
         let discount_factor = 0.95;
         DQlearning {
