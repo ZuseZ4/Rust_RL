@@ -1,7 +1,7 @@
 use super::{Observation, ReplayBuffer};
 use crate::network::nn::NeuralNetwork;
 use crate::rl::algorithms::utils;
-use ndarray::{Array1, Array2};
+use ndarray::{par_azip, Array1, Array2, Array3};
 use ndarray_stats::QuantileExt;
 use rand::rngs::ThreadRng;
 use rand::Rng;
@@ -89,31 +89,20 @@ impl DQlearning {
         bestmove
     }
 
-    fn clamp(&self, mut new_target_val: f32) -> f32 {
-        if new_target_val > 1. {
-            new_target_val = 1.;
-        }
-        if new_target_val < 0. {
-            new_target_val = 0.1;
-        }
-        new_target_val
-    }
-
     fn learn(&mut self) {
         if !self.replay_buffer.is_full() {
             return;
         }
-        let memories = self.replay_buffer.get_memories();
-        for observation in memories {
-            let Observation { s0, a, s1, r } = *observation;
-            let mut target = self.nn.predict(s0.clone().into_dyn());
-            //assert_eq!(len(a), len(target), "error, nn output not equal to amount of possible actions!");
-            let future_move_rewards = self.nn.predict(s1.into_dyn());
-            let max_future_reward = future_move_rewards.max().unwrap();
-            let new_reward = r + self.discount_factor * max_future_reward;
-            target[a] = self.clamp(new_reward);
-            self.nn.train(s0.into_dyn(), target);
-        }
+        let (s0_vec, actions, s1_vec, mut rewards) = self.replay_buffer.get_memories_SoA();
+        let s0_arr = vec_to_arr(s0_vec);
+        let s1_arr = vec_to_arr(s1_vec);
+        let targets: Array2<f32> = self.nn.predict_batch(s0_arr.clone().into_dyn());
+        let future_move_rewards: Array2<f32> = self.nn.predict_batch(s1_arr.into_dyn());
+        let max_future_reward: Array1<f32> = get_max_rewards(future_move_rewards);
+        rewards += &(self.discount_factor * max_future_reward);
+        //update_targets(&mut targets, actions, rewards);
+        let targets = update_targets(targets, actions, rewards);
+        self.nn.train(s0_arr.into_dyn(), targets.into_dyn());
     }
 
     pub fn get_move(
@@ -164,4 +153,48 @@ impl DQlearning {
             self.counter = 0;
         }
     }
+}
+
+fn update_targets(
+    mut targets: Array2<f32>,
+    actions: Array1<usize>,
+    rewards: Array1<f32>,
+) -> Array2<f32> {
+    let clamped_rewards = clamp(rewards);
+
+    par_azip!((mut target in targets.outer_iter_mut(), action in &actions, reward in &clamped_rewards) {
+        target[*action] = *reward;
+    });
+    targets
+}
+
+fn clamp(new_target_val: Array1<f32>) -> Array1<f32> {
+    new_target_val.mapv(|x| {
+        if x > 1. {
+            x
+        } else {
+            if x < 0. {
+                0.1
+            } else {
+                x
+            }
+        }
+    })
+}
+
+fn vec_to_arr(input: Vec<Array2<f32>>) -> Array3<f32> {
+    let mut res = Array3::zeros((input.len(), input[0].nrows(), input[0].ncols()));
+    par_azip!((mut out_entry in res.outer_iter_mut(), in_entry in &input) {
+      out_entry.assign(in_entry);
+    });
+    res
+}
+
+fn get_max_rewards(input: Array2<f32>) -> Array1<f32> {
+    let mut res = Array1::zeros(input.nrows());
+
+    par_azip!((mut out_entry in res.outer_iter_mut(), in_entry in input.outer_iter()) {
+      out_entry.fill(*in_entry.max().unwrap());
+    });
+    res
 }
