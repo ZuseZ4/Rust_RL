@@ -35,15 +35,14 @@ impl Layer for SoftmaxLayer {
 
     fn predict(&self, mut x: ArrayD<f32>) -> ArrayD<f32> {
         if x.ndim() == 1 {
-          predict_single(&mut x);
-          return x;
+            predict_single(&mut x);
+            return x;
         }
-        assert_eq!(x.ndim(),2);
-        for single_x in x.outer_iter_mut() { 
-          predict_single(&mut single_x.into_owned());
+        assert_eq!(x.ndim(), 2);
+        for single_x in x.outer_iter_mut() {
+            predict_single(&mut single_x.into_owned());
         }
         x
-
     }
 
     fn forward(&mut self, x: ArrayD<f32>) -> ArrayD<f32> {
