@@ -5,9 +5,9 @@ use rust_rl::rl::{agent, env, training};
 use std::io;
 use training::{utils, Trainer};
 
-fn new(learning_rate: f32) -> NeuralNetwork {
-    let mut nn = NeuralNetwork::new2d((6, 6), "bce".to_string(), "adam".to_string());
-    nn.set_batch_size(4);
+fn new(learning_rate: f32, batch_size: usize) -> NeuralNetwork {
+    let mut nn = NeuralNetwork::new3d((1, 6, 6), "bce".to_string(), "adam".to_string());
+    nn.set_batch_size(batch_size);
     nn.set_learning_rate(learning_rate);
     nn.add_convolution((3, 3), 32, 0);
     nn.add_activation("sigmoid");
@@ -64,9 +64,14 @@ pub fn main() {
 
 fn get_agents(agent_nums: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {
     let mut res: Vec<Box<dyn Agent>> = vec![];
+    let batch_size = 16;
     for agent_num in agent_nums {
         let new_agent: Result<Box<dyn Agent>, String> = match agent_num {
-            1 => Ok(Box::new(DQLAgent::new(1., new(0.001)))),
+            1 => Ok(Box::new(DQLAgent::new(
+                1.,
+                batch_size,
+                new(0.001, batch_size),
+            ))),
             2 => Ok(Box::new(QLAgent::new(1., 6 * 6))),
             3 => Ok(Box::new(RandomAgent::new())),
             4 => Ok(Box::new(HumanPlayer::new())),

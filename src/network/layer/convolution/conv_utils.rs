@@ -1,4 +1,4 @@
-use ndarray::{s, Array, Array1, Array2, Array3, ArrayD, Ix3};
+use ndarray::{par_azip, s, Array, Array1, Array2, Array3, ArrayD, Ix3};
 
 #[cfg(test)]
 mod tests {
@@ -107,10 +107,25 @@ mod tests {
 /// Afterwards we copy the original image over to the center of the new image.
 /// TODO change to full/normal/...
 pub fn add_padding(padding: usize, input: ArrayD<f32>) -> ArrayD<f32> {
-    let shape: &[usize] = input.shape();
     let n = input.ndim(); // 2d or 3d input?
+    let shape: &[usize] = input.shape();
     let x = shape[n - 2] + 2 * padding; // calculate the new dim with padding
     let y = shape[n - 1] + 2 * padding; // calculate the new dim with padding
+
+    if n > 4 {
+        unimplemented!();
+    }
+
+    if n == 4 {
+        let batch_size: usize = shape[0];
+        let channels: usize = shape[1];
+        let mut out: ArrayD<f32> = Array::zeros((batch_size, channels, x, y)).into_dyn();
+        par_azip!((mut out_entry in out.outer_iter_mut(), input_entry in input.outer_iter()) {
+          let tmp = add_padding(padding, input_entry.into_owned());
+          out_entry.assign(&tmp);
+        });
+        return out;
+    }
     let start: isize = padding as isize;
     let x_stop: isize = padding as isize + shape[n - 2] as isize;
     let y_stop: isize = padding as isize + shape[n - 1] as isize;
