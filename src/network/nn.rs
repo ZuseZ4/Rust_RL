@@ -22,10 +22,6 @@ enum Mode {
 struct HyperParameter {
     batch_size: usize,
     learning_rate: f32,
-    _gamma: f32,
-    _decay_rate: f32,
-    _resume: bool,
-    _render: bool,
 }
 
 impl HyperParameter {
@@ -33,10 +29,6 @@ impl HyperParameter {
         HyperParameter {
             batch_size: 1,
             learning_rate: 0.002, //10e-4
-            _gamma: 0.99,
-            _decay_rate: 0.99,
-            _resume: false,
-            _render: false,
         }
     }
     pub fn batch_size(&mut self, batch_size: usize) {
