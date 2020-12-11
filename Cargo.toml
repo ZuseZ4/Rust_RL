@@ -20,6 +20,10 @@ ndarray-stats = "0.3.0"
 default = []
 download = ["datasets/download"]
 
+[dependencies.spaces]
+git = "https://github.com/tspooner/spaces"
+branch = "master"
+
 [dependencies.datasets]
 git = "https://github.com/ZuseZ4/Datasets"
 branch = "master"
