@@ -2,6 +2,7 @@ use crate::network::nn::NeuralNetwork;
 use crate::rl::agent::Agent;
 use crate::rl::algorithms::DQlearning;
 use ndarray::{Array1, Array2};
+use spaces::Space;
 
 /// An agent using Deep-Q-Learning, based on a small neural network.
 pub struct DQLAgent {
@@ -19,7 +20,7 @@ impl DQLAgent {
     }
 }
 
-impl Agent for DQLAgent {
+impl<S: Space, A: Space> Agent<S, A> for DQLAgent {
     fn get_id(&self) -> String {
         "dqlearning agent".to_string()
     }

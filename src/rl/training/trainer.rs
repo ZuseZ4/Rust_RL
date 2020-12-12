@@ -10,14 +10,14 @@ where
 {
     env: Box<dyn Environment<StateSpace = S, ActionSpace = A>>,
     res: Vec<(u32, u32, u32)>,
-    agents: Vec<Box<dyn Agent>>,
+    agents: Vec<Box<dyn Agent<S, A>>>,
 }
 
 impl<S: Space, A: Space> Trainer<S, A> {
     /// We construct a Trainer by passing a single environment and one or more (possibly different) agents.
     pub fn new(
         env: Box<dyn Environment<StateSpace = S, ActionSpace = A>>,
-        agents: Vec<Box<dyn Agent>>,
+        agents: Vec<Box<dyn Agent<S, A>>>,
     ) -> Result<Self, String> {
         if agents.is_empty() {
             return Err("At least one agent required!".to_string());

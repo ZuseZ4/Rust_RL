@@ -2,6 +2,8 @@ use agent::*;
 use env::Fortress;
 use rust_rl::network::nn::NeuralNetwork;
 use rust_rl::rl::{agent, env, training};
+use spaces::discrete::Ordinal;
+use spaces::*;
 use std::io;
 use training::{utils, Trainer};
 
@@ -62,21 +64,24 @@ pub fn main() {
     );
 }
 
-fn get_agents(agent_nums: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {
-    let mut res: Vec<Box<dyn Agent>> = vec![];
+fn get_agents(
+    agent_nums: Vec<usize>,
+) -> Result<Vec<Box<dyn Agent<ProductSpace<Interval>, Ordinal>>>, String> {
+    let mut res: Vec<Box<dyn Agent<ProductSpace<Interval>, Ordinal>>> = vec![];
     let batch_size = 16;
     for agent_num in agent_nums {
-        let new_agent: Result<Box<dyn Agent>, String> = match agent_num {
-            1 => Ok(Box::new(DQLAgent::new(
-                1.,
-                batch_size,
-                new(0.001, batch_size),
-            ))),
-            2 => Ok(Box::new(QLAgent::new(1., 6 * 6))),
-            3 => Ok(Box::new(RandomAgent::new())),
-            4 => Ok(Box::new(HumanPlayer::new())),
-            _ => Err("Only implemented agents 1-4!".to_string()),
-        };
+        let new_agent: Result<Box<dyn Agent<ProductSpace<Interval>, Ordinal>>, String> =
+            match agent_num {
+                1 => Ok(Box::new(DQLAgent::new(
+                    1.,
+                    batch_size,
+                    new(0.001, batch_size),
+                ))),
+                2 => Ok(Box::new(QLAgent::new(1., 6 * 6))),
+                3 => Ok(Box::new(RandomAgent::new())),
+                4 => Ok(Box::new(HumanPlayer::new())),
+                _ => Err("Only implemented agents 1-4!".to_string()),
+            };
         res.push(new_agent?);
     }
     Ok(res)

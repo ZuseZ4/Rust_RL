@@ -1,5 +1,6 @@
 use crate::rl::agent::agent_trait::Agent;
 use ndarray::{Array1, Array2};
+use spaces::Space;
 use std::io;
 
 /// An agent which just shows the user the current environment and lets the user decide about each action.
@@ -13,7 +14,7 @@ impl HumanPlayer {
     }
 }
 
-impl Agent for HumanPlayer {
+impl<S: Space, A: Space> Agent<S, A> for HumanPlayer {
     fn get_id(&self) -> String {
         "human player".to_string()
     }

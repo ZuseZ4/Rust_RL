@@ -1,7 +1,12 @@
 use ndarray::{Array1, Array2};
+use spaces::Space;
 
 /// A trait including all functions required to train them.
-pub trait Agent {
+pub trait Agent<S, A>
+where
+    S: Space,
+    A: Space,
+{
     /// Returns a simple string identifying the specific agent type.
     fn get_id(&self) -> String;
 

@@ -2,6 +2,7 @@ use crate::rl::algorithms::Qlearning;
 use ndarray::{Array1, Array2};
 
 use crate::rl::agent::Agent;
+use spaces::Space;
 
 /// An agent working on a classical q-table.
 pub struct QLAgent {
@@ -19,7 +20,7 @@ impl QLAgent {
     }
 }
 
-impl Agent for QLAgent {
+impl<S: Space, A: Space> Agent<S, A> for QLAgent {
     fn get_id(&self) -> String {
         "qlearning agent".to_string()
     }

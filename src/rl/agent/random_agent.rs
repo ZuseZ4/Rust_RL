@@ -1,6 +1,7 @@
 use crate::rl::agent::agent_trait::Agent;
 use crate::rl::algorithms::utils;
 use ndarray::{Array1, Array2};
+use spaces::Space;
 
 /// An agent who acts randomly.
 ///
@@ -16,7 +17,7 @@ impl RandomAgent {
     }
 }
 
-impl Agent for RandomAgent {
+impl<S: Space, A: Space> Agent<S, A> for RandomAgent {
     fn get_id(&self) -> String {
         "random agent".to_string()
     }
