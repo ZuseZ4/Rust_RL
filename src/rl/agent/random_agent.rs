@@ -3,6 +3,9 @@ use crate::rl::algorithms::utils;
 use ndarray::{Array1, Array2};
 use spaces::Space;
 
+pub type State<S>  = <S as Space>::Value;
+pub type Action<S> = <S as Space>::Value;
+
 /// An agent who acts randomly.
 ///
 /// All input is ignored except of the vector of possible actions.
@@ -22,8 +25,9 @@ impl<S: Space, A: Space> Agent<S, A> for RandomAgent {
         "random agent".to_string()
     }
 
-    fn get_move(&mut self, _: Array2<f32>, actions: Array1<bool>, _: f32) -> usize {
-        utils::get_random_true_entry(actions)
+    fn get_move(&mut self, _: Array2<f32>, actions: Array1<bool>, _: f32) -> &Action<A> {
+        let res = utils::get_random_true_entry(actions);
+        res
     }
 
     fn finish_round(&mut self, _single_res: i32, _final_state: Array2<f32>) {}

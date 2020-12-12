@@ -3,6 +3,9 @@ use ndarray::{Array1, Array2};
 use spaces::Space;
 use std::io;
 
+pub type State<S>  = <S as Space>::Value;
+pub type Action<S> = <S as Space>::Value;
+
 /// An agent which just shows the user the current environment and lets the user decide about each action.
 #[derive(Default)]
 pub struct HumanPlayer {}
@@ -19,7 +22,7 @@ impl<S: Space, A: Space> Agent<S, A> for HumanPlayer {
         "human player".to_string()
     }
 
-    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, _: f32) -> usize {
+    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, _: f32) -> &Action<A> {
         let (n, m) = (board.shape()[0], board.shape()[1]);
         for i in 0..n {
             for j in 0..m {
