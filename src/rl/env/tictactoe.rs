@@ -1,5 +1,7 @@
 use crate::rl::env::env_trait::Environment;
 use ndarray::{Array, Array1, Array2};
+use spaces::discrete::Ordinal;
+use spaces::*;
 
 static BITMASKS: [&[u16]; 9] = [
     //TODO FIX: BROKEN
@@ -39,6 +41,8 @@ impl Default for TicTacToe {
 }
 
 impl Environment for TicTacToe {
+    type StateSpace = ProductSpace<Interval>;
+    type ActionSpace = Ordinal;
     fn step(&self) -> (Array2<f32>, Array1<bool>, f32, bool) {
         // storing current position into ndarray
         let position = board_as_arr(self.player1, self.player2)

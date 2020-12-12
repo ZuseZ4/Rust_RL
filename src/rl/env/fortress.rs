@@ -1,5 +1,7 @@
 use crate::rl::env::env_trait::Environment;
 use ndarray::{Array, Array1, Array2};
+use spaces::discrete::Ordinal;
+use spaces::*;
 use std::cmp::Ordering;
 
 static NEIGHBOURS_LIST: [&[usize]; 6 * 6] = [
@@ -54,6 +56,8 @@ pub struct Fortress {
 }
 
 impl Environment for Fortress {
+    type StateSpace = ProductSpace<Interval>;
+    type ActionSpace = Ordinal;
     fn step(&self) -> (Array2<f32>, Array1<bool>, f32, bool) {
         if !self.active {
             eprintln!("Warning, calling step() after done = true!");

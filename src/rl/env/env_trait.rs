@@ -1,7 +1,14 @@
 use ndarray::{Array1, Array2};
+use spaces::Space;
 
 /// This trait defines all functions on which agents and other user might depend.
 pub trait Environment {
+    /// State representation
+    type StateSpace: Space;
+
+    /// Action space representation
+    type ActionSpace: Space;
+
     /// The central function which causes the environment to pass various information to the agent.
     ///
     /// The Array2 encodes the environment (the board).  
