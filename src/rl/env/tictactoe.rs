@@ -1,5 +1,7 @@
 use crate::rl::env::env_trait::Environment;
 use ndarray::{Array, Array1, Array2};
+use spaces::discrete::NonNegativeIntegers;
+use spaces::*;
 
 static BITMASKS: [&[u16]; 9] = [
     //TODO FIX: BROKEN
@@ -39,6 +41,8 @@ impl Default for TicTacToe {
 }
 
 impl Environment for TicTacToe {
+    type StateSpace = ProductSpace<Interval>;
+    type ActionSpace = NonNegativeIntegers;
     fn step(&self) -> (Array2<f32>, Array1<bool>, f32, bool) {
         // storing current position into ndarray
         let position = board_as_arr(self.player1, self.player2)
@@ -78,7 +82,8 @@ impl Environment for TicTacToe {
         }
     }
 
-    fn take_action(&mut self, pos: usize) -> bool {
+    fn take_action(&mut self, pos: &u64) -> bool {
+        let pos = *pos as usize;
         if pos > 8 {
             return false;
         }

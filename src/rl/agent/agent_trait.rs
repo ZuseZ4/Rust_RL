@@ -1,7 +1,15 @@
 use ndarray::{Array1, Array2};
+use spaces::Space;
+
+pub type State<S>  = <S as Space>::Value;
+pub type Action<S> = <S as Space>::Value;
 
 /// A trait including all functions required to train them.
-pub trait Agent {
+pub trait Agent<S, A>
+where
+    S: Space,
+    A: Space,
+{
     /// Returns a simple string identifying the specific agent type.
     fn get_id(&self) -> String;
 
@@ -9,7 +17,7 @@ pub trait Agent {
     ///
     /// The concrete encoding of actions as usize value has to be looked up in the documentation of the specific environment.  
     /// Advanced agents shouldn't need knowledge about the used encoding.
-    fn get_move(&mut self, env: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize;
+    fn get_move(&mut self, env: Array2<f32>, actions: Array1<bool>, reward: f32) -> &Action<A>;
 
     /// Informs the agent that the current epoch has finished and tells him about his final result.
     ///

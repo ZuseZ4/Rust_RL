@@ -2,6 +2,12 @@ use crate::network::nn::NeuralNetwork;
 use crate::rl::agent::Agent;
 use crate::rl::algorithms::DQlearning;
 use ndarray::{Array1, Array2};
+use spaces::Space;
+use spaces::discrete::NonNegativeIntegers;
+
+
+pub type State<S>  = <S as Space>::Value;
+pub type Action<S> = <S as Space>::Value;
 
 /// An agent using Deep-Q-Learning, based on a small neural network.
 pub struct DQLAgent {
@@ -19,7 +25,7 @@ impl DQLAgent {
     }
 }
 
-impl Agent for DQLAgent {
+impl<S: Space, A: Space> Agent<S, A> for DQLAgent {
     fn get_id(&self) -> String {
         "dqlearning agent".to_string()
     }
@@ -29,8 +35,9 @@ impl Agent for DQLAgent {
         self.dqlearning.finish_round(result, final_state);
     }
 
-    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
-        self.dqlearning.get_move(board, actions, reward)
+    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> &Action<A> {
+        let res = self.dqlearning.get_move(board, actions, reward);
+        res
     }
 
     fn get_learning_rate(&self) -> f32 {

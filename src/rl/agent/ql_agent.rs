@@ -2,6 +2,10 @@ use crate::rl::algorithms::Qlearning;
 use ndarray::{Array1, Array2};
 
 use crate::rl::agent::Agent;
+use spaces::Space;
+
+pub type State<S>  = <S as Space>::Value;
+pub type Action<S> = <S as Space>::Value;
 
 /// An agent working on a classical q-table.
 pub struct QLAgent {
@@ -19,7 +23,7 @@ impl QLAgent {
     }
 }
 
-impl Agent for QLAgent {
+impl<S: Space, A: Space> Agent<S, A> for QLAgent {
     fn get_id(&self) -> String {
         "qlearning agent".to_string()
     }
@@ -29,8 +33,9 @@ impl Agent for QLAgent {
         self.qlearning.finish_round(result, final_state);
     }
 
-    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
-        self.qlearning.get_move(board, actions, reward)
+    fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> &Action<A> {
+        let res = self.qlearning.get_move(board, actions, reward);
+        res
     }
 
     fn set_learning_rate(&mut self, lr: f32) -> Result<(), String> {
