@@ -73,10 +73,7 @@ impl DQlearning {
 }
 
 impl DQlearning {
-    // update "table" based on last action and their result
-    pub fn finish_round(&mut self, result: i32, s1: Array2<f32>) {
-        // result is -1 for loss, 0 for draw, 1 for win
-        let reward = result as f32 * 7.;
+    pub fn finish_round(&mut self, reward: f32, s1: Array2<f32>) {
         self.replay_buffer.add_memory(Observation::new(
             self.last_turn.0.clone(),
             self.last_turn.3,
