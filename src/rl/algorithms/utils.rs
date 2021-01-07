@@ -5,7 +5,7 @@ pub fn get_random_true_entry(actions: Array1<bool>) -> usize {
         .clone()
         .fold(0, |sum, &val| if val { sum + 1 } else { sum });
     assert!(num_legal_actions > 0, "no legal action available!");
-    let mut action_number = rand::thread_rng().gen_range(0, num_legal_actions) as usize;
+    let mut action_number = rand::thread_rng().gen_range(0..num_legal_actions) as usize;
     let b = action_number;
 
     let mut position = 0;

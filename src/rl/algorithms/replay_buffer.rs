@@ -56,7 +56,7 @@ impl<T: std::clone::Clone> ReplayBuffer<T> {
         let mut res: Vec<Box<Observation<T>>> = Vec::new();
         let max = self.get_num_entries();
         for _ in 0..self.b {
-            let index = rng.gen_range(0, max);
+            let index = rng.gen_range(0..max);
             res.push(self.memories[index].clone());
         }
         res
@@ -76,7 +76,7 @@ impl<T: std::clone::Clone> ReplayBuffer<T> {
         let mut s1_arr = vec![];
         let mut rng = rand::thread_rng();
         for i in 0..self.b {
-            let observation_number = rng.gen_range(0, max);
+            let observation_number = rng.gen_range(0..max);
             let Observation { s0, a, s1, r } = *self.memories[observation_number].clone();
             rewards[i] = r;
             actions[i] = a;

@@ -45,7 +45,7 @@ mod MLP {
         let mut current_input;
         let mut current_feedback;
         for _ in 0..num {
-            pos = rand::thread_rng().gen_range(0, input.nrows()) as usize;
+            pos = rand::thread_rng().gen_range(0..input.nrows()) as usize;
             current_input = input.row(pos).into_owned().clone();
             current_feedback = feedback.row(pos).into_owned().clone();
             nn.train1d(current_input, current_feedback);
@@ -92,8 +92,8 @@ mod MLP {
         let mut nn = new(2, 6, 0.1);
 
         for _ in 0..10 {
-            let pos1 = rand::thread_rng().gen_range(0, input.shape()[0]) as usize;
-            let pos2 = rand::thread_rng().gen_range(0, input.shape()[0]) as usize;
+            let pos1 = rand::thread_rng().gen_range(0..input.shape()[0]) as usize;
+            let pos2 = rand::thread_rng().gen_range(0..input.shape()[0]) as usize;
             let current_input1 = input.index_axis(Axis(0), pos1).into_owned();
             let current_input2 = input.index_axis(Axis(0), pos2).into_owned();
             let current_fb1 = feedback.index_axis(Axis(0), pos1).into_owned();

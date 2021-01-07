@@ -24,7 +24,7 @@ fn test(nn: &mut NeuralNetwork, input: &Array4<f32>, feedback: &Array2<f32>) {
 fn train(nn: &mut NeuralNetwork, num: usize, input: &Array4<f32>, fb: &Array2<f32>) {
     let mut rng = rand::thread_rng();
     for _ in 0..num {
-        let pos = rng.gen_range(0, input.shape()[0]) as usize;
+        let pos = rng.gen_range(0..input.shape()[0]) as usize;
         let current_input = input.index_axis(Axis(0), pos).into_owned();
         let current_fb = fb.index_axis(Axis(0), pos).into_owned();
         nn.train3d(current_input, current_fb);

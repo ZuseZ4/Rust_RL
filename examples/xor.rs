@@ -26,7 +26,7 @@ fn test(nn: &mut NeuralNetwork, input: &Array2<f32>, feedback: &Array2<f32>) {
 
 fn train(nn: &mut NeuralNetwork, num_games: usize, input: &Array2<f32>, feedback: &Array2<f32>) {
     for _ in 0..num_games {
-        let move_number = rand::thread_rng().gen_range(0, input.nrows()) as usize;
+        let move_number = rand::thread_rng().gen_range(0..input.nrows()) as usize;
         let current_input = input.row(move_number).into_owned().clone();
         let current_feedback = feedback.row(move_number).into_owned().clone();
         nn.train1d(current_input, current_feedback);
