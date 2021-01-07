@@ -64,9 +64,7 @@ impl Qlearning {
 
 impl Qlearning {
     // update "table" based on last action and their result
-    pub fn finish_round(&mut self, result: i32, s1: Array2<f32>) {
-        // -1 for loss, 0 for draw, 1 for win
-        let reward = 5. * result as f32;
+    pub fn finish_round(&mut self, reward: f32, s1: Array2<f32>) {
         let s1 = s1.fold("".to_string(), |acc, x| acc + &x.to_string());
         self.replay_buffer.add_memory(Observation::new(
             self.last_state.clone(),

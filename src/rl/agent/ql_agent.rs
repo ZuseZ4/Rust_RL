@@ -24,9 +24,8 @@ impl Agent for QLAgent {
         "qlearning agent".to_string()
     }
 
-    fn finish_round(&mut self, result: i32, final_state: Array2<f32>) {
-        // -1 for loss, 0 for draw, 1 for win
-        self.qlearning.finish_round(result, final_state);
+    fn finish_round(&mut self, reward: f32, final_state: Array2<f32>) {
+        self.qlearning.finish_round(reward, final_state);
     }
 
     fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {

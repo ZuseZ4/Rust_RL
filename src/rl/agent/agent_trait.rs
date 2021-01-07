@@ -13,8 +13,8 @@ pub trait Agent {
 
     /// Informs the agent that the current epoch has finished and tells him about his final result.
     ///
-    /// Common values might be -1/0/1 if the agent achieved a loss/draw/win.
-    fn finish_round(&mut self, result: i32, final_state: Array2<f32>);
+    /// Common values might be -1./0./1. if the agent achieved a loss/draw/win.
+    fn finish_round(&mut self, reward: f32, final_state: Array2<f32>);
 
     /// Updates the exploration rate if it lies in the range [0,1].
     fn set_exploration_rate(&mut self, e: f32) -> Result<(), String>;
