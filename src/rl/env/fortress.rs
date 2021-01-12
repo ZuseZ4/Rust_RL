@@ -195,17 +195,15 @@ impl Fortress {
 }
 
 fn get_reward(first_player_turn: bool, field: [i8; 36], flags: [i8; 36]) -> f32 {
+    0.
+    /*
     let controlled_fields = controlled_fields(field, flags);
     let mut reward = (controlled_fields.0 as i32) - (controlled_fields.1 as i32);
     if !first_player_turn {
         reward *= -1;
     }
-    if reward == 0 {
-        // add small bonus for achieving at least a draw
-        0.5
-    } else {
-        reward as f32
-    }
+    0.5 / (1. + f32::exp(-1. * reward as f32)) + 0.25 // moved into [-0.5,0.5]
+    */
 }
 
 fn controlled_fields(field: [i8; 36], flags: [i8; 36]) -> (u8, u8) {

@@ -213,16 +213,14 @@ fn check_result(first_player_turn: bool, player1: u16, player2: u16, pos: usize)
 
 // check rewards, especially draw value
 fn get_reward(state: &GameState, agent_num: usize) -> f32 {
+    0.
+    /*
     let x = if agent_num == 0 { 1. } else { -1. };
-    let res = match state {
+    match state {
         GameState::Draw => 0.4,
         GameState::Player1won => 1. * x,
         GameState::Player2won => -1. * x,
         GameState::Running => 0.,
-    };
-    if res < -0.8 {
-        -0.8
-    } else {
-        res
     }
+    */
 }

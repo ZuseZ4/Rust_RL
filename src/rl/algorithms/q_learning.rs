@@ -71,6 +71,7 @@ impl Qlearning {
             self.last_action,
             s1,
             reward,
+            true,
         ));
         self.learn();
     }
@@ -100,11 +101,12 @@ impl Qlearning {
         let mut updates: Vec<((String, usize), f32)> = Default::default();
         let memories = self.replay_buffer.get_memories();
         for observation in memories {
-            let Observation { s0, a, s1, r } = *observation;
+            let Observation { s0, a, s1, r, .. } = *observation;
             let key = (s0, a);
             let new_val = if self.scores.contains_key(&key) {
                 let val = self.scores.get(&key).expect("can't fail");
-                val + self.learning_rate * (r + self.discount_factor * self.max_future_q(s1) - val)
+                val + self.learning_rate * 
+                    (r + self.discount_factor * self.max_future_q(s1) - val)
             } else {
                 r // use RIC: https://en.wikipedia.org/wiki/Q-learning#Initial_conditions_(Q0)
             };
@@ -127,6 +129,7 @@ impl Qlearning {
             self.last_action,
             board_as_string.clone(),
             reward,
+            false, // aparently we are not done yet.
         ));
         self.learn();
 

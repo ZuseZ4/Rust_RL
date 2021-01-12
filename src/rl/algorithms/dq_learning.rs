@@ -13,7 +13,8 @@ pub struct DQlearning {
     sum: usize,
     exploration: f32,
     discount_factor: f32,
-    last_turn: (Array2<f32>, Array1<f32>, Array1<f32>, usize), // (board before last own move, allowed moves, NN output, move choosen from NN)
+    // last_turn: (board before last own move, allowed moves, NN output, move choosen from NN)
+    last_turn: (Array2<f32>, Array1<f32>, Array1<f32>, usize), 
     replay_buffer: ReplayBuffer<Array2<f32>>,
     rng: ThreadRng,
     epsilon: f32,
@@ -23,7 +24,8 @@ impl DQlearning {
     pub fn new(exploration: f32, batch_size: usize, mut nn: NeuralNetwork) -> Self {
         if nn.get_batch_size() % batch_size != 0 {
             eprintln!(
-                "not implemented yet, unsure how to store intermediate vals before weight updates"
+                "not implemented yet, unsure how to store 
+                intermediate vals before weight updates"
             );
             unimplemented!();
         }
@@ -79,6 +81,7 @@ impl DQlearning {
             self.last_turn.3,
             s1,
             reward,
+            true, // we are obviously done with this episode
         )); //
         self.learn();
     }
@@ -95,15 +98,15 @@ impl DQlearning {
         if !self.replay_buffer.is_full() {
             return;
         }
-        let (s0_vec, actions, s1_vec, mut rewards) = self.replay_buffer.get_memories_SoA();
+        let (s0_vec, actions, s1_vec, rewards, done) = self.replay_buffer.get_memories_SoA();
         let s0_arr = vec_to_arr(s0_vec);
         let s1_arr = vec_to_arr(s1_vec);
-        let targets: Array2<f32> = self.nn.predict_batch(s0_arr.clone().into_dyn());
-        let future_move_rewards: Array2<f32> = self.nn.predict_batch(s1_arr.into_dyn());
-        let max_future_reward: Array1<f32> = get_max_rewards(future_move_rewards);
-        rewards += &(self.discount_factor * max_future_reward);
-        //update_targets(&mut targets, actions, rewards);
-        let targets = update_targets(targets, actions, rewards);
+        let done: Array1<f32> = done.mapv(|x| if !x { 1. } else { 0. });
+        let current_q_list: Array2<f32> = self.nn.predict_batch(s0_arr.clone().into_dyn());
+        let future_q_list: Array2<f32> = self.nn.predict_batch(s1_arr.into_dyn());
+        let max_future_q: Array1<f32> = get_max_rewards(future_q_list);
+        let new_q: Array1<f32> = rewards + self.discount_factor * done * max_future_q;
+        let targets = update_targets(current_q_list, actions, new_q);//TODO verify
         self.nn.train(s0_arr.into_dyn(), targets.into_dyn());
     }
 
@@ -120,6 +123,7 @@ impl DQlearning {
             self.last_turn.3,
             board_arr.clone(),
             reward,
+            false, // not done since move requested
         )); //
         self.learn();
 
@@ -133,7 +137,8 @@ impl DQlearning {
         let mut next_move = self.select_move(legal_predicted_moves);
 
         // shall we explore a random move?
-        // also select random move if predicted move not allowed (e.g. legal_predicted_moves contains only 0's).
+        // also select random move if predicted move not allowed 
+        // (e.g. legal_predicted_moves contains only 0's).
         if (self.exploration > self.rng.gen()) || (!action_arr[next_move]) {
             next_move = utils::get_random_true_entry(action_arr);
         }
@@ -168,7 +173,8 @@ fn update_targets(
 ) -> Array2<f32> {
     let clamped_rewards = clamp(rewards);
 
-    par_azip!((mut target in targets.outer_iter_mut(), action in &actions, reward in &clamped_rewards) {
+    par_azip!((mut target in targets.outer_iter_mut(), action in &actions, 
+               reward in &clamped_rewards) {
         target[*action] = *reward;
     });
     targets
@@ -176,14 +182,10 @@ fn update_targets(
 
 fn clamp(new_target_val: Array1<f32>) -> Array1<f32> {
     new_target_val.mapv(|x| {
-        if x > 1. {
-            x
+        if x < 0. {
+            0.1
         } else {
-            if x < 0. {
-                0.1
-            } else {
-                x
-            }
+            x
         }
     })
 }

@@ -13,7 +13,8 @@ pub fn read_agents(n: usize) -> Vec<usize> {
         let agent: usize = agent
             .trim()
             .parse()
-            .expect("please type a number (1 for dql, 2 for ql, 3 for random, 4 for human");
+            .expect("please type a number (0 for ddql, 1 for dql, 2 for ql, 
+            3 for random, 4 for human");
         agents.push(agent);
     }
     agents
