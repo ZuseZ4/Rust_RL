@@ -4,39 +4,49 @@ use std::io;
 pub fn read_agents(n: usize) -> Vec<usize> {
     let mut agents: Vec<usize> = vec![];
 
-    for _ in 0..n {
-        let mut agent = String::new();
-        println!("please pick agents.");
-        io::stdin()
-            .read_line(&mut agent)
-            .expect("Failed to read type of agents");
-        let agent: usize = agent
-            .trim()
-            .parse()
-            .expect("please type a number (1 for dql, 2 for ql, 3 for random, 4 for human");
-        agents.push(agent);
+    println!(
+        "\nPlease insert {} numbers, seperated by whitespace, to select the agents.",
+        n
+    );
+    println!("(0 for ddql, 1 for dql, 2 for ql, 3 for random, 4 for human)");
+    let stdin = io::stdin();
+    loop {
+        let mut buffer = String::new();
+        stdin.read_line(&mut buffer).unwrap();
+        let nums: Vec<&str> = buffer.split(' ').collect();
+        if nums.len() != n {
+            println!("Please enter exactly {} values", n);
+            continue;
+        }
+        for agent_num in nums
+            .iter()
+            .map(|num| usize::from_str_radix(num.trim(), 10).unwrap())
+        {
+            agents.push(agent_num);
+        }
+        break;
     }
     agents
 }
 
 /// Reads the amount of training- and test-games from terminal.
-pub fn read_game_numbers() -> (u64, u64) {
-    let mut training_games = String::new();
-    let mut bench_games = String::new();
-
-    println!("please insert the number of training games.");
-    io::stdin()
-        .read_line(&mut training_games)
-        .expect("Failed to read number of games");
-
-    println!("please insert the number of benchmark games.");
-    io::stdin()
-        .read_line(&mut bench_games)
-        .expect("Failed to read number of games");
-
-    let training_games: u64 = training_games.trim().parse().expect("please type a number");
-    let bench_games: u64 = bench_games.trim().parse().expect("please type a number");
-    (training_games, bench_games)
+pub fn read_game_numbers() -> (u64, u64, u64) {
+    loop {
+        println!("\nPlease enter #training_games #test_games #iterations, seperated by whitespace");
+        let stdin = io::stdin();
+        let mut buffer = String::new();
+        stdin.read_line(&mut buffer).unwrap();
+        let nums: Vec<&str> = buffer.split(' ').collect();
+        if nums.len() != 3 {
+            println!("Please enter exactly three values");
+            continue;
+        }
+        let nums: Vec<u64> = nums
+            .iter()
+            .map(|num| u64::from_str_radix(num.trim(), 10).unwrap())
+            .collect();
+        return (nums[0], nums[1], nums[2]);
+    }
 }
 
 /// For round based games, reads an usize value from terminal.

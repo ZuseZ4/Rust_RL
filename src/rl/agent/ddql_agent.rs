@@ -4,51 +4,51 @@ use crate::rl::algorithms::DQlearning;
 use ndarray::{Array1, Array2};
 
 /// An agent using Deep-Q-Learning, based on a small neural network.
-pub struct DQLAgent {
-    dqlearning: DQlearning,
+pub struct DDQLAgent {
+    ddqlearning: DQlearning,
 }
 
 // based on Q-learning using a HashMap as table
 //
-impl DQLAgent {
+impl DDQLAgent {
     /// A constructor including an initial exploration rate.
     pub fn new(exploration: f32, batch_size: usize, nn: NeuralNetwork) -> Self {
-        DQLAgent {
-            dqlearning: DQlearning::new(exploration, batch_size, nn, false),
+        DDQLAgent {
+            ddqlearning: DQlearning::new(exploration, batch_size, nn, true),
         }
     }
 }
 
-impl Agent for DQLAgent {
+impl Agent for DDQLAgent {
     fn get_id(&self) -> String {
-        "dqlearning agent".to_string()
+        "ddqlearning agent".to_string()
     }
 
     fn finish_round(&mut self, reward: f32, final_state: Array2<f32>) {
-        self.dqlearning.finish_round(reward, final_state);
+        self.ddqlearning.finish_round(reward, final_state);
     }
 
     fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
-        self.dqlearning.get_move(board, actions, reward)
+        self.ddqlearning.get_move(board, actions, reward)
     }
 
     fn get_learning_rate(&self) -> f32 {
-        self.dqlearning.get_learning_rate()
+        self.ddqlearning.get_learning_rate()
     }
 
     fn set_learning_rate(&mut self, lr: f32) -> Result<(), String> {
-        self.dqlearning.set_learning_rate(lr)
+        self.ddqlearning.set_learning_rate(lr)
     }
 
     fn get_exploration_rate(&self) -> f32 {
-        self.dqlearning.get_exploration_rate()
+        self.ddqlearning.get_exploration_rate()
     }
 
     fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {
         if !(0.0..=1.).contains(&e) {
             return Err("exploration rate must be in [0,1]!".to_string());
         }
-        self.dqlearning.set_exploration_rate(e)?;
+        self.ddqlearning.set_exploration_rate(e)?;
         Ok(())
     }
 }

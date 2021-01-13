@@ -64,7 +64,7 @@ impl<T: std::clone::Clone> ReplayBuffer<T> {
 
     /// Same as get_memories(), but returns data as Struct of Arrays, instead of Array of Structs.
     #[allow(non_snake_case)]
-    pub fn get_memories_SoA(&self) -> (Vec<T>, Array1<usize>, Vec<T>, Array1<f32>) {
+    pub fn get_memories_SoA(&self) -> (Vec<T>, Array1<usize>, Vec<T>, Array1<f32>, Array1<bool>) {
         assert!(
             self.is_full || self.iter_pos > 0,
             "add at least a single observation before calling get_memories()"
@@ -72,18 +72,20 @@ impl<T: std::clone::Clone> ReplayBuffer<T> {
         let max = self.get_num_entries();
         let mut rewards: Array1<f32> = Array::zeros(self.b);
         let mut actions: Array1<usize> = Array::zeros(self.b);
+        let mut done_arr: Array1<bool> = Array::from_elem(self.b, false);
         let mut s0_arr = vec![];
         let mut s1_arr = vec![];
         let mut rng = rand::thread_rng();
         for i in 0..self.b {
             let observation_number = rng.gen_range(0..max);
-            let Observation { s0, a, s1, r } = *self.memories[observation_number].clone();
+            let Observation { s0, a, s1, r, d } = *self.memories[observation_number].clone();
             rewards[i] = r;
             actions[i] = a;
+            done_arr[i] = d;
             s0_arr.push(s0);
             s1_arr.push(s1);
         }
-        (s0_arr, actions, s1_arr, rewards)
+        (s0_arr, actions, s1_arr, rewards, done_arr)
     }
 
     fn get_num_entries(&self) -> usize {
@@ -99,10 +101,6 @@ impl<T: std::clone::Clone> ReplayBuffer<T> {
     /// If the maximum amount of entries is already reached, the oldest entry is replaced.
     /// Otherwise our new entry is appended.
     pub fn add_memory(&mut self, obs: Observation<T>) {
-        let Observation { r, .. } = obs;
-        if r < 0.0001 && rand::thread_rng().gen::<f32>() < 0.2 {
-            return;
-        }
         if !self.is_full {
             self.memories.push(Box::new(obs));
         } else {
