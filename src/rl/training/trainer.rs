@@ -8,11 +8,16 @@ pub struct Trainer {
     agents: Vec<Box<dyn Agent>>,
     learning_rates: Vec<f32>,
     exploration_rates: Vec<f32>,
+    print: bool,
 }
 
 impl Trainer {
     /// We construct a Trainer by passing a single environment and one or more (possibly different) agents.
-    pub fn new(env: Box<dyn Environment>, agents: Vec<Box<dyn Agent>>) -> Result<Self, String> {
+    pub fn new(
+        env: Box<dyn Environment>,
+        agents: Vec<Box<dyn Agent>>,
+        print: bool,
+    ) -> Result<Self, String> {
         if agents.is_empty() {
             return Err("At least one agent required!".to_string());
         }
@@ -23,6 +28,7 @@ impl Trainer {
             agents,
             learning_rates,
             exploration_rates,
+            print,
         })
     }
 
@@ -43,6 +49,28 @@ impl Trainer {
         self.agents.iter().map(|a| a.get_id()).collect()
     }
 
+    /// Executes n training games folowed by m bench games.
+    /// Repeates this cycle for i iterations.
+    pub fn train_bench_loops(&mut self, n: u64, m: u64, i: u64) {
+        for _ in 0..i {
+            self.train(n);
+            let res: Vec<(u32, u32, u32)> = self.bench(m);
+            if self.print {
+                for (agent, result) in res.iter().enumerate() {
+                    //for agent in 0..res.len() {
+                    println!(
+                        "agent{} ({}): lost: {}, draw: {}, won: {}",
+                        agent,
+                        self.get_agent_ids()[agent],
+                        result.0,
+                        result.1,
+                        result.2
+                    );
+                }
+            }
+        }
+    }
+
     /// Executes the given amount of (independent) training games.
     ///
     /// Results are stored and agents are expected to update their internal parameters   
@@ -59,17 +87,14 @@ impl Trainer {
         self.play_games(num_games, false)
     }
 
-    fn adjust_rates(
-        &mut self,
-        fraction_done: f32,
-    ) {
+    fn adjust_rates(&mut self, fraction_done: f32) {
         for i in 0..self.agents.len() {
             self.agents[i]
                 .set_exploration_rate(self.exploration_rates[i] * (1. - fraction_done))
                 .unwrap();
-            //self.agents[i]
-            //    .set_learning_rate(self.learning_rates[i] * (1. - fraction_done))
-            //    .unwrap();
+            self.agents[i]
+                .set_learning_rate(self.learning_rates[i] * (1. - fraction_done))
+                .unwrap();
         }
         //println!(
         //    "Updated learning and exploration after finishing {}%",
@@ -105,9 +130,7 @@ impl Trainer {
         for game in 0..num_games {
             self.env.reset();
             if (game % sub_epoch) == 0 && train {
-                self.adjust_rates(
-                    game as f32 / num_games as f32,
-                );
+                self.adjust_rates(game as f32 / num_games as f32);
             }
 
             let final_state: Array2<f32> = 'outer: loop {
@@ -135,16 +158,10 @@ impl Trainer {
     }
 }
 
-fn get_rates(agents: &Vec<Box<dyn Agent>>) -> (Vec<f32>, Vec<f32>) {
-    
-    let exploration_rates: Vec<f32> = agents
-        .iter()
-        .map(|a| a.get_exploration_rate())
-        .collect();
-    let learning_rates: Vec<f32> = agents
-        .iter()
-        .map(|a| a.get_learning_rate())
-        .collect();
+//fn get_rates(agents: &Vec<Box<dyn Agent>>) -> (Vec<f32>, Vec<f32>) {
+fn get_rates(agents: &[Box<dyn Agent>]) -> (Vec<f32>, Vec<f32>) {
+    let exploration_rates: Vec<f32> = agents.iter().map(|a| a.get_exploration_rate()).collect();
+    let learning_rates: Vec<f32> = agents.iter().map(|a| a.get_learning_rate()).collect();
 
     (exploration_rates, learning_rates)
 }

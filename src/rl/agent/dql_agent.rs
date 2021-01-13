@@ -14,7 +14,7 @@ impl DQLAgent {
     /// A constructor including an initial exploration rate.
     pub fn new(exploration: f32, batch_size: usize, nn: NeuralNetwork) -> Self {
         DQLAgent {
-            dqlearning: DQlearning::new(exploration, batch_size, nn),
+            dqlearning: DQlearning::new(exploration, batch_size, nn, false),
         }
     }
 }
@@ -45,7 +45,7 @@ impl Agent for DQLAgent {
     }
 
     fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {
-        if e < 0. || e > 1. {
+        if !(0.0..=1.).contains(&e) {
             return Err("exploration rate must be in [0,1]!".to_string());
         }
         self.dqlearning.set_exploration_rate(e)?;

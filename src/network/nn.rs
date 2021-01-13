@@ -498,12 +498,12 @@ impl NeuralNetwork {
             feedback = self
                 .error_function
                 .deriv_from_logits(input, target.into_dyn());
-        // to print error function loss here: 
+        // to print error function loss here:
         // println!("{}", self.error_function.loss_from_logits(input, target);
         } else {
             //evaluate last activation layer and error function seperately
             input = self.layers[n - 1].forward(input);
-            // to print error function loss here: 
+            // to print error function loss here:
             // println!("{}", self.error_function.loss(input, target);
             feedback = self.error_function.backward(input, target.into_dyn());
             feedback = self.layers[n - 1].backward(feedback);

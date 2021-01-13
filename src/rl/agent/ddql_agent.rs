@@ -1,11 +1,11 @@
 use crate::network::nn::NeuralNetwork;
 use crate::rl::agent::Agent;
-use crate::rl::algorithms::DDQlearning;
+use crate::rl::algorithms::DQlearning;
 use ndarray::{Array1, Array2};
 
 /// An agent using Deep-Q-Learning, based on a small neural network.
 pub struct DDQLAgent {
-    ddqlearning: DDQlearning,
+    ddqlearning: DQlearning,
 }
 
 // based on Q-learning using a HashMap as table
@@ -14,7 +14,7 @@ impl DDQLAgent {
     /// A constructor including an initial exploration rate.
     pub fn new(exploration: f32, batch_size: usize, nn: NeuralNetwork) -> Self {
         DDQLAgent {
-            ddqlearning: DDQlearning::new(exploration, batch_size, nn),
+            ddqlearning: DQlearning::new(exploration, batch_size, nn, true),
         }
     }
 }
@@ -45,7 +45,7 @@ impl Agent for DDQLAgent {
     }
 
     fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {
-        if e < 0. || e > 1. {
+        if !(0.0..=1.).contains(&e) {
             return Err("exploration rate must be in [0,1]!".to_string());
         }
         self.ddqlearning.set_exploration_rate(e)?;

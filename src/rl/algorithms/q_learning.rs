@@ -18,6 +18,8 @@ pub struct Qlearning {
     action_space_length: usize,
 }
 
+const EPSILON: f32 = 1e-4;
+
 // based on Q-learning using a HashMap as table
 //
 impl Qlearning {
@@ -29,7 +31,7 @@ impl Qlearning {
             exploration,
             learning_rate,
             discount_factor,
-            last_action: 42 as usize,
+            last_action: 42usize,
             last_state: "".to_string(),
             replay_buffer: ReplayBuffer::new(bs, 1),
             scores: HashMap::new(),
@@ -43,7 +45,7 @@ impl Qlearning {
     }
 
     pub fn set_learning_rate(&mut self, lr: f32) -> Result<(), String> {
-        if lr < 0. || lr > 1. {
+        if !(0.0..=1.).contains(&lr) {
             return Err("learning rate must be in [0,1]!".to_string());
         }
         self.learning_rate = lr;
@@ -54,7 +56,7 @@ impl Qlearning {
     }
 
     pub fn set_exploration_rate(&mut self, e: f32) -> Result<(), String> {
-        if e < 0. || e > 1. {
+        if !(0.0..=1.).contains(&e) {
             return Err("exploration rate must be in [0,1]!".to_string());
         }
         self.exploration = e;
@@ -64,7 +66,10 @@ impl Qlearning {
 
 impl Qlearning {
     // update "table" based on last action and their result
-    pub fn finish_round(&mut self, reward: f32, s1: Array2<f32>) {
+    pub fn finish_round(&mut self, mut reward: f32, s1: Array2<f32>) {
+        if (reward).abs() < EPSILON {
+            reward = 0.5;
+        }
         let s1 = s1.fold("".to_string(), |acc, x| acc + &x.to_string());
         self.replay_buffer.add_memory(Observation::new(
             self.last_state.clone(),
@@ -105,8 +110,7 @@ impl Qlearning {
             let key = (s0, a);
             let new_val = if self.scores.contains_key(&key) {
                 let val = self.scores.get(&key).expect("can't fail");
-                val + self.learning_rate * 
-                    (r + self.discount_factor * self.max_future_q(s1) - val)
+                val + self.learning_rate * (r + self.discount_factor * self.max_future_q(s1) - val)
             } else {
                 r // use RIC: https://en.wikipedia.org/wiki/Q-learning#Initial_conditions_(Q0)
             };
@@ -124,13 +128,15 @@ impl Qlearning {
         reward: f32,
     ) -> usize {
         let board_as_string = board_arr.fold("".to_string(), |acc, x| acc + &x.to_string());
-        self.replay_buffer.add_memory(Observation::new(
-            self.last_state.clone(),
-            self.last_action,
-            board_as_string.clone(),
-            reward,
-            false, // aparently we are not done yet.
-        ));
+        if f32::abs(reward) > EPSILON || rand::thread_rng().gen::<f32>() < 0.2 {
+            self.replay_buffer.add_memory(Observation::new(
+                self.last_state.clone(),
+                self.last_action,
+                board_as_string.clone(),
+                reward,
+                false, // aparently we are not done yet.
+            ));
+        }
         self.learn();
 
         self.last_state = board_as_string;

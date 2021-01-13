@@ -194,7 +194,9 @@ impl Fortress {
     }
 }
 
-fn get_reward(first_player_turn: bool, field: [i8; 36], flags: [i8; 36]) -> f32 {
+// To make the game harder we only give a reward when finishing the game.
+// Feel free to change that behaviour
+fn get_reward(_first_player_turn: bool, _field: [i8; 36], _flags: [i8; 36]) -> f32 {
     0.
     /*
     let controlled_fields = controlled_fields(field, flags);

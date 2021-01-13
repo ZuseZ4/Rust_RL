@@ -26,8 +26,8 @@ pub fn main() {
         .expect("Failed to read y or n!");
     let auto_fill: String = auto_fill.trim().parse().expect("Please type y or n!");
 
-    let ((train_games, bench_games), agent_numbers) = match auto_fill.as_str() {
-        "y" => ((40_000, 10_000), vec![0, 2]),
+    let ((train_games, bench_games, iterations), agent_numbers) = match auto_fill.as_str() {
+        "y" => ((40_000, 10_000, 5), vec![0, 2]),
         "n" => (utils::read_game_numbers(), utils::read_agents(2)),
         _ => panic!("please only answer y or n!"),
     };
@@ -35,28 +35,8 @@ pub fn main() {
     let agents = get_agents(agent_numbers).unwrap();
     let game = TicTacToe::new();
 
-    let mut trainer = Trainer::new(Box::new(game), agents).unwrap();
-    let training_rounds = 10;
-    for round in 0..training_rounds {
-        trainer.train(train_games);
-
-        let res: Vec<(u32, u32, u32)> = trainer.bench(bench_games);
-
-        println!(
-            "agent1 ({}): lost: {}, draw: {}, won: {}",
-            trainer.get_agent_ids()[0],
-            res[0].0,
-            res[0].1,
-            res[0].2
-        );
-        println!(
-            "agent2 ({}): lost: {}, draw: {}, won: {}",
-            trainer.get_agent_ids()[1],
-            res[1].0,
-            res[1].1,
-            res[1].2
-        );
-    }
+    let mut trainer = Trainer::new(Box::new(game), agents, true).unwrap();
+    trainer.train_bench_loops(train_games, bench_games, iterations);
 }
 
 fn get_agents(agent_nums: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {

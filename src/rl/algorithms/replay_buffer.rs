@@ -2,7 +2,6 @@ use crate::rl::algorithms::observation::Observation;
 use ndarray::{Array, Array1};
 use rand::Rng;
 
-
 /// A struct containing all relevant information.
 pub struct ReplayBuffer<T>
 where
