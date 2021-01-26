@@ -24,8 +24,9 @@ const EPSILON: f32 = 1e-4;
 //
 impl Qlearning {
     pub fn new(exploration: f32, action_space_length: usize) -> Self {
-        let bs = 1;
-        let learning_rate = 0.1;
+        let bs = 16;
+        let learning_rate = 3e-3;
+        //let learning_rate = 0.1;
         let discount_factor = 0.95;
         Qlearning {
             exploration,
@@ -33,7 +34,7 @@ impl Qlearning {
             discount_factor,
             last_action: 42usize,
             last_state: "".to_string(),
-            replay_buffer: ReplayBuffer::new(bs, 1),
+            replay_buffer: ReplayBuffer::new(bs, 100),
             scores: HashMap::new(),
             rng: rand::thread_rng(),
             action_space_length,

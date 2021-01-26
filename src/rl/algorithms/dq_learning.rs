@@ -14,9 +14,9 @@ pub struct DQlearning {
     target_nn: NeuralNetwork,
     target_update_counter: usize,
     target_update_every: usize,
-    counter: usize,
-    sum: usize,
-    error_it: usize,
+    //counter: usize,
+    //sum: usize,
+    //error_it: usize,
     exploration: f32,
     discount_factor: f32,
     // last_turn: (board before last own move, allowed moves, NN output, move choosen from NN)
@@ -44,9 +44,9 @@ impl DQlearning {
         let discount_factor = 0.95;
         DQlearning {
             use_ddqn,
-            sum: 0,
-            counter: 0,
-            error_it: 0,
+            //sum: 0,
+            //counter: 0,
+            //error_it: 0,
             target_nn,
             target_update_counter: 0,
             target_update_every: 120, // update after 5 episodes (entire games)
@@ -133,7 +133,7 @@ impl DQlearning {
             .into_shape((1, board_arr.shape()[0], board_arr.shape()[1]))
             .unwrap();
         let predicted_moves = self.nn.predict3d(board_with_channels);
-        self.count_illegal_moves(predicted_moves.clone(), actions.clone());
+        //self.count_illegal_moves(predicted_moves.clone(), actions.clone());
         let legal_predicted_moves = predicted_moves.clone() * actions.clone();
         let mut next_move = legal_predicted_moves.argmax().unwrap();
 
@@ -152,6 +152,7 @@ impl DQlearning {
         self.last_turn.3
     }
 
+    /*
     fn count_illegal_moves(&mut self, predicted_moves: Array1<f32>, allowed_moves: Array1<f32>) {
         let illegal_moves = allowed_moves.mapv(|x| 1. - x);
         let errors = predicted_moves * illegal_moves;
@@ -167,7 +168,7 @@ impl DQlearning {
             self.sum = 0;
             self.counter = 0;
         }
-    }
+    }*/
 
     fn learn(&mut self) {
         if !self.replay_buffer.is_full() {

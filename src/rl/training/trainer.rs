@@ -1,6 +1,7 @@
 use crate::rl::agent::Agent;
 use crate::rl::env::Environment;
 use ndarray::Array2;
+
 /// A trainer works on a given environment and a set of agents.
 pub struct Trainer {
     env: Box<dyn Environment>,
@@ -150,7 +151,7 @@ impl Trainer {
             self.update_results(&game_res);
             if train {
                 for (i, agent) in self.agents.iter_mut().enumerate() {
-                    agent.finish_round(game_res[i].into(), final_state.clone());
+                    agent.finish_round(game_res[i], final_state.clone());
                 }
             }
         }
