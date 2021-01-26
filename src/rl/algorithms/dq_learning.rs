@@ -14,9 +14,6 @@ pub struct DQlearning {
     target_nn: NeuralNetwork,
     target_update_counter: usize,
     target_update_every: usize,
-    //counter: usize,
-    //sum: usize,
-    //error_it: usize,
     exploration: f32,
     discount_factor: f32,
     // last_turn: (board before last own move, allowed moves, NN output, move choosen from NN)
@@ -35,7 +32,7 @@ impl DQlearning {
             );
             unimplemented!();
         }
-        nn.set_batch_size(batch_size); // TODO not working yet, see nn.rs
+        nn.set_batch_size(batch_size);
         let target_nn = if use_ddqn {
             nn.clone()
         } else {
@@ -44,12 +41,9 @@ impl DQlearning {
         let discount_factor = 0.95;
         DQlearning {
             use_ddqn,
-            //sum: 0,
-            //counter: 0,
-            //error_it: 0,
             target_nn,
             target_update_counter: 0,
-            target_update_every: 120, // update after 5 episodes (entire games)
+            target_update_every: 20, // update after 5 episodes (entire games)
             nn,
             exploration,
             last_turn: (
@@ -91,9 +85,8 @@ impl DQlearning {
 
 impl DQlearning {
     // learn based on last action and their result
-    pub fn finish_round(&mut self, reward: f32, s1: Array2<f32>) {
-        let mut final_reward = reward;
-        if f32::abs(reward) < 1e-4 {
+    pub fn finish_round(&mut self, mut final_reward: f32, s1: Array2<f32>) {
+        if f32::abs(final_reward) < 1e-4 {
             final_reward = 0.5; // smaller bonus for a draw
         }
 
@@ -116,8 +109,8 @@ impl DQlearning {
     ) -> usize {
         let actions = action_arr.mapv(|x| if x { 1. } else { 0. });
 
-        // store every interesting action, as well as every 5th action with zero-reward
-        if f32::abs(reward) > EPSILON || rand::thread_rng().gen::<f32>() < 0.2 {
+        // store every interesting action, as well as every 20% of the actions with zero-reward
+        if f32::abs(reward) > EPSILON || self.rng.gen::<f32>() < 0.2 {
             self.replay_buffer.add_memory(Observation::new(
                 self.last_turn.0.clone(),
                 self.last_turn.3,
@@ -133,7 +126,6 @@ impl DQlearning {
             .into_shape((1, board_arr.shape()[0], board_arr.shape()[1]))
             .unwrap();
         let predicted_moves = self.nn.predict3d(board_with_channels);
-        //self.count_illegal_moves(predicted_moves.clone(), actions.clone());
         let legal_predicted_moves = predicted_moves.clone() * actions.clone();
         let mut next_move = legal_predicted_moves.argmax().unwrap();
 
@@ -151,24 +143,6 @@ impl DQlearning {
 
         self.last_turn.3
     }
-
-    /*
-    fn count_illegal_moves(&mut self, predicted_moves: Array1<f32>, allowed_moves: Array1<f32>) {
-        let illegal_moves = allowed_moves.mapv(|x| 1. - x);
-        let errors = predicted_moves * illegal_moves;
-        let errors = errors
-            .iter()
-            .fold(0, |err, &val| if val > 0.2 { err + 1 } else { err });
-        self.sum += errors;
-        self.counter += 1;
-        let n = 1000;
-        if self.counter % n == 0 {
-            println!("{} errors per {} moves: {}", self.error_it, n, self.sum);
-            self.error_it += 1;
-            self.sum = 0;
-            self.counter = 0;
-        }
-    }*/
 
     fn learn(&mut self) {
         if !self.replay_buffer.is_full() {

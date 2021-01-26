@@ -23,10 +23,8 @@ const EPSILON: f32 = 1e-4;
 // based on Q-learning using a HashMap as table
 //
 impl Qlearning {
-    pub fn new(exploration: f32, action_space_length: usize) -> Self {
+    pub fn new(exploration: f32, learning_rate: f32, action_space_length: usize) -> Self {
         let bs = 16;
-        let learning_rate = 3e-3;
-        //let learning_rate = 0.1;
         let discount_factor = 0.95;
         Qlearning {
             exploration,
@@ -34,7 +32,7 @@ impl Qlearning {
             discount_factor,
             last_action: 42usize,
             last_state: "".to_string(),
-            replay_buffer: ReplayBuffer::new(bs, 100),
+            replay_buffer: ReplayBuffer::new(bs, 1000),
             scores: HashMap::new(),
             rng: rand::thread_rng(),
             action_space_length,
@@ -129,7 +127,7 @@ impl Qlearning {
         reward: f32,
     ) -> usize {
         let board_as_string = board_arr.fold("".to_string(), |acc, x| acc + &x.to_string());
-        if f32::abs(reward) > EPSILON || rand::thread_rng().gen::<f32>() < 0.2 {
+        if f32::abs(reward) > EPSILON || self.rng.gen::<f32>() < 0.2 {
             self.replay_buffer.add_memory(Observation::new(
                 self.last_state.clone(),
                 self.last_action,
