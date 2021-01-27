@@ -1,5 +1,5 @@
-use crate::network::nn::NeuralNetwork;
 use super::results::RunningResults;
+use crate::network::nn::NeuralNetwork;
 use crate::rl::agent::Agent;
 use crate::rl::algorithms::DQlearning;
 use ndarray::{Array1, Array2};
