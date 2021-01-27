@@ -1,6 +1,7 @@
 use crate::rl::agent::Agent;
 use crate::rl::env::Environment;
 use ndarray::Array2;
+
 /// A trainer works on a given environment and a set of agents.
 pub struct Trainer {
     env: Box<dyn Environment>,
@@ -57,7 +58,6 @@ impl Trainer {
             let res: Vec<(u32, u32, u32)> = self.bench(m);
             if self.print {
                 for (agent, result) in res.iter().enumerate() {
-                    //for agent in 0..res.len() {
                     println!(
                         "agent{} ({}): lost: {}, draw: {}, won: {}",
                         agent,
@@ -96,10 +96,6 @@ impl Trainer {
                 .set_learning_rate(self.learning_rates[i] * (1. - fraction_done))
                 .unwrap();
         }
-        //println!(
-        //    "Updated learning and exploration after finishing {}%",
-        //    (fraction_done * 100.) as i32
-        //);
     }
 
     fn update_results(&mut self, new_res: &[i8]) {
@@ -150,7 +146,7 @@ impl Trainer {
             self.update_results(&game_res);
             if train {
                 for (i, agent) in self.agents.iter_mut().enumerate() {
-                    agent.finish_round(game_res[i].into(), final_state.clone());
+                    agent.finish_round(game_res[i], final_state.clone());
                 }
             }
         }

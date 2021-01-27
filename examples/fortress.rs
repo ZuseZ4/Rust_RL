@@ -11,10 +11,12 @@ fn new(learning_rate: f32, batch_size: usize) -> NeuralNetwork {
     nn.set_learning_rate(learning_rate);
     //nn.add_convolution((3, 3), 32, 0);
     //nn.add_activation("sigmoid");
-    nn.add_convolution((3, 3), 32, 0);
-    nn.add_activation("sigmoid");
+    //nn.add_convolution((3, 3), 32, 0);
+    //nn.add_activation("sigmoid");
     nn.add_flatten();
     nn.add_dense(100);
+    nn.add_activation("sigmoid");
+    nn.add_dense(50);
     nn.add_activation("sigmoid");
     nn.add_dense(36);
     //nn.add_activation("sigmoid");
@@ -62,7 +64,7 @@ fn get_agents(agent_nums: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {
                 batch_size,
                 new(0.001, batch_size),
             ))),
-            2 => Ok(Box::new(QLAgent::new(1., 6 * 6))),
+            2 => Ok(Box::new(QLAgent::new(1., 0.1, 6 * 6))),
             3 => Ok(Box::new(RandomAgent::new())),
             4 => Ok(Box::new(HumanPlayer::new())),
             _ => Err("Only implemented agents 1-4!".to_string()),
