@@ -62,7 +62,8 @@ impl Environment for Fortress {
         // storing current position into ndarray
         let position = Array2::from_shape_vec((6, 6), self.field.to_vec()).unwrap();
         let position = position.mapv(|x| x as f32);
-        let position = position.mapv(|x| (x + 3.) / 6.); // scale to [0,1]
+        //TODO test removing next line
+        // let position = position.mapv(|x| (x + 3.) / 6.); // scale to [0,1]
 
         // collecting allowed moves
         let moves = self.get_legal_actions();
