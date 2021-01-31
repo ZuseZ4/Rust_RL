@@ -40,15 +40,15 @@ impl RunningResults {
             1 => self.won += 1,
             _ => panic!(),
         }
-        if self.current_pos == 0 {
+        if self.current_pos == 0 && self.print {
             println!(
-                "accumulated results of last {} epochs: \t won: {} \t draw: {} \t lost: {}",
-                self.n, self.won, self.draw, self.lost
+                "accumulated results of last {} epochs: \t lost: {} \t draw: {} \t won: {}",
+                self.n, self.lost, self.draw, self.won
             );
         }
     }
 
     pub fn get_results(&self) -> (u32, u32, u32) {
-        (self.won, self.draw, self.lost)
+        (self.lost, self.draw, self.won)
     }
 }

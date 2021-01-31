@@ -8,6 +8,7 @@ use crate::rl::agent::Agent;
 pub struct QLAgent {
     qlearning: Qlearning,
     results: RunningResults,
+    frozen: bool,
 }
 
 // based on Q-learning using a HashMap as table
@@ -17,7 +18,8 @@ impl QLAgent {
     pub fn new(exploration: f32, learning: f32, action_space_length: usize) -> Self {
         QLAgent {
             qlearning: Qlearning::new(exploration, learning, action_space_length),
-            results: RunningResults::new(100, true),
+            results: RunningResults::new(1000, true),
+            frozen: false,
         }
     }
 }
@@ -27,13 +29,17 @@ impl Agent for QLAgent {
         "qlearning agent".to_string()
     }
 
+    fn freeze(&mut self, freeze: bool) {
+        self.frozen = freeze;
+    }
+
     fn finish_round(&mut self, reward: i8, final_state: Array2<f32>) {
         self.results.add(reward.into());
         self.qlearning.finish_round(reward.into(), final_state);
     }
 
     fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
-        self.qlearning.get_move(board, actions, reward)
+        self.qlearning.get_move(board, actions, reward, self.frozen)
     }
 
     fn set_learning_rate(&mut self, lr: f32) -> Result<(), String> {

@@ -8,6 +8,7 @@ use ndarray::{Array1, Array2};
 pub struct DDQLAgent {
     ddqlearning: DQlearning,
     results: RunningResults,
+    frozen: bool,
 }
 
 // based on Q-learning using a HashMap as table
@@ -18,6 +19,7 @@ impl DDQLAgent {
         DDQLAgent {
             ddqlearning: DQlearning::new(exploration, batch_size, nn, true),
             results: RunningResults::new(1000, true),
+            frozen: false,
         }
     }
 }
@@ -27,13 +29,18 @@ impl Agent for DDQLAgent {
         "ddqlearning agent".to_string()
     }
 
+    fn freeze(&mut self, freeze: bool) {
+        self.frozen = freeze;
+    }
+
     fn finish_round(&mut self, reward: i8, final_state: Array2<f32>) {
         self.results.add(reward.into());
         self.ddqlearning.finish_round(reward.into(), final_state);
     }
 
     fn get_move(&mut self, board: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize {
-        self.ddqlearning.get_move(board, actions, reward)
+        self.ddqlearning
+            .get_move(board, actions, reward, self.frozen)
     }
 
     fn get_learning_rate(&self) -> f32 {

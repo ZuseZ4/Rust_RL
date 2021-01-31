@@ -12,33 +12,41 @@ fn new(learning_rate: f32, batch_size: usize) -> NeuralNetwork {
     nn.add_flatten();
     nn.add_dense(100);
     nn.add_activation("sigmoid");
-    nn.add_dense(30);
-    nn.add_activation("sigmoid");
     nn.add_dense(9);
-    //nn.add_activation("sigmoid");
     nn.print_setup();
     nn
 }
 
 pub fn main() {
     let mut auto_fill = String::new();
-    println!("Run with default parameters? (y/n)");
+    println!("Run with default parameters? (Y/n)");
     io::stdin()
         .read_line(&mut auto_fill)
         .expect("Failed to read y or n!");
     let auto_fill: String = auto_fill.trim().parse().expect("Please type y or n!");
 
-    let ((train_games, bench_games, iterations), agent_numbers) = match auto_fill.as_str() {
-        "y" => ((40_000, 10_000, 5), vec![0, 2]),
-        "n" => (utils::read_game_numbers(), utils::read_agents(2)),
+    let agent_numbers = match auto_fill.as_str() {
+        "y" | "Y" | "" => vec![3, 0],
+        "n" => utils::read_agents(2),
         _ => panic!("please only answer y or n!"),
     };
 
     let agents = get_agents(agent_numbers).unwrap();
     let game = TicTacToe::new();
-
     let mut trainer = Trainer::new(Box::new(game), agents, true).unwrap();
-    trainer.train_bench_loops(train_games, bench_games, iterations);
+
+    trainer.train(85 * 1e2 as u64);
+    println!("lost/draw/won: {:?}", trainer.bench(10000)[1]);
+    trainer.set_learning_rates(&vec![1e-4, 1e-4]);
+    trainer.set_exploration_rates(&vec![0.1, 0.1]);
+
+    trainer.train(103 * 1e2 as u64);
+    println!("lost/draw/won: {:?}", trainer.bench(10000)[1]);
+    trainer.set_learning_rates(&vec![1e-5, 1e-5]);
+    trainer.set_exploration_rates(&vec![0., 0.]);
+
+    trainer.train(20 * 1e3 as u64);
+    println!("lost/draw/won: {:?}", trainer.bench(10000)[1]);
 }
 
 fn get_agents(agent_nums: Vec<usize>) -> Result<Vec<Box<dyn Agent>>, String> {

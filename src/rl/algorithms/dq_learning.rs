@@ -36,7 +36,7 @@ impl DQlearning {
         let target_nn = if use_ddqn {
             nn.clone()
         } else {
-            NeuralNetwork::new1d(0, "none".to_string(), "none".to_string())
+            NeuralNetwork::new1d(0, "mse".to_string(), "none".to_string())
         };
         let discount_factor = 0.95;
         DQlearning {
@@ -106,20 +106,24 @@ impl DQlearning {
         board_arr: Array2<f32>,
         action_arr: Array1<bool>,
         reward: f32,
+        freeze: bool,
     ) -> usize {
         let actions = action_arr.mapv(|x| if x { 1. } else { 0. });
 
-        // store every interesting action, as well as every 20% of the actions with zero-reward
-        if f32::abs(reward) > EPSILON || self.rng.gen::<f32>() < 0.2 {
-            self.replay_buffer.add_memory(Observation::new(
-                self.last_turn.0.clone(),
-                self.last_turn.3,
-                board_arr.clone(),
-                reward,
-                false,
-            ));
+        if !freeze {
+            // store every interesting action, as well as every 20%
+            // of the actions with zero-reward
+            if f32::abs(reward) > EPSILON || self.rng.gen::<f32>() < 0.2 {
+                self.replay_buffer.add_memory(Observation::new(
+                    self.last_turn.0.clone(),
+                    self.last_turn.3,
+                    board_arr.clone(),
+                    reward,
+                    false,
+                ));
+            }
+            self.learn();
         }
-        self.learn();
 
         let board_with_channels = board_arr
             .clone()
@@ -138,8 +142,6 @@ impl DQlearning {
 
         // bookkeeping
         self.last_turn = (board_arr, actions, predicted_moves, next_move);
-
-        //println!("action: {}, \t reward: {}", self.last_turn.3, reward);
 
         self.last_turn.3
     }
@@ -225,12 +227,12 @@ fn argmax(input: Array2<f32>) -> Array1<usize> {
                 argmax = (i, val);
             }
         }
-        //println!("{} {} {:}\n", argmax.0, argmax.1, in_entry);
         out_entry.fill(argmax.0);
     });
 
     res
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

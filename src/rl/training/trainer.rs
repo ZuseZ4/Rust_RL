@@ -7,8 +7,6 @@ pub struct Trainer {
     env: Box<dyn Environment>,
     res: Vec<(u32, u32, u32)>,
     agents: Vec<Box<dyn Agent>>,
-    learning_rates: Vec<f32>,
-    exploration_rates: Vec<f32>,
     print: bool,
 }
 
@@ -22,13 +20,10 @@ impl Trainer {
         if agents.is_empty() {
             return Err("At least one agent required!".to_string());
         }
-        let (exploration_rates, learning_rates) = get_rates(&agents);
         Ok(Trainer {
             env,
             res: vec![(0, 0, 0); agents.len()],
             agents,
-            learning_rates,
-            exploration_rates,
             print,
         })
     }
@@ -79,23 +74,37 @@ impl Trainer {
         self.play_games(num_games, true);
     }
 
+    /// Allows changing the learning rate of the agents.
+    pub fn set_learning_rates(&mut self, new_vals: &[f32]) -> Result<(), String> {
+        assert_eq!(
+            new_vals.len(),
+            self.agents.len(),
+            "wrong length of input slice!"
+        );
+        for (agent, new_val) in self.agents.iter_mut().zip(new_vals.iter()) {
+            agent.set_learning_rate(*new_val)?;
+        }
+        Ok(())
+    }
+
+    /// Allows changing the exploration rate of the agents.
+    pub fn set_exploration_rates(&mut self, new_vals: &[f32]) -> Result<(), String> {
+        assert_eq!(
+            new_vals.len(),
+            self.agents.len(),
+            "wrong length of input slice!"
+        );
+        for (agent, new_val) in self.agents.iter_mut().zip(new_vals.iter()) {
+            agent.set_exploration_rate(*new_val)?;
+        }
+        Ok(())
+    }
+
     /// Executes the given amount of (independent) bench games.
     ///
     /// Results are stored and agents are expected to not learn based on bench games.
     pub fn bench(&mut self, num_games: u64) -> Vec<(u32, u32, u32)> {
-        self.adjust_rates(1.);
         self.play_games(num_games, false)
-    }
-
-    fn adjust_rates(&mut self, fraction_done: f32) {
-        for i in 0..self.agents.len() {
-            self.agents[i]
-                .set_exploration_rate(self.exploration_rates[i] * (1. - fraction_done))
-                .unwrap();
-            self.agents[i]
-                .set_learning_rate(self.learning_rates[i] * (1. - fraction_done))
-                .unwrap();
-        }
     }
 
     fn update_results(&mut self, new_res: &[i8]) {
@@ -115,19 +124,15 @@ impl Trainer {
     }
 
     fn play_games(&mut self, num_games: u64, train: bool) -> Vec<(u32, u32, u32)> {
-        self.res = vec![(0, 0, 0); self.agents.len()];
-        let mut sub_epoch: u64 = (num_games / 50) as u64;
-        if sub_epoch == 0 {
-            sub_epoch = 1;
+        for agent in self.agents.iter_mut() {
+            agent.freeze(!train);
         }
+        self.res = vec![(0, 0, 0); self.agents.len()];
 
         // TODO parallelize
         println!("num games: {}", num_games);
-        for game in 0..num_games {
+        for _game in 0..num_games {
             self.env.reset();
-            if (game % sub_epoch) == 0 && train {
-                self.adjust_rates(game as f32 / num_games as f32);
-            }
 
             let final_state: Array2<f32> = 'outer: loop {
                 for agent in self.agents.iter_mut() {
@@ -152,12 +157,4 @@ impl Trainer {
         }
         self.res.clone()
     }
-}
-
-//fn get_rates(agents: &Vec<Box<dyn Agent>>) -> (Vec<f32>, Vec<f32>) {
-fn get_rates(agents: &[Box<dyn Agent>]) -> (Vec<f32>, Vec<f32>) {
-    let exploration_rates: Vec<f32> = agents.iter().map(|a| a.get_exploration_rate()).collect();
-    let learning_rates: Vec<f32> = agents.iter().map(|a| a.get_learning_rate()).collect();
-
-    (exploration_rates, learning_rates)
 }

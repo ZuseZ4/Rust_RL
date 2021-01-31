@@ -46,6 +46,8 @@ impl Agent for HumanPlayer {
         }
     }
 
+    fn freeze(&mut self, _freeze: bool) {}
+
     fn finish_round(&mut self, _single_res: i8, _final_state: Array2<f32>) {}
 
     fn get_learning_rate(&self) -> f32 {

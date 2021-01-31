@@ -125,22 +125,26 @@ impl Qlearning {
         board_arr: Array2<f32>,   // TODO work on T
         action_arr: Array1<bool>, // TODO work on V
         reward: f32,
+        frozen: bool,
     ) -> usize {
         let board_as_string = board_arr.fold("".to_string(), |acc, x| acc + &x.to_string());
-        if f32::abs(reward) > EPSILON || self.rng.gen::<f32>() < 0.2 {
-            self.replay_buffer.add_memory(Observation::new(
-                self.last_state.clone(),
-                self.last_action,
-                board_as_string.clone(),
-                reward,
-                false, // aparently we are not done yet.
-            ));
+
+        if !frozen {
+            if f32::abs(reward) > EPSILON || self.rng.gen::<f32>() < 0.2 {
+                self.replay_buffer.add_memory(Observation::new(
+                    self.last_state.clone(),
+                    self.last_action,
+                    board_as_string.clone(),
+                    reward,
+                    false, // aparently we are not done yet.
+                ));
+            }
+            self.learn();
         }
-        self.learn();
 
         self.last_state = board_as_string;
 
-        if self.exploration > rand::thread_rng().gen() {
+        if self.exploration > self.rng.gen() {
             self.last_action = utils::get_random_true_entry(action_arr);
         } else {
             self.last_action = match self.get_best_move(action_arr.clone()) {

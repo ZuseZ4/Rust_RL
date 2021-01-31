@@ -11,6 +11,12 @@ pub trait Agent {
     /// Advanced agents shouldn't need knowledge about the used encoding.
     fn get_move(&mut self, env: Array2<f32>, actions: Array1<bool>, reward: f32) -> usize;
 
+    /// Change this value to decide wether an agent is allowed to learn from input, or not.
+    ///
+    /// Setting freeze=true assures that following calls to get_move() will not change
+    /// any internal state of the agent. This is particularry usefull for testing the agent.
+    fn freeze(&mut self, freeze: bool);
+
     /// Informs the agent that the current epoch has finished and tells him about his final result.
     ///
     /// Common values might be -1./0./1. if the agent achieved a loss/draw/win.
