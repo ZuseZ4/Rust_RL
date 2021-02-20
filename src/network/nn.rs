@@ -1,6 +1,6 @@
 use crate::network;
-use ndarray::par_azip;
 use ndarray::parallel::prelude::*;
+use ndarray::{azip, par_azip};
 use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1, Ix2};
 use network::functional::activation_layer::{
     LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer,
@@ -247,7 +247,6 @@ impl NeuralNetwork {
 
     /// This function appends a convolution layer to the neural network.
     ///
-    /// Currently filter_shape.0 == filter_shape.1 is requred.  
     /// If padding > 0 then the x (and if available y) dimension are padded with zeros at both sides.  
     /// E.g. For padding == 1 and x=y=2 we might receive:   
     /// 0000   
@@ -260,25 +259,19 @@ impl NeuralNetwork {
         &mut self,
         filter_shape: (usize, usize),
         filter_number: usize,
-        padding: usize,
+        _padding: usize, // replace to string or enum (full/none)
     ) {
-        let filter_depth: usize;
-        let input_dim = self.input_dims.last().unwrap().clone();
+        let input_shape = self.input_dims.last().unwrap().clone();
         assert!(
-            input_dim.len() == 2 || input_dim.len() == 3,
-            "only implemented conv for 2d or 3d input! {}",
-            input_dim.len()
+            input_shape.len() == 3,
+            "only implemented conv for 3d input! {}",
+            input_shape.len()
         );
-        if input_dim.len() == 2 {
-            filter_depth = 1;
-        } else {
-            filter_depth = input_dim[0];
-        }
+        let input_shape = (input_shape[0], input_shape[1], input_shape[2]);
         let conv_layer = ConvolutionLayer2D::new(
-            filter_shape,
-            filter_depth,
-            filter_number,
-            padding,
+            (filter_number, filter_shape.0, filter_shape.1),
+            input_shape,
+            // padding,
             self.h_p.batch_size,
             self.h_p.learning_rate,
             self.optimizer_function.clone_box(),
@@ -388,31 +381,39 @@ impl NeuralNetwork {
 
     /// This function handles the inference on 1d input.
     pub fn predict1d(&self, input: Array1<f32>) -> Array1<f32> {
-        self.predict(input.into_dyn())
+        self.predict_single(input.into_dyn())
     }
     /// This function handles the inference on 2d input.
     pub fn predict2d(&self, input: Array2<f32>) -> Array1<f32> {
-        self.predict(input.into_dyn())
+        self.predict_single(input.into_dyn())
     }
     /// This function handles the inference on 3d input.
     pub fn predict3d(&self, input: Array3<f32>) -> Array1<f32> {
-        self.predict(input.into_dyn())
+        self.predict_single(input.into_dyn())
     }
 
     /// This function handles the inference on dynamic-dimensional input.
-    pub fn predict(&self, mut input: ArrayD<f32>) -> Array1<f32> {
+    pub fn predict(&self, mut input: ArrayD<f32>) -> Array2<f32> {
         for i in 0..self.layers.len() {
             input = self.layers[i].predict(input);
         }
-        input.into_dimensionality::<Ix1>().unwrap() //output should be Array1 again
+        input.into_dimensionality::<Ix2>().unwrap() //output should be Array1 again
+    }
+
+    /// DEPRECATED
+    pub fn predict_batch(&self, mut input: ArrayD<f32>) -> Array2<f32> {
+        self.predict(input)
     }
 
     /// This function handles the inference on a batch of dynamic-dimensional input.
-    pub fn predict_batch(&self, mut input: ArrayD<f32>) -> Array2<f32> {
+    pub fn predict_single(&self, mut input: ArrayD<f32>) -> Array1<f32> {
+        input.insert_axis_inplace(Axis(0));
         for i in 0..self.layers.len() {
             input = self.layers[i].predict(input);
         }
-        input.into_dimensionality::<Ix2>().unwrap()
+        debug_assert!(input.ndim() == 2);
+        let output_dim = input.shape()[1];
+        input.into_shape(output_dim).unwrap() // strip the batch size since it's one
     }
 
     /// This function calculates the inference accuracy on a testset with given labels.
@@ -420,15 +421,16 @@ impl NeuralNetwork {
         let n = target.len_of(Axis(0));
         let mut loss: Array1<f32> = Array1::zeros(n);
         let mut correct: Array1<f32> = Array1::ones(n);
-        par_azip!((index i, l in &mut loss, c in &mut correct) {
+        azip!((index i, l in &mut loss, c in &mut correct) {
             let current_input = input.index_axis(Axis(0), i);
             let current_fb = target.index_axis(Axis(0), i);
-            let pred = self.predict(current_input.into_owned().into_dyn());
-            *l = self.loss_from_prediction(pred.clone(), current_fb.into_owned());
+            let prediction = self.predict_single(current_input.into_owned().into_dyn());
+            assert_eq!(prediction.shape()[0], 10);
+            *l = self.loss_from_prediction(prediction.clone(), current_fb.into_owned());
 
-            let best_guess: f32 = (pred.clone() * current_fb).sum();
+            let best_guess: f32 = (prediction.clone() * current_fb).sum();
 
-            let num: usize = pred.iter().filter(|&x| *x >= best_guess).count();
+            let num: usize = prediction.iter().filter(|&x| *x >= best_guess).count();
             if num != 1 {
                 *c = 0.;
             }
@@ -464,6 +466,11 @@ impl NeuralNetwork {
         loss[0]
     }
 
+    /// This functions adds the batch size.
+    pub fn train_single(&mut self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+        self.train(input.insert_axis(Axis(0)), target.insert_axis(Axis(0)))
+    }
+
     /// This function handles training on a single 1d example.
     pub fn train1d(&mut self, input: Array1<f32>, target: Array1<f32>) {
         self.train(input.into_dyn(), target.into_dyn());
@@ -480,7 +487,7 @@ impl NeuralNetwork {
     }
     /// This function handles training on a single dynamic-dimensional example.
     pub fn train(&mut self, mut input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-        //assert_eq!(input.len_of(Axis(0)), target.len()); //later when training on batches
+        //debug_assert!(input.len_of(Axis(0)) == target.len(), "{} {}", input.len_of(Axis(0), target); //later when training on batches
         //maybe return option(accuracy,None) and add a setter to return accuracy?
         let n = self.layers.len();
 
