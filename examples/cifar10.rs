@@ -7,7 +7,7 @@ use std::time::Instant;
 fn new() -> NeuralNetwork {
     let mut nn = NeuralNetwork::new3d((3, 32, 32), "cce".to_string(), "adam".to_string());
     nn.set_batch_size(32);
-    nn.set_learning_rate(0.1);
+    nn.set_learning_rate(0.001);
     nn.add_convolution((3, 3), 10, 1);
     nn.add_activation("sigmoid");
     nn.add_dropout(0.4);
@@ -27,7 +27,7 @@ fn train(nn: &mut NeuralNetwork, num: usize, input: &Array4<f32>, fb: &Array2<f3
         let pos = rng.gen_range(0..input.shape()[0]) as usize;
         let current_input = input.index_axis(Axis(0), pos).into_owned();
         let current_fb = fb.index_axis(Axis(0), pos).into_owned();
-        nn.train3d(current_input, current_fb);
+        nn.train_single(current_input.into_dyn(), current_fb.into_dyn());
     }
 }
 
@@ -52,10 +52,10 @@ pub fn main() {
 
     let mut nn = new();
     nn.print_setup();
-    train(&mut nn, train_size, &trn_img, &trn_lbl);
     let start = Instant::now();
     for i in 0..10 {
         print!("{}: ", i + 1);
+        train(&mut nn, train_size, &trn_img, &trn_lbl);
         test(&mut nn, &tst_img, &tst_lbl);
     }
     let stop = Instant::now();

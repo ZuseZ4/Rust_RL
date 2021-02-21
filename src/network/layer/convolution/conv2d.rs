@@ -18,7 +18,7 @@ pub struct ConvolutionLayer2D {
     external_output_shape: (usize, usize, usize), // (num_kernels, width, height), e.g. (64,32,32)
     external_kernel_shape: (usize, usize, usize, usize), // (num_kernels, channels, width, height)
     internal_kernel_shape: (usize, usize),       // (num_kernels, elements_per_kernel)
-    padding: usize,
+    padding: Vec<usize>,
 }
 
 // From external_output -> internal_output
@@ -32,37 +32,9 @@ fn reshape_from_next_layer(mut x: Array4<f32>, expected_shape: (usize, usize)) -
 // From internal_output -> external_output
 fn reshape_for_next_layer(output: Array3<f32>, dst_shape: (usize, usize, usize)) -> Array4<f32> {
     let batch_size = output.shape()[0];
-    //println!("dst shape: {:?}", dst_shape);
-    //println!("output shape: {:?}", output.shape());
     output
         .into_shape((batch_size, dst_shape.0, dst_shape.1, dst_shape.2))
         .unwrap()
-}
-
-// From external_input -> internal_input
-fn reshape_from_prev_layer(
-    mut input: Array4<f32>,
-    elements_per_kernel: usize,
-    kernel_width_height: (usize, usize),
-) -> Array3<f32> {
-    input = conv_utils::add_padding(input, vec![0, 0, 1, 1]);
-    let input_shape = input.shape();
-    let batch_size = input_shape[0];
-    let windows = input.windows([
-        1,
-        input.shape()[1],
-        kernel_width_height.0,
-        kernel_width_height.1,
-    ]);
-    let num_kernel_applications = windows.clone().into_iter().collect::<Vec<_>>().len();
-    let shape = ((batch_size, num_kernel_applications, elements_per_kernel));
-    let mut res_2d: Array2<f32> = Array2::zeros((num_kernel_applications, elements_per_kernel));
-    for (i, window) in windows.into_iter().enumerate() {
-        res_2d
-            .row_mut(i)
-            .assign(&window.into_owned().into_shape(elements_per_kernel).unwrap());
-    }
-    res_2d.into_shape(shape).unwrap()
 }
 
 // From internal_input -> external_input
@@ -73,55 +45,84 @@ fn reshape_for_prev_layer(
     Default::default()
 }
 
+// From external_input -> internal_input
+fn reshape_from_prev_layer(
+    mut input: Array4<f32>,
+    kernel_width_height: (usize, usize),
+    padding: Vec<usize>,
+) -> Array3<f32> {
+    input = conv_utils::add_padding(input, padding);
+    let input_shape = input.shape();
+    let batch_size = input_shape[0];
+    let channels = input_shape[1];
+    let elements_per_kernel = channels * kernel_width_height.0 * kernel_width_height.1;
+    let windows = input.windows([
+        1,
+        input.shape()[1],
+        kernel_width_height.0,
+        kernel_width_height.1,
+    ]);
+    let num_kernel_applications = windows.clone().into_iter().collect::<Vec<_>>().len();
+    let shape = (batch_size, num_kernel_applications, elements_per_kernel);
+    let mut res_2d: Array2<f32> = Array2::zeros((num_kernel_applications, elements_per_kernel));
+    for (i, window) in windows.into_iter().enumerate() {
+        res_2d
+            .row_mut(i)
+            .assign(&window.into_owned().into_shape(elements_per_kernel).unwrap());
+    }
+    res_2d.into_shape(shape).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use ndarray::{arr2, arr3};
 
     #[test]
-    fn conv_from_next_layer_1() {
-        let input = arr4(&[[
+    fn from_next_layer_1() {
+        let input = arr3(&[
             [[1., 2., 3.], [5., 6., 7.]],
             [[9., 10., 11.], [13., 14., 15.]],
-        ]]);
-        let output = reshape_from_next_layer(input);
-        assert_eq!(
-            output,
-            arr2(&[[1., 2., 3., 5., 6., 7.], [9., 10., 11., 13., 14., 15.]])
-        );
+        ]);
+        let input = input.into_shape((1, 1, 4, 3)).unwrap();
+        let target = arr3(&[[[1., 2., 3., 5., 6., 7.], [9., 10., 11., 13., 14., 15.]]]);
+        let output = reshape_from_next_layer(input, (2, 6));
+        assert_eq!(output, target);
     }
 
     #[test]
-    fn conv_from_prev_layer_1() {
-        let input = arr4(&[[
+    fn from_prev_layer_1() {
+        let input = arr2(&[
             [1., 2., 3., 4.],
             [5., 6., 7., 8.],
             [9., 10., 11., 12.],
             [13., 14., 15., 16.],
-        ]]);
-        let output = reshape_from_prev_layer(input);
+        ]);
+        let input = input.into_shape((1, 1, 4, 4)).unwrap();
+        let output = reshape_from_prev_layer(input, (3, 3), vec![0; 4]);
         assert_eq!(
             output,
-            arr2(&[
+            arr3(&[[
                 [1., 2., 3., 5., 6., 7., 9., 10., 11.],
                 [2., 3., 4., 6., 7., 8., 10., 11., 12.],
                 [5., 6., 7., 9., 10., 11., 13., 14., 15.],
                 [6., 7., 8., 10., 11., 12., 14., 15., 16.]
-            ])
+            ]])
         );
     }
     #[test]
-    fn test_unfold2() {
-        let input = arr4(&[[
+    fn from_prev_layer_2() {
+        let input = arr2(&[
             [1., 2., 3., 4.],
             [5., 6., 7., 8.],
             [9., 10., 11., 12.],
             [13., 14., 15., 16.],
-        ]]);
-        let output = reshape_from_prev_layer(input);
+        ]);
+        let input = input.into_shape((1, 1, 4, 4)).unwrap();
+        let output = reshape_from_prev_layer(input, (2, 2), vec![0; 4]);
         assert_eq!(
             output,
-            arr2(&[
+            arr3(&[[
                 [1., 2., 5., 6.],
                 [2., 3., 6., 7.],
                 [3., 4., 7., 8.],
@@ -131,7 +132,7 @@ mod tests {
                 [9., 10., 13., 14.],
                 [10., 11., 14., 15.],
                 [11., 12., 15., 16.]
-            ])
+            ]])
         );
     }
 }
@@ -181,13 +182,14 @@ impl ConvolutionLayer2D {
             learning_rate,
         )
         .unwrap();
+        let padding = vec![0, 0, kernels.1 / 2, kernels.2 / 2];
         ConvolutionLayer2D {
             conv_layer,
-            padding: 1, // TODO fix padding, probably to enum here?
+            padding,
             external_input_shape: input_shape,
             internal_input_shape,
             internal_output_shape,
-            external_output_shape: (num_kernels, input_shape.1, input_shape.2), // last two only work for 3x3 kernels. TODO fix padding s.t. it always works
+            external_output_shape: (num_kernels, input_shape.1, input_shape.2),
             external_kernel_shape: (num_kernels, channels_in, kernels.1, kernels.2),
             internal_kernel_shape,
         }
@@ -206,6 +208,7 @@ impl Layer for ConvolutionLayer2D {
     fn clone_box(&self) -> Box<dyn Layer> {
         let layer = ConvolutionLayer2D {
             conv_layer: self.conv_layer.clone_box(),
+            padding: self.padding.clone(),
             ..*self
         };
         Box::new(layer)
@@ -229,8 +232,8 @@ impl Layer for ConvolutionLayer2D {
         };
         let input: Array3<f32> = reshape_from_prev_layer(
             input,
-            self.internal_kernel_shape.1,
             (self.external_kernel_shape.2, self.external_kernel_shape.3),
+            self.padding.clone(),
         );
         // now input: (batch, windows_per_batch_element, elements_per_kernel)
         let result = self.conv_layer.predict(input);
@@ -248,8 +251,8 @@ impl Layer for ConvolutionLayer2D {
         };
         let input: Array3<f32> = reshape_from_prev_layer(
             input,
-            self.internal_kernel_shape.1,
             (self.external_kernel_shape.2, self.external_kernel_shape.3),
+            self.padding.clone(),
         );
         // now input: (batch, windows_per_batch_element, elements_per_kernel)
         let result = self.conv_layer.forward(input);

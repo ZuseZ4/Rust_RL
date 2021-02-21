@@ -108,7 +108,7 @@ impl ConvCalculator {
             .enumerate()
         {
             let w_delta: Array2<f32> = single_feedback.t().dot(&single_forward);
-            let b_delta: Array1<f32> = single_feedback.t().dot(&Array1::ones(784)); // bias is always applied
+            let b_delta: Array1<f32> = single_feedback.t().dot(&Array1::ones(self.input_shape.0)); // bias is always applied
             if self.num_in_batch % self.batch_size == 0 {
                 self.w_updates = w_delta;
                 self.b_updates = b_delta;
