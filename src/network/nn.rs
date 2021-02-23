@@ -1,7 +1,11 @@
+// TODO !! Allow passing in arbitrary batchsizes, as long as batchdim exists. (have 1 forward/predict/backward special function which adds batchdim internally)
+// Our predict function passes the entire input as a single huge batch forward.
+// Our forward / backward function split it and pass it forward in sub-batches with _batch_size_ elements, ( or less if less than _batch_Size_ elements have been passed before).
+
 use crate::network;
+use ndarray::par_azip;
 use ndarray::parallel::prelude::*;
-use ndarray::{azip, par_azip};
-use ndarray::{Array1, Array2, Array3, ArrayD, Axis, Ix1, Ix2};
+use ndarray::{Array1, Array2, ArrayD, Axis, Ix2};
 use network::functional::activation_layer::{
     LeakyReLuLayer, ReLuLayer, SigmoidLayer, SoftmaxLayer,
 };
@@ -11,12 +15,6 @@ use network::functional::error::{
 //RootMeanSquareError,
 use network::layer::{ConvolutionLayer2D, DenseLayer, DropoutLayer, FlattenLayer, Layer};
 use network::optimizer::*;
-
-#[derive(Clone)]
-enum Mode {
-    Eval,
-    Train,
-}
 
 #[derive(Clone, Default)]
 struct HyperParameter {
@@ -28,7 +26,7 @@ impl HyperParameter {
     pub fn new() -> Self {
         HyperParameter {
             batch_size: 1,
-            learning_rate: 0.002, //10e-4
+            learning_rate: 3e-4,
         }
     }
     pub fn batch_size(&mut self, batch_size: usize) {
@@ -65,7 +63,6 @@ pub struct NeuralNetwork {
     error_function: Box<dyn Error>,
     optimizer_function: Box<dyn Optimizer>,
     from_logits: bool,
-    mode: Mode,
 }
 
 impl Clone for NeuralNetwork {
@@ -79,7 +76,6 @@ impl Clone for NeuralNetwork {
             error_function: self.error_function.clone_box(),
             optimizer_function: self.optimizer_function.clone_box(),
             from_logits: self.from_logits,
-            mode: self.mode.clone(),
         }
     }
 }
@@ -117,7 +113,11 @@ impl NeuralNetwork {
         }
     }
 
-    fn new(input_shape: Vec<usize>, error: String, optimizer: String) -> Self {
+    /// This function is used to create a new Neural Network.
+    /// The input shape should be adjusted based on the dataset,
+    /// e.g. [3,32,32] for cifar10 and [1,28,28] for MNIST.
+    /// When not using convolution layers, the channel can be ommited if equal to one.
+    pub fn new(input_shape: Vec<usize>, error: String, optimizer: String) -> Self {
         let error_function;
         match NeuralNetwork::get_error(error.clone()) {
             Ok(error_fun) => error_function = error_fun,
@@ -143,40 +143,7 @@ impl NeuralNetwork {
             layers: vec![],
             h_p: HyperParameter::new(),
             from_logits: false,
-            mode: Mode::Train,
         }
-    }
-
-    /// Sets network to inference mode, dropout and backpropagation/training are disabled.
-    pub fn eval_mode(&mut self) {
-        self.mode = Mode::Eval;
-    }
-
-    /// Sets network to train mode, additional calculations for weight updates might occur.
-    pub fn train_mode(&mut self) {
-        self.mode = Mode::Train;
-    }
-
-    /// A constructor for a neural network which takes 1d input.
-    pub fn new1d(input_dim: usize, error: String, optimizer: String) -> Self {
-        NeuralNetwork::new(vec![input_dim], error, optimizer)
-    }
-    /// A constructor for a neural network which takes 2d input.
-    pub fn new2d(
-        (input_dim1, input_dim2): (usize, usize),
-        error: String,
-        optimizer: String,
-    ) -> Self {
-        NeuralNetwork::new(vec![input_dim1, input_dim2], error, optimizer)
-    }
-
-    /// A constructor for a neural network which takes 3d input.
-    pub fn new3d(
-        (input_dim1, input_dim2, input_dim3): (usize, usize, usize),
-        error: String,
-        optimizer: String,
-    ) -> Self {
-        NeuralNetwork::new(vec![input_dim1, input_dim2, input_dim3], error, optimizer)
     }
 
     /// A setter to adjust the optimizer.
@@ -379,19 +346,6 @@ impl NeuralNetwork {
         self.print_separator("─");
     }
 
-    /// This function handles the inference on 1d input.
-    pub fn predict1d(&self, input: Array1<f32>) -> Array1<f32> {
-        self.predict_single(input.into_dyn())
-    }
-    /// This function handles the inference on 2d input.
-    pub fn predict2d(&self, input: Array2<f32>) -> Array1<f32> {
-        self.predict_single(input.into_dyn())
-    }
-    /// This function handles the inference on 3d input.
-    pub fn predict3d(&self, input: Array3<f32>) -> Array1<f32> {
-        self.predict_single(input.into_dyn())
-    }
-
     /// This function handles the inference on dynamic-dimensional input.
     pub fn predict(&self, mut input: ArrayD<f32>) -> Array2<f32> {
         for i in 0..self.layers.len() {
@@ -401,31 +355,31 @@ impl NeuralNetwork {
     }
 
     /// DEPRECATED
-    pub fn predict_batch(&self, mut input: ArrayD<f32>) -> Array2<f32> {
+    pub fn predict_batch(&self, input: ArrayD<f32>) -> Array2<f32> {
         self.predict(input)
     }
 
     /// This function handles the inference on a batch of dynamic-dimensional input.
     pub fn predict_single(&self, mut input: ArrayD<f32>) -> Array1<f32> {
         input.insert_axis_inplace(Axis(0));
-        for i in 0..self.layers.len() {
-            input = self.layers[i].predict(input);
-        }
-        debug_assert!(input.ndim() == 2);
-        let output_dim = input.shape()[1];
-        input.into_shape(output_dim).unwrap() // strip the batch size since it's one
+        let output = self.predict(input);
+        let output_dim = output.shape()[1];
+        output.into_shape(output_dim).unwrap() // strip the batch size since it's one
     }
 
     /// This function calculates the inference accuracy on a testset with given labels.
     pub fn test(&self, input: ArrayD<f32>, target: Array2<f32>) {
-        let n = target.len_of(Axis(0));
+        let n = target.shape()[0];
+        println!("starting predict!");
+        //let output: Array2<f32> = self.predict(input.clone());
+        println!("stoping predict!");
         let mut loss: Array1<f32> = Array1::zeros(n);
         let mut correct: Array1<f32> = Array1::ones(n);
-        azip!((index i, l in &mut loss, c in &mut correct) {
+        par_azip!((index i, l in &mut loss, c in &mut correct) {
             let current_input = input.index_axis(Axis(0), i);
             let current_fb = target.index_axis(Axis(0), i);
             let prediction = self.predict_single(current_input.into_owned().into_dyn());
-            assert_eq!(prediction.shape()[0], 10);
+            //let prediction = output.index_axis(Axis(0), i).into_owned();
             *l = self.loss_from_prediction(prediction.clone(), current_fb.into_owned());
 
             let best_guess: f32 = (prediction.clone() * current_fb).sum();
@@ -438,14 +392,6 @@ impl NeuralNetwork {
         let avg_loss = loss.par_iter().sum::<f32>() / (n as f32);
         let acc = correct.par_iter().sum::<f32>() / (n as f32);
         println!("avg loss: {}, percentage correct: {}", avg_loss, acc);
-    }
-
-    /// This function calculates the loss based on the neural network inference and a target label.
-    pub fn loss_from_prediction(&self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
-        let y = prediction.into_dyn();
-        let t = target.into_dyn();
-        let loss = self.error_function.forward(y, t);
-        loss[0]
     }
 
     /// This function calculates the loss based on the original data and the target label.
@@ -461,8 +407,16 @@ impl NeuralNetwork {
                 .error_function
                 .loss_from_logits(input, target.into_dyn());
         } else {
-            loss = self.error_function.forward(input, target.into_dyn());
+            loss = self.error_function.loss(input, target.into_dyn());
         };
+        loss[0]
+    }
+
+    /// This function calculates the loss based on the neural network inference and a target label.
+    pub fn loss_from_prediction(&self, prediction: Array1<f32>, target: Array1<f32>) -> f32 {
+        let y = prediction.into_dyn();
+        let t = target.into_dyn();
+        let loss = self.error_function.loss(y, t);
         loss[0]
     }
 
@@ -471,24 +425,12 @@ impl NeuralNetwork {
         self.train(input.insert_axis(Axis(0)), target.insert_axis(Axis(0)))
     }
 
-    /// This function handles training on a single 1d example.
-    pub fn train1d(&mut self, input: Array1<f32>, target: Array1<f32>) {
-        self.train(input.into_dyn(), target.into_dyn());
-    }
-    /// This function handles training on a single 2d example.
-    pub fn train2d(&mut self, input: Array2<f32>, target: Array1<f32>) {
-        self.train(input.into_dyn(), target.into_dyn());
-    }
-    /// This function handles training on a single 3d example.
-    pub fn train3d(&mut self, input: Array3<f32>, target: Array1<f32>) -> Array1<f32> {
-        self.train(input.into_dyn(), target.into_dyn())
-            .into_dimensionality::<Ix1>()
-            .unwrap()
-    }
     /// This function handles training on a single dynamic-dimensional example.
     pub fn train(&mut self, mut input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
-        //debug_assert!(input.len_of(Axis(0)) == target.len(), "{} {}", input.len_of(Axis(0), target); //later when training on batches
-        //maybe return option(accuracy,None) and add a setter to return accuracy?
+        debug_assert!(
+            input.shape()[0] == target.shape()[0],
+            "train function: both args require an (identical) batch size!"
+        );
         let n = self.layers.len();
 
         // forward pass
@@ -501,18 +443,15 @@ impl NeuralNetwork {
         let mut feedback;
         // handle last layer and error function
         if self.from_logits {
-            //merge last layer with error function
+            //skip last activation function and pass 
+            // the logits to the error function.
             feedback = self
                 .error_function
                 .deriv_from_logits(input, target.into_dyn());
-        // to print error function loss here:
-        // println!("{}", self.error_function.loss_from_logits(input, target);
         } else {
             //evaluate last activation layer and error function seperately
             input = self.layers[n - 1].forward(input);
-            // to print error function loss here:
-            // println!("{}", self.error_function.loss(input, target);
-            feedback = self.error_function.backward(input, target.into_dyn());
+            feedback = self.error_function.deriv(input, target.into_dyn());
             feedback = self.layers[n - 1].backward(feedback);
         }
 

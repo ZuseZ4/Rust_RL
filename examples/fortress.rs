@@ -6,7 +6,7 @@ use std::io;
 use training::{utils, Trainer};
 
 fn new(learning_rate: f32, batch_size: usize) -> NeuralNetwork {
-    let mut nn = NeuralNetwork::new3d((1, 6, 6), "mse".to_string(), "adam".to_string());
+    let mut nn = NeuralNetwork::new(vec![1, 6, 6], "mse".to_string(), "adam".to_string());
     nn.set_batch_size(batch_size);
     nn.set_learning_rate(learning_rate);
     //nn.add_convolution((3, 3), 32, 0);

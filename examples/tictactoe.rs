@@ -6,14 +6,13 @@ use std::io;
 use training::{utils, Trainer};
 
 fn new(learning_rate: f32, batch_size: usize) -> NeuralNetwork {
-    let mut nn = NeuralNetwork::new3d((1, 3, 3), "mse".to_string(), "adam".to_string());
+    let mut nn = NeuralNetwork::new(vec![1, 3, 3], "mse".to_string(), "adam".to_string());
     nn.set_batch_size(batch_size);
     nn.set_learning_rate(learning_rate);
     nn.add_flatten();
     nn.add_dense(100);
     nn.add_activation("sigmoid");
     nn.add_dense(9);
-    //nn.add_activation("sigmoid");
     nn.print_setup();
     nn
 }

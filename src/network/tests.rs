@@ -7,7 +7,7 @@ mod MLP {
     use rand::Rng;
 
     fn new(i_dim: usize, bs: usize, lr: f32) -> NeuralNetwork {
-        let mut nn = NeuralNetwork::new1d(i_dim, "bce".to_string(), "adam".to_string());
+        let mut nn = NeuralNetwork::new(vec![i_dim], "bce".to_string(), "adam".to_string());
         nn.set_batch_size(bs);
         nn.set_learning_rate(lr);
         nn.add_dense(2); //Dense with 2 output neurons
@@ -24,8 +24,7 @@ mod MLP {
             current_input = input.row(i).into_owned().clone();
             current_feedback = feedback.row(i).into_owned().clone();
 
-            let prediction = nn.predict1d(current_input.clone());
-            //let diff = nn.loss_from_prediction(prediction.clone(), current_feedback.clone());
+            let prediction = nn.predict(current_input.clone().into_dyn());
             let diff =
                 nn.loss_from_input(current_input.clone().into_dyn(), current_feedback.clone());
             assert!(
@@ -48,7 +47,7 @@ mod MLP {
             pos = rand::thread_rng().gen_range(0..input.nrows()) as usize;
             current_input = input.row(pos).into_owned().clone();
             current_feedback = feedback.row(pos).into_owned().clone();
-            nn.train1d(current_input, current_feedback);
+            nn.train(current_input.into_dyn(), current_feedback.into_dyn());
         }
     }
 

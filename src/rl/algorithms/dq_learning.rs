@@ -39,7 +39,7 @@ impl DQlearning {
         let target_nn = if use_ddqn {
             nn.clone()
         } else {
-            NeuralNetwork::new1d(0, "none".to_string(), "none".to_string())
+            NeuralNetwork::new(vec![0], "none".to_string(), "none".to_string())
         };
         let discount_factor = 0.95;
         DQlearning {
@@ -132,7 +132,7 @@ impl DQlearning {
             .clone()
             .into_shape((1, board_arr.shape()[0], board_arr.shape()[1]))
             .unwrap();
-        let predicted_moves = self.nn.predict3d(board_with_channels);
+        let predicted_moves = self.nn.predict_single(board_with_channels.into_dyn());
         self.count_illegal_moves(predicted_moves.clone(), actions.clone());
         let legal_predicted_moves = predicted_moves.clone() * actions.clone();
         let mut next_move = legal_predicted_moves.argmax().unwrap();

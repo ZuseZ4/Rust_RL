@@ -19,7 +19,7 @@ impl Error for RootMeanSquareError {
         format!("Root Mean Square")
     }
 
-    fn forward(&self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    fn loss(&self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         let output = output.into_dimensionality::<Ix1>().unwrap();
         let target = target.into_dimensionality::<Ix1>().unwrap();
         let n = output.len() as f32;
@@ -32,7 +32,7 @@ impl Error for RootMeanSquareError {
         Array1::<f32>::from_elem(1, self.err).into_dyn()
     }
 
-    fn backward(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
+    fn deriv(&mut self, output: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
         let div = 2. * target.len() as f32 * self.err;
         (output - target) / div
     }

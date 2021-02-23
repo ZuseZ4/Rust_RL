@@ -1,4 +1,4 @@
-use ndarray::{par_azip, s, Array, Array4, ArrayD, Axis};
+use ndarray::{s, Array, Array4, ArrayD};
 
 #[cfg(test)]
 mod tests {
@@ -83,7 +83,8 @@ pub fn add_padding(input: Array4<f32>, padding: Vec<usize>) -> Array4<f32> {
     out
 }
 
-/// TODO implement this
-pub fn remove_padding(padding: usize, input: ArrayD<f32>) -> ArrayD<f32> {
+// TODO implement this
+#[allow(dead_code)]
+pub fn remove_padding(_padding: usize, input: ArrayD<f32>) -> ArrayD<f32> {
     input
 }
