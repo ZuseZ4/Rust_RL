@@ -20,6 +20,7 @@ impl Clone for BinaryCrossEntropyError {
     }
 }
 
+
 impl BinaryCrossEntropyError {
     /// No parameters required.
     pub fn new() -> Self {
@@ -41,11 +42,13 @@ impl Error for BinaryCrossEntropyError {
     fn loss(&self, input: ArrayD<f32>, target: ArrayD<f32>) -> Array1<f32> {
         let loss_arr: Array1<f32> = Array1::zeros(input.shape()[0]);
         azip!((mut loss in loss_arr.outer_iter_mut(), i in input.outer_iter(), t in target.outer_iter()) {
-          let tmp = -t.clone().into_owned() * i.mapv(f32::ln) - (1. - t.into_owned()) * i.mapv(|x| (1. - x).ln());
+          let tmp: f32 = -t.clone().into_owned() * i.mapv(f32::ln) - (1. - t.into_owned()) * i.mapv(|x| (1. - x).ln());
           loss.fill(tmp);
         });
         loss_arr
     }
+
+    // TODO fix those functions to work on batch input!
 
     // deriv after activation function (which probably was sigmoid)
     fn deriv(&self, input: ArrayD<f32>, target: ArrayD<f32>) -> ArrayD<f32> {
@@ -55,10 +58,14 @@ impl Error for BinaryCrossEntropyError {
     // takes input from last dense/conv/.. layer directly, without activation function in between
     // Loss(t,z) = max(z,0) - tz + log(1+ e^(-|z|)), t is label
     fn loss_from_logits(&self, input: ArrayD<f32>, target: ArrayD<f32>) -> Array1<f32> {
-        let tmp = input.mapv(|z| 1. + (-f32::abs(z)).exp());
-        let loss = input.mapv(|x| f32::max(0., x)) + tmp.mapv(f32::ln) - input * target.clone();
-        let cost: f32 = loss.sum() / target.len() as f32;
-        Array::from_elem(1, cost)
+        let loss_arr: Array1<f32> = Array1::zeros(input.shape()[0]);
+        azip!((mut loss in loss_arr.outer_iter_mut(), i in input.outer_iter(), t in target.outer_iter()) {
+          let tmp = i.mapv(|z| 1. + (-f32::abs(z)).exp());
+          let single_loss = i.mapv(|x| f32::max(0., x)) + tmp.mapv(f32::ln) - i * t.clone();
+          let cost: f32 = single_loss.sum() / target.len() as f32;
+          loss.fill(cost);
+        });
+        loss_arr
     }
 
     // takes input from last dense/conv/.. layer directly, without activation function in between
